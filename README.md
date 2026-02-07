@@ -6,9 +6,9 @@
 
 ## 📢 Project Overview
 Universities face challenges in maintaining meaningful engagement with alumni, often relying on fragmented platforms like social media and email. **Alumnet** solves this by providing a secure, role-based environment for:
-1.  **Connecting:** A searchable directory to identify alumni by academic background or expertise.
-2.  **Mentoring:** A structured workflow for students to request guidance and for alumni to manage these requests.
-3.  **Engaging:** A central hub for university events and engagement monitoring.
+1.  **Connection:** A searchable directory to identify alumni using academic background or expertise.
+2.  **Mentorship:** A structured workflow for the students to request guidance and for alumni to manage these requests.
+3.  **Engagement:** A central hub for university events and engagement monitoring.
 
 ## 🚀 Key Features
 * **Alumni Directory:** Searchable database filtering by batch, department, and skills.
@@ -20,7 +20,7 @@ Universities face challenges in maintaining meaningful engagement with alumni, o
 ## 🛠 Technology Stack
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | React.js |
+| **Frontend** | React.js [![My Skills](https://skillicons.dev/icons?i=js)](https://skillicons.dev)|
 | **Backend** | Node.js with Express |
 | **Database** | PostgreSQL |
 | **Auth** | JWT (JSON Web Tokens) |
