@@ -18,14 +18,15 @@ Universities face challenges in maintaining meaningful engagement with alumni, o
 * **Admin Dashboard:** Tools for user approval, role management, and engagement analytics.
 
 ## 🛠 Technology Stack
+
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | React.js |<img width="100" height="100" alt="download" src="https://github.com/user-attachments/assets/8b6b2ac9-6b8b-4c8f-86e4-4a35bbc49e5d" />
-| **Backend** | Node.js with Express |
-| **Database** | PostgreSQL |
-| **Auth** | JWT (JSON Web Tokens) |
-| **Deployment** | Render |
-| **Design** | Figma |
+| **Frontend** | ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) |
+| **Backend** | ![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB) |
+| **Database** | ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white) |
+| **Auth** | ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens) |
+| **Deployment** | ![Render](https://img.shields.io/badge/Render-%2346E3B7.svg?style=for-the-badge&logo=render&logoColor=white) |
+| **Design** | ![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white) |
 
 ## 👥 Team CodeX
 * **E/23/435** - E.S Wickramasinghe
