@@ -2,9 +2,8 @@
 layout: home
 permalink: index.html
 
-# Please update this with your repository name and project title
-repository-name: eYY-co2060-project-template
-title: Project Template
+repository-name: e23-co2060-Alumnet
+title: CO2060 Software Design Project
 ---
 
 [comment]: # "This is the standard layout for the project, but you can clean this and use your own template, and add more information required for your own project"
@@ -20,13 +19,13 @@ If your followed all the given instructions correctly, your repository will be a
 A HTML template integrated with the given GitHub repository templates, based on github.com/cepdnaclk/eYY-project-theme . If you like to remove this default theme and make your own web page, you can remove the file, docs/_config.yml and create the site using HTML. -->
 
 # Project Title
-
----
+Alumnet
 
 ## Team
--  eNumber, Name, [email](mailto:name@email.com)
--  eNumber, Name, [email](mailto:name@email.com)
--  eNumber, Name, [email](mailto:name@email.com)
+-  E/23/435, E.S Wickramasinghe, e23435@eng.pdn.ac.lk(mailto:name@email.com)
+-  E/23/362, S.N.V.N Senadheera, e23362@eng.pdn.ac.lk(mailto:name@email.com)
+-  E/23/340, W.H.C.C Samarasinghe, e23340@eng.pdn.ac.lk(mailto:name@email.com)
+-  E/23/075, K.K Dilshara, e23075@eng.pdn.ac.lk(mailto:name@email.com)
 
 <!-- Image (photo/drawing of the final hardware) should be here -->
 
@@ -65,8 +64,8 @@ What was achieved, future developments, commercialization plans
 
 ## Links
 
-- [Project Repository](https://github.com/cepdnaclk/{{ page.repository-name }}){:target="_blank"}
-- [Project Page](https://cepdnaclk.github.io/{{ page.repository-name}}){:target="_blank"}
+- [Project Repository](https://github.com/cepdnaclk/{{ page.e23-co2060-Alumnet }}){:target="_blank"}
+- [Project Page](https://cepdnaclk.github.io/{{ page.e23-co2060-Alumnet}}){:target="_blank"}
 - [Department of Computer Engineering](http://www.ce.pdn.ac.lk/)
 - [University of Peradeniya](https://eng.pdn.ac.lk/)
 
