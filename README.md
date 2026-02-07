@@ -34,6 +34,43 @@ Universities face challenges in maintaining meaningful engagement with alumni, o
 * **E/23/340** - W.H.C.C Samarasinghe
 * **E/23/075** - K.K Dilshara
 
+## ⚡ Getting Started
+### Prerequisites
+* Node.js (v14+)
+* PostgreSQL
+
+### Installation
+
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/cepdnaclk/e23-co2060-project-alumnet.git
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    cd client && npm install
+    cd ../server && npm install
+    ```
+
+3.  **Run the Application**
+    ```bash
+    # Run Backend
+    cd server && npm start
+
+    # Run Frontend
+    cd client && npm start
+    ```
+   
+## 🗄️ Database Schema
+
+The system relies on a **PostgreSQL** relational database with the following core entities:
+
+* **Users:** Base entity for authentication (Email, Password Hash, Role).
+* **Profiles:** Distinct attributes for `StudentProfile` (GPA, Interests) vs. `AlumniProfile` (Experience, Current Company).
+* **MentorshipRequests:** Tracks the status (`Pending`, `Accepted`, `Rejected`) between a Student and an Alumnus.
+* **Events:** University announcements managed by Admins.
+* **Notifications:** Asynchronous updates for users.
+    
 ## 🏫 Course Information
 * **Course:** CO2060 - Software Systems Design Project
 * **Department:** Department of Computer Engineering, University of Peradeniya
