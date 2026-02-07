@@ -1,32 +1,67 @@
 {
     "team": [
         {
-            "name": "Team Member Name 1",
-            "email": "email@eng.pdn.ac.lk",
-            "eNumber": "E/yy/xxx"
+            "name": "E.S Wickramasinghe",
+            "email": "e23435@eng.pdn.ac.lk",
+            "eNumber": "E/23/435"
         },
         {
-            "name": "Team Member Name 2",
-            "email": "email@eng.pdn.ac.lk",
-            "eNumber": "E/yy/xxx"
+            "name": "S.N.V.N Senadheera",
+            "email": "e23362@eng.pdn.ac.lk",
+            "eNumber": "E/23/362"
         },
         {
-            "name": "Team Member Name 3",
-            "email": "email@eng.pdn.ac.lk",
-            "eNumber": "E/yy/xxx"
+            "name": "W.H.C.C Samarasinghe",
+            "email": "e23340@eng.pdn.ac.lk",
+            "eNumber": "E/23/340"
+        }
+        ,{
+            "name": "K.K Dilshara",
+            "email": "e23075@eng.pdn.ac.lk",
+            "eNumber": "E/23/075"
+        }
+    ],
+    "supervisors": [{
+    "team": [
+        {
+            "name": "E.S Wickramasinghe",
+            "email": "e23435@eng.pdn.ac.lk",
+            "eNumber": "E/23/435"
+        },
+        {
+            "name": "S.N.V.N Senadheera",
+            "email": "e23362@eng.pdn.ac.lk",
+            "eNumber": "E/23/362"
+        },
+        {
+            "name": "W.H.C.C Samarasinghe",
+            "email": "e23340@eng.pdn.ac.lk",
+            "eNumber": "E/23/340"
+        }
+        ,{
+            "name": "K.K Dilshara",
+            "email": "e23075@eng.pdn.ac.lk",
+            "eNumber": "E/23/075"
         }
     ],
     "supervisors": [
         {
             "name": "Dr. Supervisor 1",
-            "email": "email@eng.pdn.ac.lk"
-        },
-        {
-            "name": "Supervisor 2",
-            "email": "email@eng.pdn.ac.lk"
+            "email": "e21077@eng.pdn.ac.lk"
         }
     ],
     "tags": ["Web", "Software Systems", "CO2060"],
     "image":"cover_page.jpg",
     "thumbnail":"thumbnail.jpg"
 }
+
+        {
+            "name": "Dr. Supervisor 1",
+            "email": "e21077@eng.pdn.ac.lk"
+        }
+    ],
+    "tags": ["Web", "Software Systems", "CO2060"],
+    "image":"cover_page.jpg",
+    "thumbnail":"thumbnail.jpg"
+}
+
