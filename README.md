@@ -1,57 +1,39 @@
-___
-# DELETE THIS INSTRUCTIONS AND ADD AN INTRODUCTION ABOUT YOUR PROJECT
-___
+# Alumnet: Alumni-Student Engagement Platform
 
-# eYY-co2060-project-template
+> A centralized, university-managed digital platform designed to bridge the gap between students and alumni.
 
-This is a sample repository you can use for your Software Systems Design Project. Once you followed these instructions, remove the text and add a brief introduction to here.
+---
 
-### Enable GitHub Pages
+## 📢 Project Overview
+Universities face challenges in maintaining meaningful engagement with alumni, often relying on fragmented platforms like social media and email. **Alumnet** solves this by providing a secure, role-based environment for:
+1.  **Connecting:** A searchable directory to identify alumni by academic background or expertise.
+2.  **Mentoring:** A structured workflow for students to request guidance and for alumni to manage these requests.
+3.  **Engaging:** A central hub for university events and engagement monitoring.
 
-You can put the things to be shown in GitHub pages into the _docs/_ folder. Both html and md file formats are supported. You need to go to settings and enable GitHub pages and select _main_ branch and _docs_ folder from the dropdowns, as shown in the below image.
+## 🚀 Key Features
+* **Alumni Directory:** Searchable database filtering by batch, department, and skills.
+* **Mentorship Workflow:** Structured system where students send requests and alumni can Accept/Reject.
+* **Event Announcements:** Administrators can broadcast events to all users (no ticketing/payments involved).
+* **Role-Based Access:** Secure dashboards for Students, Alumni, and Administrators.
+* **Admin Dashboard:** Tools for user approval, role management, and engagement analytics.
 
-![image](https://user-images.githubusercontent.com/11540782/98789936-028d3600-2429-11eb-84be-aaba665fdc75.png)
+## 🛠 Technology Stack
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React.js |
+| **Backend** | Node.js with Express |
+| **Database** | PostgreSQL |
+| **Auth** | JWT (JSON Web Tokens) |
+| **Deployment** | Render |
+| **Design** | Figma |
 
-### Special Configurations
+## 👥 Team CodeX
+* **E/23/362** - S.N.V.N Senadheera
+* **E/23/XXX** - [Member 2 Name]
+* **E/23/XXX** - [Member 3 Name]
+* **E/23/XXX** - [Member 4 Name]
 
-These projects will be automatically added into [https://projects.ce.pdn.ac.lk](). If you like to show more details about your project on this site, you can fill the parameters in the file, _/docs/index.json_
-
-```
-{
-  "title": "This is the title of the project",
-  "team": [
-    {
-      "name": "Team Member Name 1",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    },
-    {
-      "name": "Team Member Name 2",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    },
-    {
-      "name": "Team Member Name 3",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    }
-  ],
-  "supervisors": [
-    {
-      "name": "Dr. Supervisor 1",
-      "email": "email@eng.pdn.ac.lk"
-    },
-    {
-      "name": "Supervisor 2",
-      "email": "email@eng.pdn.ac.lk"
-    }
-  ],
-  "tags": ["Web", "Software Systems", "CO2060"]
-}
-```
-
-Once you filled this _index.json_ file, please verify the syntax is correct. (You can use [this](https://jsonlint.com/) tool).
-
-### Page Theme
-
-A custom theme integrated with this GitHub Page, which is based on [github.com/cepdnaclk/eYY-project-theme](https://github.com/cepdnaclk/eYY-project-theme). If you like to remove this default theme, you can remove the file, _docs/\_config.yml_ and use HTML based website.
+## 🏫 Course Information
+* **Course:** CO2060 - Software Systems Design Project
+* **Department:** Department of Computer Engineering, University of Peradeniya
+* **Semester:** 4
