@@ -27,7 +27,7 @@
             "email": "e21077@eng.pdn.ac.lk"
         }
     ],
-    "tags": ["Web", "Software Systems", "CO2060"],
+    "tags": ["React", "Node.js", "PostgreSQL", "CO2060"],
     "image":"cover_page.jpg",
-    "thumbnail":"thumbnail.jpg"
+    "thumbnail":"icon.jpeg"
 }
