@@ -20,7 +20,7 @@ Universities face challenges in maintaining meaningful engagement with alumni, o
 ## 🛠 Technology Stack
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | React.js [![My Skills](https://skillicons.dev/icons?i=react)](https://skillicons.dev)|
+| **Frontend** | React.js |<img width="100" height="100" alt="download" src="https://github.com/user-attachments/assets/8b6b2ac9-6b8b-4c8f-86e4-4a35bbc49e5d" />
 | **Backend** | Node.js with Express |
 | **Database** | PostgreSQL |
 | **Auth** | JWT (JSON Web Tokens) |
