@@ -24,61 +24,61 @@ title: Alumnet - Student-Alumni Engagement Platform
 
 ## Introduction
 
-[cite_start]Universities face ongoing challenges in maintaining meaningful and structured engagement with their alumni after graduation[cite: 405]. [cite_start]Currently, alumni information is fragmented across informal platforms such as social media groups, emails, and personal networks[cite: 406]. [cite_start]This fragmentation makes it difficult to identify alumni by expertise, facilitate mentorship, or effectively promote university events[cite: 407].
+Universities face ongoing challenges in maintaining meaningful and structured engagement with their alumni after graduation. Currently, alumni information is fragmented across informal platforms such as social media groups, emails, and personal networks. This fragmentation makes it difficult to identify alumni by expertise, facilitate mentorship, or effectively promote university events.
 
-**Alumnet** is a centralized, university-managed digital platform designed to solve this problem. [cite_start]It enables organized alumni engagement, structured mentorship workflows, and engagement monitoring in a secure, role-based environment[cite: 409].
+**Alumnet** is a centralized, university-managed digital platform designed to solve this problem. It enables organized alumni engagement, structured mentorship workflows, and engagement monitoring in a secure, role-based environment.
 
 ## Solution Architecture
 
 Alumnet operates as a standalone web-based application using a 3-tier architecture:
 
-1.  [cite_start]**Presentation Layer (Frontend):** Built with **React.js** to provide a responsive and interactive user interface for Students, Alumni, and Administrators[cite: 443].
-2.  [cite_start]**Application Layer (Backend):** Powered by **Node.js** and **Express**, handling API routing, business logic, and authentication[cite: 445].
-3.  [cite_start]**Data Layer (Database):** Uses **PostgreSQL** for persistent storage of user profiles, mentorship requests, and events[cite: 447].
+1.  **Presentation Layer (Frontend):** Built with **React.js** to provide a responsive and interactive user interface for Students, Alumni, and Administrators.
+2.  **Application Layer (Backend):** Powered by **Node.js** and **Express**, handling API routing, business logic, and authentication.
+3.  **Data Layer (Database):** Uses **PostgreSQL** for persistent storage of user profiles, mentorship requests, and events.
 
-[cite_start]The system is deployed on **Render** and uses **JWT (JSON Web Tokens)** for secure, stateless authentication [cite: 448-449].
+The system is deployed on **Render** and uses **JWT (JSON Web Tokens)** for secure, stateless authentication.
 
 ## Software Designs
 
 The system is designed around five core features to ensure scalability and usability:
 
 ### 1. User Authentication & Role Management
-Secure login with JWT-based authentication. [cite_start]The system supports three distinct roles [cite: 422-424]:
+Secure login with JWT-based authentication. The system supports three distinct roles:
 * **Students:** Can search directories and request mentorship.
 * **Alumni:** Can manage profiles and accept/reject requests.
 * **Admins:** Manage users and events.
 
 ### 2. Alumni Profile Management
-A centralized directory allowing alumni to create professional profiles. [cite_start]Students can search this directory filtering by **batch, department, profession, and skills** [cite: 425-426].
+A centralized directory allowing alumni to create professional profiles. Students can search this directory filtering by **batch, department, profession, and skills**.
 
 ### 3. Mentorship Workflow
-[cite_start]A structured process to formalize guidance [cite: 428-430]:
+A structured process to formalize guidance:
 * **Request:** Students send a mentorship request to a specific alumnus.
 * **Response:** Alumni receive the request and can simply "Accept" or "Reject".
 * **Tracking:** Both parties can track the status of the connection.
 
 ### 4. Event Announcements
-University administrators can broadcast official event announcements to all users. [cite_start]To avoid complexity and legal risks, the system **does not** handle ticket bookings or financial transactions [cite: 431-433].
+University administrators can broadcast official event announcements to all users. To avoid complexity and legal risks, the system **does not** handle ticket bookings or financial transactions.
 
 ### 5. Database Design
-[cite_start]The database schema includes entities for **Users**, **AlumniProfiles**, **StudentProfiles**, **MentorshipRequests**, **Events**, and **Notifications** to support clear relationships and data integrity [cite: 452-458].
+The database schema includes entities for **Users**, **AlumniProfiles**, **StudentProfiles**, **MentorshipRequests**, **Events**, and **Notifications** to support clear relationships and data integrity.
 
 ## Testing
 
 The verification strategy for Alumnet includes:
 
-* [cite_start]**Functional Testing:** Verifying that each feature (e.g., login, search, request sending) functions according to the requirements[cite: 387].
-* [cite_start]**Security Testing:** Ensuring that role-based access control (RBAC) is strictly enforced (e.g., a Student cannot delete an Event) and that user data is protected[cite: 388].
-* [cite_start]**Usability Inspection:** Reviewing the interface to ensure that the "Accept/Reject" workflow is intuitive for alumni with varying technical skills[cite: 379].
+* **Functional Testing:** Verifying that each feature (e.g., login, search, request sending) functions according to the requirements.
+* **Security Testing:** Ensuring that role-based access control (RBAC) is strictly enforced (e.g., a Student cannot delete an Event) and that user data is protected.
+* **Usability Inspection:** Reviewing the interface to ensure that the "Accept/Reject" workflow is intuitive for alumni with varying technical skills.
 
 ## Conclusion
 
-Alumnet successfully addresses the problem of unstructured alumni engagement by providing a secure and scalable platform. [cite_start]The project delivers a functional directory, a mentorship workflow, and an event broadcasting system[cite: 468].
+Alumnet successfully addresses the problem of unstructured alumni engagement by providing a secure and scalable platform. The project delivers a functional directory, a mentorship workflow, and an event broadcasting system.
 
 **Future Enhancements:**
-* [cite_start]Support for multiple universities[cite: 466].
-* [cite_start]Inclusion of corporate or industry mentors[cite: 466].
-* [cite_start]Advanced analytics dashboards for engagement monitoring[cite: 466].
+* Support for multiple universities.
+* Inclusion of corporate or industry mentors.
+* Advanced analytics dashboards for engagement monitoring.
 
 ## Links
 
