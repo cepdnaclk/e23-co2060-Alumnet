@@ -28,10 +28,10 @@ Universities face challenges in maintaining meaningful engagement with alumni, o
 | **Design** | Figma |
 
 ## 👥 Team CodeX
+* **E/23/435** - E.S Wickramasinghe
 * **E/23/362** - S.N.V.N Senadheera
-* **E/23/XXX** - [Member 2 Name]
-* **E/23/XXX** - [Member 3 Name]
-* **E/23/XXX** - [Member 4 Name]
+* **E/23/340** - W.H.C.C Samarasinghe
+* **E/23/075** - K.K Dilshara
 
 ## 🏫 Course Information
 * **Course:** CO2060 - Software Systems Design Project
