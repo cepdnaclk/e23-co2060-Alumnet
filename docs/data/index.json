@@ -1,4 +1,4 @@
-
+{
     "team": [
         {
             "name": "E.S Wickramasinghe",
@@ -30,3 +30,4 @@
     "tags": ["Web", "Software Systems", "CO2060"],
     "image":"cover_page.jpg",
     "thumbnail":"thumbnail.jpg"
+}
