@@ -1,0 +1,33 @@
+{
+    "team": [
+        {
+            "name": "E.S Wickramasinghe",
+            "email": "e23435@eng.pdn.ac.lk",
+            "eNumber": "E/23/435"
+        },
+        {
+            "name": "S.N.V.N Senadheera",
+            "email": "e23362@eng.pdn.ac.lk",
+            "eNumber": "E/23/362"
+        },
+        {
+            "name": "W.H.C.C Samarasinghe",
+            "email": "e23340@eng.pdn.ac.lk",
+            "eNumber": "E/23/340"
+        }
+        ,{
+            "name": "K.K Dilshara",
+            "email": "e23075@eng.pdn.ac.lk",
+            "eNumber": "E/23/075"
+        }
+    ],
+    "supervisors": [
+        {
+            "name": "K.M.S Darshana",
+            "email": "e21077@eng.pdn.ac.lk"
+        }
+    ],
+    "tags": ["React", "Node.js", "PostgreSQL", "CO2060"],
+    "image":"cover_page.jpg",
+    "thumbnail":"Icon.jpeg"
+}

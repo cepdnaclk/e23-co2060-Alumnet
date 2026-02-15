@@ -1,0 +1,38 @@
+# Template specific files
+*.sh
+_site/
+.jekyll-metadata
+Gemfile.lock
+Gemfile
+
+# Dependencies 
+node_modules/
+package-lock.json
+
+# Environment Variables 
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build Outputs 
+dist/
+build/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories
+.idea
+.vscode
+*.suo
+*.ntvs
+*.njsproj
+*.sln
