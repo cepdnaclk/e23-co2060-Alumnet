@@ -1,19 +1,12 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+INSERT INTO users (id, email, password_hash, role) 
+VALUES ('11111111-1111-1111-1111-111111111111', 'student@university.edu', 'fake_hashed_pass', 'student');
 
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('student', 'alumni', 'admin')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+INSERT INTO profiles (user_id, full_name, bio, skills) 
+VALUES ('11111111-1111-1111-1111-111111111111', 'Leo The Student', 'Computer Engineering student looking for a mentor.', ARRAY['Java', 'React', 'C++']);
 
-CREATE TABLE profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    full_name VARCHAR(100) NOT NULL,
-    bio TEXT,
-    company VARCHAR(100),       
-    job_title VARCHAR(100),     
-    skills TEXT[]              
-);
+INSERT INTO users (id, email, password_hash, role) 
+VALUES ('22222222-2222-2222-2222-222222222222', 'alumni@techcorp.com', 'fake_hashed_pass', 'alumni');
+
+INSERT INTO profiles (user_id, full_name, company, job_title, skills) 
+VALUES ('22222222-2222-2222-2222-222222222222', 'Jane Smith', 'Tech Corp', 'Senior Backend Engineer', ARRAY['PostgreSQL', 'Node.js', 'System Design']);
+
