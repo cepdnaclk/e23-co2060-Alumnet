@@ -5,7 +5,7 @@ const pool = require("../config/db");
 
 const router = express.Router();
 
-const protect = require("../middleware/authMiddleware");
+const { protect, authorize } = require("../middleware/authMiddleware");
 
 // REGISTER
 router.post("/register", async (req, res) => {
@@ -98,5 +98,14 @@ router.get("/profile", protect, async (req, res) => {
     user: req.user
   });
 });
+
+router.get(
+  "/admin-only",
+  protect,
+  authorize("admin"),
+  (req, res) => {
+    res.json({ message: "Welcome Admin" });
+  }
+);
 
 module.exports = router;
