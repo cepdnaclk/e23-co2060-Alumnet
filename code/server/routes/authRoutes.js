@@ -5,6 +5,8 @@ const pool = require("../config/db");
 
 const router = express.Router();
 
+const protect = require("../middleware/authMiddleware");
+
 // REGISTER
 router.post("/register", async (req, res) => {
   try {
@@ -88,6 +90,13 @@ router.post("/login", async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
+});
+
+router.get("/profile", protect, async (req, res) => {
+  res.json({
+    message: "Protected route accessed",
+    user: req.user
+  });
 });
 
 module.exports = router;
