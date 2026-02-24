@@ -10,34 +10,38 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 // REGISTER
 router.post("/register", async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, full_name } = req.body;
 
-    if (!email || !password || !role) {
+    if (!email || !password || !role || !full_name) {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    // Check if user exists
     const existingUser = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
+      "SELECT 1 FROM users WHERE email = $1",
       [email]
     );
-
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user
+    // Insert into users
     const newUser = await pool.query(
       "INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id, email, role",
       [email, hashedPassword, role]
     );
 
-    // Create token
+    const userId = newUser.rows[0].id;
+
+    // Insert into profiles (minimum required field is full_name)
+    await pool.query(
+      "INSERT INTO profiles (user_id, full_name) VALUES ($1, $2)",
+      [userId, full_name]
+    );
+
     const token = jwt.sign(
-      { id: newUser.rows[0].id, role: newUser.rows[0].role },
+      { id: userId, role: newUser.rows[0].role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -93,10 +97,35 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/profile", protect, async (req, res) => {
-  res.json({
-    message: "Protected route accessed",
-    user: req.user
-  });
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+        u.id,
+        u.email,
+        u.role,
+        p.full_name,
+        p.bio,
+        p.company,
+        p.job_title,
+        p.skills
+      FROM users u
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE u.id = $1
+      `,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 router.get(
