@@ -1,11 +1,13 @@
 const express = require("express");
 const cors = require("cors");
+const eventRoutes = require('./eventRoutes');
 require("dotenv").config();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/events', eventRoutes);
 
 app.get("/", (req, res) => {
   res.send("Alumnet API is running 🚀");
