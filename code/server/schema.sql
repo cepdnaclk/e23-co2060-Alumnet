@@ -17,3 +17,13 @@ CREATE TABLE profiles (
     job_title VARCHAR(100),     
     skills TEXT[]              
 );
+
+CREATE TABLE events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    location VARCHAR(255),
+    event_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
