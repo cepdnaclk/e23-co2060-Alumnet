@@ -1,19 +1,19 @@
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL;
 
-export async function registerUser(payload) {
-  const res = await fetch(`${API_URL}/api/auth/register`, {
+export async function login(email, password) {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ email, password }),
   });
   return res.json();
 }
 
-export async function loginUser(payload) {
-  const res = await fetch(`${API_URL}/api/auth/login`, {
+export async function register(data) {
+  const res = await fetch(`${API_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(data),
   });
   return res.json();
 }
