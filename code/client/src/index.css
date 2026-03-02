@@ -1,12 +1,71 @@
-:root {
-  font-family: Arial, sans-serif;
+@font-face {
+  font-family: "Outfit";
+  src: url("/src/assets/fonts/Outfit-Regular") format("opentype");
+  font-weight: 400;
+  font-style: normal;
 }
 
-body {
-  margin: 0;
-  background: #f6f7fb;
+:root {
+  --primary-blue: #0b2a6f;
+  --primary-dark: #0f172a;
+  --primary-black: #000000;
+  --primary-white: #ffffff;
 }
 
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+}
+
+body {
+  font-family: "Outfit", Arial, sans-serif;
+  background-color: var(--primary-white);
+  color: var(--primary-dark);
+}
+
+button {
+  font-family: "Outfit", Arial, sans-serif;
+  cursor: pointer;
+}
+
+/* ---------- UI polish helpers ---------- */
+.btn {
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  letter-spacing: 1px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.98;
+}
+
+.btn:active {
+  transform: translateY(0px);
+}
+
+/* Hero fade-in animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 700ms ease both;
+}
+
+.fade-up.delay-1 {
+  animation-delay: 120ms;
+}
+.fade-up.delay-2 {
+  animation-delay: 240ms;
+}
+.fade-up.delay-3 {
+  animation-delay: 360ms;
 }
