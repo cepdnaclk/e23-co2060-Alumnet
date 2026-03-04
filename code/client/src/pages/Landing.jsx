@@ -8,7 +8,7 @@ export default function Landing({ onGoLogin, onGoRegister }) {
     <div
       style={{
         minHeight: "100vh",
-        backgroundImage: `linear-gradient(rgba(2, 30, 90, 0.75), rgba(2, 30, 90, 0.75)), url(${heroBg})`,
+        backgroundImage: `linear-gradient(rgba(2, 30, 90, 0.85), rgba(2, 30, 90, 0.85)), url(${heroBg})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -142,7 +142,7 @@ const primaryBtn = {
   color: "#0b2a6f",
   padding: "12px 22px",
   borderRadius: 10,
-  fontWeight: 600,
+  fontWeight: 700,
   fontSize: "16px",
   letterSpacing: "0.3px",
   cursor: "pointer",
@@ -155,7 +155,7 @@ const outlineBtn = {
   color: "white",
   padding: "12px 22px",
   borderRadius: 10,
-  fontWeight: 600,
+  fontWeight: 700,
   fontSize: "16px",
   letterSpacing: "0.3px",
   cursor: "pointer",
