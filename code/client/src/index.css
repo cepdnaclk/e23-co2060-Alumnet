@@ -1,6 +1,6 @@
 @font-face {
-  font-family: "Outfit";
-  src: url("/src/assets/fonts/Outfit-Regular") format("opentype");
+  font-family: "DMSans-Regular";
+  src: url("/src/assets/fonts/DMSans-Regular") format("opentype");
   font-weight: 400;
   font-style: normal;
 }
@@ -19,13 +19,13 @@
 }
 
 body {
-  font-family: "Outfit", Arial, sans-serif;
+  font-family: "DMSans-Regular", Arial, sans-serif;
   background-color: var(--primary-white);
   color: var(--primary-dark);
 }
 
 button {
-  font-family: "Outfit", Arial, sans-serif;
+  font-family: "DMSans-Regular", Arial, sans-serif;
   cursor: pointer;
 }
 
