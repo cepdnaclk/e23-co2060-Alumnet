@@ -1,6 +1,17 @@
+// src/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../api";
+import AuthLayout from "../components/AuthLayout";
+import {
+  titleStyle,
+  labelStyle,
+  inputStyle,
+  btnPrimaryStyle,
+  footerRowStyle,
+  linkStyle,
+  errorBoxStyle,
+} from "../styles/ui";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -28,54 +39,41 @@ export default function Login() {
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: "80px auto", padding: 20 }}>
-      <h1 style={{ marginBottom: 12 }}>Login</h1>
-      <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Use your Alumnet account to continue.
-      </p>
+    <AuthLayout maxWidth={420}>
+      <h1 style={titleStyle}>Login</h1>
 
       <form onSubmit={handleSubmit}>
-        <label style={{ display: "block", marginBottom: 6 }}>Email</label>
+        <label style={labelStyle}>Email</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          placeholder="james.potter@example.com"
           required
-          style={{ width: "100%", padding: 10, marginBottom: 14 }}
+          autoComplete="email"
+          style={inputStyle}
         />
 
-        <label style={{ display: "block", marginBottom: 6 }}>Password</label>
+        <label style={labelStyle}>Password</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
+          placeholder="••••••••••"
           required
-          style={{ width: "100%", padding: 10, marginBottom: 14 }}
+          autoComplete="current-password"
+          style={inputStyle}
         />
 
-        {error && (
-          <div
-            style={{
-              background: "rgba(255,0,0,0.08)",
-              border: "1px solid rgba(255,0,0,0.2)",
-              padding: 10,
-              borderRadius: 8,
-              marginBottom: 12,
-              color: "#b00020",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div style={errorBoxStyle}>{error}</div>}
 
         <button
           type="submit"
           disabled={loading}
+          className="btnPrimary"
           style={{
-            width: "100%",
-            padding: 12,
+            ...btnPrimaryStyle,
+            opacity: loading ? 0.8 : 1,
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
@@ -83,13 +81,18 @@ export default function Login() {
         </button>
       </form>
 
-      <div style={{ marginTop: 14, opacity: 0.85 }}>
-        Don’t have an account? <Link to="/register">Register</Link>
+      <div style={footerRowStyle}>
+        Don’t have an account?{" "}
+        <Link className="link" style={linkStyle} to="/register">
+          Register
+        </Link>
       </div>
 
-      <div style={{ marginTop: 10 }}>
-        <Link to="/">← Back to Home</Link>
+      <div style={{ textAlign: "center", marginTop: 10 }}>
+        <Link className="link" style={linkStyle} to="/">
+          ← Back to Home
+        </Link>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

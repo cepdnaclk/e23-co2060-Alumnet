@@ -1,25 +1,50 @@
+// src/pages/AdminDashboard.jsx
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { getPendingUsers, verifyUser } from "../api";
+import { useNavigate, Link } from "react-router-dom";
+import AuthLayout from "../components/AuthLayout";
+import { titleStyle, footerRowStyle, linkStyle, errorBoxStyle, badge, theme } from "../styles/ui";
 
 export default function AdminDashboard() {
-  const token = localStorage.getItem("token");
-
+  const navigate = useNavigate();
+  const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [items, setItems] = useState([]);
-  const [actionId, setActionId] = useState(null);
+  const [err, setErr] = useState("");
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const loadPending = async () => {
-    setError("");
+    setErr("");
     setLoading(true);
     try {
-      const data = await getPendingUsers(token);
-      setItems(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message || "Failed to load pending users");
+      const token = localStorage.getItem("token");
+      if (!token) return navigate("/login");
+
+      const res = await fetch(`${API_URL}/api/auth/admin/pending`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to load pending users");
+
+      setPending(data.users || data);
+    } catch (e) {
+      setErr(e.message || "Failed to load");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const verifyUser = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/api/auth/admin/verify/${userId}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Verify failed");
+      await loadPending();
+    } catch (e) {
+      setErr(e.message || "Verify failed");
     }
   };
 
@@ -28,139 +53,72 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const approve = async (userId) => {
-    setActionId(userId);
-    setError("");
-    try {
-      await verifyUser(token, userId);
-      // refresh list after approve
-      await loadPending();
-    } catch (err) {
-      setError(err.message || "Failed to verify user");
-    } finally {
-      setActionId(null);
-    }
-  };
-
   return (
-    <div style={{ maxWidth: 1000, margin: "30px auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-        <div>
-          <h1 style={{ marginBottom: 6 }}>Admin Dashboard</h1>
-          <div style={{ opacity: 0.8 }}>Approve new users (pending → verified).</div>
-        </div>
+    <AuthLayout maxWidth={820}>
+      <h1 style={titleStyle}>Admin Dashboard</h1>
 
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <Link to="/profile">My Profile</Link>
-          <button onClick={loadPending} style={{ padding: "10px 12px" }}>
-            Refresh
-          </button>
-        </div>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+        <span style={badge("admin")}>Admin</span>
       </div>
 
-      {error && (
-        <div
-          style={{
-            marginTop: 14,
-            background: "rgba(255,0,0,0.08)",
-            border: "1px solid rgba(255,0,0,0.2)",
-            padding: 12,
-            borderRadius: 10,
-            color: "#b00020",
-          }}
-        >
-          {error}
+      {err && <div style={errorBoxStyle}>{err}</div>}
+
+      {loading ? (
+        <div style={{ textAlign: "center", color: theme.blue, opacity: 0.85 }}>Loading…</div>
+      ) : pending.length === 0 ? (
+        <div style={{ textAlign: "center", color: theme.blue, opacity: 0.85 }}>
+          No pending users 🎉
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 10 }}>
+          {pending.map((u) => (
+            <div
+              key={u.user_id || u.id}
+              style={{
+                border: "1px solid rgba(11,42,111,0.12)",
+                borderRadius: 12,
+                padding: 12,
+                background: "rgba(255,255,255,0.95)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ color: theme.blue }}>
+                  <div style={{ fontWeight: 700 }}>{u.full_name || "Unnamed"}</div>
+                  <div style={{ opacity: 0.85 }}>{u.email}</div>
+                  <div style={{ opacity: 0.85, fontSize: 13 }}>Role: {u.role}</div>
+                </div>
+
+                <button
+                  className="btnPrimary"
+                  onClick={() => verifyUser(u.user_id || u.id)}
+                  style={{
+                    border: "none",
+                    background: theme.blue,
+                    color: "white",
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    height: 42,
+                    alignSelf: "center",
+                    fontFamily: "DM Sans, sans-serif",
+                  }}
+                >
+                  Verify
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      <div style={{ marginTop: 16 }}>
-        {loading ? (
-          <p>Loading pending users...</p>
-        ) : items.length === 0 ? (
-          <div
-            style={{
-              padding: 14,
-              borderRadius: 12,
-              background: "rgba(0,0,0,0.03)",
-              border: "1px solid rgba(0,0,0,0.06)",
-            }}
-          >
-            No pending users right now ✅
-          </div>
-        ) : (
-          <div
-            style={{
-              border: "1px solid rgba(0,0,0,0.08)",
-              borderRadius: 14,
-              overflow: "hidden",
-              background: "white",
-            }}
-          >
-            <HeaderRow />
-            {items.map((u) => (
-              <UserRow
-                key={u.id}
-                user={u}
-                approving={actionId === u.id}
-                onApprove={() => approve(u.id)}
-              />
-            ))}
-          </div>
-        )}
+      <div style={footerRowStyle}>
+        <div style={{ textAlign: "center" }}>
+          <Link className="link" style={linkStyle} to="/profile">
+            ← Back to Profile
+          </Link>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function HeaderRow() {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "2fr 1fr 2fr 1fr",
-        gap: 12,
-        padding: "12px 14px",
-        fontSize: 12,
-        opacity: 0.7,
-        background: "rgba(0,0,0,0.03)",
-        borderBottom: "1px solid rgba(0,0,0,0.06)",
-      }}
-    >
-      <div>Email</div>
-      <div>Role</div>
-      <div>Full Name</div>
-      <div style={{ textAlign: "right" }}>Action</div>
-    </div>
-  );
-}
-
-function UserRow({ user, approving, onApprove }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "2fr 1fr 2fr 1fr",
-        gap: 12,
-        padding: "12px 14px",
-        borderBottom: "1px solid rgba(0,0,0,0.06)",
-        alignItems: "center",
-      }}
-    >
-      <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</div>
-      <div>{user.role}</div>
-      <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{user.full_name || "-"}</div>
-      <div style={{ textAlign: "right" }}>
-        <button
-          onClick={onApprove}
-          disabled={approving}
-          style={{
-            padding: "8px 10px",
-            cursor: approving ? "not-allowed" : "pointer",
-          }}
-        >
-          {approving ? "Approving..." : "Approve"}
-        </button>
-      </div>
-    </div>
+    </AuthLayout>
   );
 }
