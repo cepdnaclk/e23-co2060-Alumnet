@@ -3,6 +3,7 @@ import { loginUser, registerUser, getProfile } from "./api";
 import Navbar from "./components/Navbar";
 import EditProfile from "./pages/EditProfile";
 import Landing from "./pages/Landing";
+import Announcements from "./pages/Announcements";
 
 function App() {
   const [email, setEmail] = useState("");
@@ -12,7 +13,7 @@ function App() {
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("student");
 
-  // Views: "landing" | "auth" | "profile"
+  // Views: "landing" | "auth" | "profile" | "announcements"
   const [view, setView] = useState("landing");
 
   const handleLogin = async (e) => {
@@ -60,7 +61,7 @@ function App() {
 
   return (
   <div>
-    {view !== "landing" && <Navbar />}
+    {view !== "landing" && <Navbar onNavigate={setView} />}
 
     {view === "landing" && (
       <Landing
@@ -156,9 +157,11 @@ function App() {
                 {message}
               </pre>
             </div>
-          ) : (
+          ) : view === "profile" ? (
             <EditProfile />
-          )}
+          ) : view === "announcements" ? (
+            <Announcements />
+          ) : null}
         </div>
       )}
     </div>
