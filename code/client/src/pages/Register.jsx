@@ -72,7 +72,7 @@ export default function Register() {
     return {
       ...common,
       job_title: jobTitle,
-      organization,
+      company: organization,
       grad_year: gradYear,
       linkedin_url: linkedinUrl,
       interests,

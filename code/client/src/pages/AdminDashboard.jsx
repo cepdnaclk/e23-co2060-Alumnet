@@ -1,124 +1,151 @@
 // src/pages/AdminDashboard.jsx
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import AuthLayout from "../components/AuthLayout";
-import { titleStyle, footerRowStyle, linkStyle, errorBoxStyle, badge, theme } from "../styles/ui";
+import { useEffect,useState } from "react";
+import PageShell from "../components/PageShell";
+import { Link,useNavigate } from "react-router-dom";
+import { theme } from "../styles/ui";
 
-export default function AdminDashboard() {
-  const navigate = useNavigate();
-  const [pending, setPending] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+export default function AdminDashboard(){
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const navigate = useNavigate();
 
-  const loadPending = async () => {
-    setErr("");
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return navigate("/login");
+const [pending,setPending] = useState([]);
+const [loading,setLoading] = useState(true);
+const [err,setErr] = useState("");
 
-      const res = await fetch(`${API_URL}/api/auth/admin/pending`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to load pending users");
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-      setPending(data.users || data);
-    } catch (e) {
-      setErr(e.message || "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  };
+const loadUsers = async()=>{
+ try{
+  const token = localStorage.getItem("token");
+  if(!token) return navigate("/login");
 
-  const verifyUser = async (userId) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/api/auth/admin/verify/${userId}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Verify failed");
-      await loadPending();
-    } catch (e) {
-      setErr(e.message || "Verify failed");
-    }
-  };
+  const res = await fetch(`${API_URL}/api/auth/admin/pending`,{
+   headers:{Authorization:`Bearer ${token}`}
+  });
 
-  useEffect(() => {
-    loadPending();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.message);
 
-  return (
-    <AuthLayout maxWidth={820}>
-      <h1 style={titleStyle}>Admin Dashboard</h1>
+  setPending(data.users||data);
 
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-        <span style={badge("admin")}>Admin</span>
-      </div>
+ }catch(e){
+  setErr(e.message);
+ }finally{
+  setLoading(false);
+ }
+};
 
-      {err && <div style={errorBoxStyle}>{err}</div>}
+const verifyUser = async(id)=>{
+ try{
 
-      {loading ? (
-        <div style={{ textAlign: "center", color: theme.blue, opacity: 0.85 }}>Loading…</div>
-      ) : pending.length === 0 ? (
-        <div style={{ textAlign: "center", color: theme.blue, opacity: 0.85 }}>
-          No pending users 🎉
-        </div>
-      ) : (
-        <div style={{ display: "grid", gap: 10 }}>
-          {pending.map((u) => (
-            <div
-              key={u.user_id || u.id}
-              style={{
-                border: "1px solid rgba(11,42,111,0.12)",
-                borderRadius: 12,
-                padding: 12,
-                background: "rgba(255,255,255,0.95)",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ color: theme.blue }}>
-                  <div style={{ fontWeight: 700 }}>{u.full_name || "Unnamed"}</div>
-                  <div style={{ opacity: 0.85 }}>{u.email}</div>
-                  <div style={{ opacity: 0.85, fontSize: 13 }}>Role: {u.role}</div>
-                </div>
+  const token = localStorage.getItem("token");
 
-                <button
-                  className="btnPrimary"
-                  onClick={() => verifyUser(u.user_id || u.id)}
-                  style={{
-                    border: "none",
-                    background: theme.blue,
-                    color: "white",
-                    borderRadius: 10,
-                    padding: "10px 14px",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                    height: 42,
-                    alignSelf: "center",
-                    fontFamily: "DM Sans, sans-serif",
-                  }}
-                >
-                  Verify
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+  await fetch(`${API_URL}/api/auth/admin/verify/${id}`,{
+   method:"PATCH",
+   headers:{Authorization:`Bearer ${token}`}
+  });
 
-      <div style={footerRowStyle}>
-        <div style={{ textAlign: "center" }}>
-          <Link className="link" style={linkStyle} to="/profile">
-            ← Back to Profile
-          </Link>
-        </div>
-      </div>
-    </AuthLayout>
-  );
+  loadUsers();
+
+ }catch(e){
+  setErr(e.message);
+ }
+};
+
+useEffect(()=>{
+ loadUsers();
+},[]);
+
+return(
+
+<PageShell
+title="User Verification"
+subtitle="Approve alumni and student accounts"
+right={
+ <Link to="/profile" style={backBtn}>
+  Back to Profile
+ </Link>
+}
+>
+
+{err && <div style={error}>{err}</div>}
+
+{loading ? (
+ <div>Loading...</div>
+) : pending.length===0 ? (
+ <div>No pending users 🎉</div>
+) : (
+
+<div style={list}>
+
+{pending.map((u)=>(
+<div key={u.user_id||u.id} style={card}>
+
+<div>
+<div style={name}>{u.full_name}</div>
+<div>{u.email}</div>
+<div style={{fontSize:13}}>Role: {u.role}</div>
+</div>
+
+<button
+style={verifyBtn}
+onClick={()=>verifyUser(u.user_id||u.id)}
+>
+Verify User
+</button>
+
+</div>
+))}
+
+</div>
+
+)}
+
+</PageShell>
+
+);
+}
+
+const list={
+ display:"grid",
+ gap:12
+}
+
+const card={
+ background:"white",
+ padding:16,
+ borderRadius:12,
+ border:"1px solid rgba(11,42,111,0.12)",
+ display:"flex",
+ justifyContent:"space-between",
+ alignItems:"center"
+}
+
+const name={
+ fontWeight:700,
+ color:theme.blue
+}
+
+const verifyBtn={
+ background:theme.blue,
+ color:"white",
+ border:"none",
+ padding:"10px 14px",
+ borderRadius:8,
+ cursor:"pointer"
+}
+
+const backBtn={
+ background:theme.blue,
+ color:"white",
+ padding:"10px 14px",
+ borderRadius:8,
+ textDecoration:"none"
+}
+
+const error={
+ background:"#fee2e2",
+ padding:10,
+ borderRadius:8,
+ marginBottom:10
 }

@@ -1,6 +1,8 @@
 // src/components/Navbar.jsx
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import logo from "../assets/alumnet-logo.png";
+import { theme } from "../styles/ui";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -17,36 +19,29 @@ const Navbar = () => {
 
       <nav className="navWrap">
         <div className="navInner">
-          {/* Brand */}
-          <div className="brand" onClick={() => navigate("/")}>
-            Alumnet
-          </div>
 
-          {/* Links */}
+          <img
+            src={logo}
+            className="logo"
+            alt="Alumnet"
+            onClick={() => navigate("/")}
+          />
+
           <div className="links">
-            <NavLink to="/" className={({ isActive }) => `link ${isActive ? "active" : ""}`}>
+
+            <NavLink to="/" className={({isActive})=>`link ${isActive?"active":""}`}>
               Home
             </NavLink>
 
-            <NavLink
-              to="/directory"
-              className={({ isActive }) => `link ${isActive ? "active" : ""}`}
-            >
+            <NavLink to="/directory" className={({isActive})=>`link ${isActive?"active":""}`}>
               Directory
             </NavLink>
 
-            {/* Added the Announcement part*/}
-            <NavLink
-              to="/announcements"
-              className={({ isActive }) => `link ${isActive ? "active" : ""}`}
-            >
+            <NavLink to="/announcements" className={({isActive})=>`link ${isActive?"active":""}`}>
               Announcements
             </NavLink>
 
-            <NavLink
-              to="/profile"
-              className={({ isActive }) => `link ${isActive ? "active" : ""}`}
-            >
+            <NavLink to="/profile" className={({isActive})=>`link ${isActive?"active":""}`}>
               My Profile
             </NavLink>
 
@@ -55,13 +50,11 @@ const Navbar = () => {
                 Logout
               </button>
             ) : (
-              <NavLink
-                to="/login"
-                className={({ isActive }) => `link pill ${isActive ? "active" : ""}`}
-              >
+              <NavLink to="/login" className="loginBtn">
                 Login
               </NavLink>
             )}
+
           </div>
         </div>
       </nav>
@@ -72,99 +65,71 @@ const Navbar = () => {
 export default Navbar;
 
 const css = `
-/* Glassy dark-blue navbar */
 .navWrap{
   position: sticky;
-  top: 0;
-  z-index: 50;
-  width: 100%;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  background: rgba(11, 42, 111, 0.55);
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  top:0;
+  z-index:50;
+  width:100%;
+  background:#0b2a6f;
+  border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
 .navInner{
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 14px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  max-width:1200px;
+  margin:auto;
+  padding:14px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
 }
 
-.brand{
-  color: #fff;
-  font-size: 22px;
-  letter-spacing: .02em;
-  cursor: pointer;
-  user-select: none;
-  transition: transform .18s ease, opacity .18s ease;
-}
-.brand:hover{
-  transform: translateY(-1px);
-  opacity: .95;
+.logo{
+  height:40px;
+  cursor:pointer;
 }
 
 .links{
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  display:flex;
+  gap:14px;
+  align-items:center;
 }
 
 .link{
-  color: rgba(255,255,255,0.88);
-  text-decoration: none;
-  letter-spacing: .06em;
-  font-size: 14px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  transition: transform .18s ease, background .18s ease, color .18s ease;
+  color:rgba(255,255,255,0.9);
+  text-decoration:none;
+  font-size:14px;
+  padding:8px 10px;
+  border-radius:8px;
+  transition:.2s;
 }
+
 .link:hover{
-  transform: translateY(-2px);
-  background: rgba(255,255,255,0.10);
-  color: #fff;
+  background:rgba(255,255,255,0.12);
 }
 
 .link.active{
-  background: rgba(255,255,255,0.14);
-  color: #fff;
+  background:rgba(255,255,255,0.18);
 }
 
-/* Optional pill style for login */
-.link.pill{
-  background: rgba(255,255,255,0.92);
-  color: #0b2a6f;
-  border: 1px solid rgba(255,255,255,0.35);
-}
-.link.pill:hover{
-  background: #fff;
-  transform: translateY(-2px);
-}
-
-/* Logout button */
 .logoutBtn{
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(0,0,0,0.08);
-  color: rgba(255,255,255,0.92);
-  border-radius: 10px;
-  padding: 8px 12px;
-  letter-spacing: .06em;
-  cursor: pointer;
-  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
-}
-.logoutBtn:hover{
-  transform: translateY(-2px);
-  background: rgba(255,255,255,0.12);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.18);
-  color: #fff;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.3);
+  color:white;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
 }
 
-@media (max-width: 640px){
-  .navInner{ padding: 12px 14px; }
-  .links{ gap: 8px; }
-  .link{ font-size: 13px; padding: 7px 8px; }
+.logoutBtn:hover{
+  background:rgba(255,255,255,0.15);
+}
+
+.loginBtn{
+  background:white;
+  color:#0b2a6f;
+  padding:8px 14px;
+  border-radius:8px;
+  text-decoration:none;
+  font-weight:600;
 }
 `;
