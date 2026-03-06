@@ -4,19 +4,19 @@
 const express = require("express");
 const router = express.Router();
 
-// Import shared DB connection
-const pool = require("./config/db");
+const { protect, authorize } = require("../middleware/authMiddleware");
+const pool = require("../config/db");
 
-// CREATE EVENT
-router.post("/", async (req, res) => {
+// CREATE EVENT (Only admin + alumni)
+router.post("/", protect, authorize("admin", "alumni"), async (req, res) => {
   try {
-    const { title, description, event_date, location } = req.body;
+    const { title, description, location, event_date } = req.body;
 
     const result = await pool.query(
-      `INSERT INTO events (title, description, event_date, location)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO events (title, description, location, event_date, created_by)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [title, description, event_date, location]
+      [title, description, location, event_date, req.user.id]
     );
 
     res.status(201).json(result.rows[0]);
@@ -29,10 +29,7 @@ router.post("/", async (req, res) => {
 // GET ALL EVENTS
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT * FROM events ORDER BY event_date ASC`
-    );
-
+    const result = await pool.query(`SELECT * FROM events ORDER BY event_date ASC`);
     res.json(result.rows);
   } catch (err) {
     console.error(err);

@@ -23,7 +23,7 @@ const protect = (req, res, next) => {
   }
 };
 
-// 🔥 Role-based authorization
+// Role-based authorization
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
