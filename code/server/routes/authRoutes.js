@@ -215,6 +215,7 @@ router.put("/profile", protect, async (req, res) => {
       job_title,
       grad_year,
       linkedin_url,
+      skills 
     } = req.body;
 
     if (full_name && tooLong(full_name, 100)) return bad(res, "full_name too long (max 100)");
@@ -224,7 +225,7 @@ router.put("/profile", protect, async (req, res) => {
     if (job_title && tooLong(job_title, 100)) return bad(res, "job_title too long (max 100)");
     if (grad_year && tooLong(grad_year, 10)) return bad(res, "grad_year too long (max 10)");
     if (linkedin_url && !isValidUrl(linkedin_url)) return bad(res, "linkedin_url must start with http/https");
-
+    if (skills && tooLong(skills, 500)) return bad(res, "skills too long (maximum 500)");
     const updated = await pool.query(
       `
       UPDATE profiles
@@ -236,11 +237,12 @@ router.put("/profile", protect, async (req, res) => {
         company = COALESCE($5, company),
         job_title = COALESCE($6, job_title),
         grad_year = COALESCE($7, grad_year),
-        linkedin_url = COALESCE($8, linkedin_url)
-      WHERE user_id = $9
+        linkedin_url = COALESCE($8, linkedin_url),
+        skills = COALESCE ($9, skills)
+      WHERE user_id = $10
       RETURNING *
       `,
-      [full_name ?? null, bio ?? null, batch ?? null, interests ?? null, company ?? null, job_title ?? null, grad_year ?? null, linkedin_url ?? null, req.user.id]
+      [full_name ?? null, bio ?? null, batch ?? null, interests ?? null, company ?? null, job_title ?? null, grad_year ?? null, linkedin_url ?? null, skills ?? null, req.user.id]
     );
 
     if (updated.rows.length === 0) return res.status(404).json({ message: "Profile not found" });
