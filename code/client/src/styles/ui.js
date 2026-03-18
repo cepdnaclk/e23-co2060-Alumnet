@@ -1,55 +1,68 @@
-// src/styles/ui.js
 export const theme = {
-  blue: "#0b2a6f",
+  bg: "#e8e7e3",
+  surface: "rgba(250,249,246,0.78)",
+  surfaceStrong: "rgba(255,255,255,0.88)",
+  text: "#111111",
+  textSoft: "rgba(17,17,17,0.66)",
+  border: "rgba(0,0,0,0.10)",
+  borderSoft: "rgba(0,0,0,0.06)",
+  black: "#111111",
   white: "#ffffff",
-  text: "#0b2a6f",
-  lightGray: "#f3f4f6",
-  border: "rgba(11,42,111,0.18)",
-  borderSoft: "rgba(11,42,111,0.12)",
+  teal: "#7ea7ae",
+  tealSoft: "rgba(126,167,174,0.16)",
 };
 
-export const pageWrapStyle = (heroBg) => ({
+export const pageWrapStyle = () => ({
   minHeight: "100vh",
-  backgroundImage: `linear-gradient(rgba(11,42,111,0.9), rgba(11,42,111,0.9)), url(${heroBg})`,
-  backgroundSize: "cover",
-  backgroundPosition: "center",
+  background: theme.bg,
   display: "grid",
   placeItems: "center",
-  padding: "40px 20px",
-  fontFamily: "DM Sans, sans-serif",
+  padding: "32px 18px",
+  fontFamily: '"Google Sans", Arial, sans-serif',
 });
 
 export const cardStyle = {
   width: "100%",
-  maxWidth: 460,
-  borderRadius: 14,
-  padding: "32px 36px",
-  background: "rgba(255,255,255,0.96)",
-  boxShadow: "0 20px 60px rgba(0,0,0,.25)",
-  border: "1px solid rgba(255,255,255,0.55)",
-  backdropFilter: "blur(10px)",
+  borderRadius: 30,
+  padding: "34px 30px 28px",
+  background: theme.surface,
+  border: `1px solid ${theme.borderSoft}`,
+  boxShadow: "0 14px 34px rgba(0,0,0,0.045)",
+  backdropFilter: "blur(14px)",
+  WebkitBackdropFilter: "blur(14px)",
 };
 
 export const titleStyle = {
-  margin: "0 0 22px",
-  fontSize: 30,
+  margin: "0 0 8px",
+  fontSize: 34,
+  lineHeight: 1.02,
   textAlign: "center",
   color: theme.text,
-  fontWeight: 700,
+  fontWeight: 400,
+  letterSpacing: "-0.04em",
 };
 
 export const subtitleStyle = {
-  marginTop: -12,
-  marginBottom: 18,
+  margin: "0 0 24px",
   textAlign: "center",
-  opacity: 0.82,
+  color: theme.textSoft,
+  fontSize: 15,
+  lineHeight: 1.6,
+};
+
+export const sectionTitleStyle = {
+  margin: "4px 0 12px",
+  fontSize: 18,
+  lineHeight: 1.2,
   color: theme.text,
+  fontWeight: 400,
+  letterSpacing: "-0.02em",
 };
 
 export const labelStyle = {
   display: "block",
-  marginBottom: 6,
-  marginTop: 14,
+  marginBottom: 7,
+  marginTop: 10,
   fontSize: 14,
   color: theme.text,
 };
@@ -57,12 +70,21 @@ export const labelStyle = {
 export const inputStyle = {
   width: "100%",
   padding: "12px 14px",
-  borderRadius: 10,
+  borderRadius: 14,
   border: `1px solid ${theme.border}`,
   outline: "none",
-  background: "rgba(255,255,255,0.98)",
-  marginBottom: 14,
-  fontFamily: "DM Sans, sans-serif",
+  background: "rgba(255,255,255,0.76)",
+  color: theme.text,
+  marginBottom: 10,
+  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontSize: 15,
+  transition: "border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease",
+};
+
+export const textareaStyle = {
+  ...inputStyle,
+  minHeight: 96,
+  resize: "vertical",
 };
 
 export const selectStyle = {
@@ -72,40 +94,48 @@ export const selectStyle = {
 
 export const btnPrimaryStyle = {
   width: "100%",
-  marginTop: 8,
   padding: "12px 14px",
-  borderRadius: 10,
+  borderRadius: 999,
   border: "none",
-  background: theme.blue,
+  background: theme.black,
   color: theme.white,
-  fontWeight: 600,
-  fontFamily: "DM Sans, sans-serif",
+  fontSize: 15,
+  fontWeight: 400,
+  fontFamily: '"Google Sans", Arial, sans-serif',
 };
 
 export const btnSecondaryStyle = {
   width: "100%",
   marginTop: 10,
   padding: "12px 14px",
-  borderRadius: 10,
+  borderRadius: 999,
   border: `1px solid ${theme.border}`,
-  background: "white",
-  color: theme.blue,
-  fontWeight: 600,
-  fontFamily: "DM Sans, sans-serif",
+  background: "rgba(255,255,255,0.72)",
+  color: theme.text,
+  fontWeight: 400,
+  fontFamily: '"Google Sans", Arial, sans-serif',
 };
 
 export const footerRowStyle = {
-  marginTop: 16,
+  marginTop: 18,
   paddingTop: 14,
   borderTop: `1px solid ${theme.borderSoft}`,
   textAlign: "center",
-  color: theme.text,
+  color: theme.textSoft,
+  fontSize: 15,
 };
 
 export const linkStyle = {
-  color: theme.blue,
+  color: theme.text,
   textDecoration: "none",
-  fontWeight: 500,
+  fontWeight: 400,
+  fontSize: 15,
+};
+
+export const dividerStyle = {
+  height: 1,
+  background: theme.borderSoft,
+  margin: "10px 0 16px",
 };
 
 export const badge = (variant) => {
@@ -116,30 +146,48 @@ export const badge = (variant) => {
     padding: "6px 10px",
     borderRadius: 999,
     fontSize: 13,
-    fontWeight: 600,
+    fontWeight: 400,
     border: `1px solid ${theme.border}`,
-    background: "rgba(255,255,255,0.8)",
-    color: theme.blue,
+    background: "rgba(255,255,255,0.74)",
+    color: theme.text,
   };
 
   if (variant === "verified") {
-    return { ...base, border: "1px solid rgba(22,163,74,0.35)", color: "#166534" };
+    return {
+      ...base,
+      border: "1px solid rgba(34,197,94,0.26)",
+      color: "#166534",
+      background: "rgba(240,253,244,0.92)",
+    };
   }
+
   if (variant === "pending") {
-    return { ...base, border: "1px solid rgba(245,158,11,0.35)", color: "#92400e" };
+    return {
+      ...base,
+      border: "1px solid rgba(245,158,11,0.24)",
+      color: "#92400e",
+      background: "rgba(255,251,235,0.92)",
+    };
   }
+
   if (variant === "admin") {
-    return { ...base, border: "1px solid rgba(59,130,246,0.35)", color: "#1d4ed8" };
+    return {
+      ...base,
+      border: "1px solid rgba(126,167,174,0.28)",
+      color: "#295b64",
+      background: theme.tealSoft,
+    };
   }
+
   return base;
 };
 
 export const errorBoxStyle = {
   marginTop: 8,
-  background: "rgba(255,0,0,0.08)",
-  border: "1px solid rgba(255,0,0,0.22)",
+  background: "rgba(239,68,68,0.08)",
+  border: "1px solid rgba(239,68,68,0.16)",
   padding: 10,
-  borderRadius: 10,
+  borderRadius: 14,
   color: "#b91c1c",
   fontSize: 13,
 };
@@ -154,28 +202,38 @@ export const uiCss = `
   transform: translateY(0);
   opacity:1;
 }
+
 input:focus, select:focus, textarea:focus{
-  border-color: rgba(11,42,111,0.4) !important;
-  box-shadow: 0 0 0 4px rgba(11,42,111,0.12);
+  border-color: rgba(0,0,0,0.18) !important;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.04);
 }
+
 .btnPrimary, .btnSecondary{
-  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease;
 }
+
 .btnPrimary:hover, .btnSecondary:hover{
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(0,0,0,.25);
-  filter: brightness(1.02);
+  box-shadow: 0 10px 22px rgba(0,0,0,.08);
 }
+
+.link{
+  transition: opacity .18s ease, transform .18s ease;
+}
+
 .link:hover{
-  text-decoration: underline;
+  opacity:.7;
 }
+
 .grid2{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+
 @media (max-width: 640px){
-  .grid2{ grid-template-columns: 1fr; }
+  .grid2{
+    grid-template-columns: 1fr;
+  }
 }
 `;
-
