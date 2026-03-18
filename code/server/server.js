@@ -15,6 +15,10 @@ app.use("/api/directory", directoryRoutes);
 app.use("/api/mentorship-requests", mentorshipRoutes);
 app.use("/api/events", eventRoutes);
 
+app.get("/", (req, res) => {
+  res.send("Alumnet API is running 🚀");
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
