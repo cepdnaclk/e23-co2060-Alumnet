@@ -3,24 +3,31 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import AdminDashboard from "./pages/AdminDashboard";
-import AlumniDirectory from "./pages/AlumniDirectory";
-import Announcements from "./pages/Announcements"; 
+import Directory from "./pages/Directory";
+import AlumniPublicProfile from "./pages/AlumniPublicProfile";
+import RequestMentorship from "./pages/RequestMentorship";
+import StudentRequests from "./pages/StudentRequests";
+import MentorRequests from "./pages/MentorRequests";
+import MyMentors from "./pages/MyMentors";
+import MyMentees from "./pages/MyMentees";
+import Events from "./pages/Events";
+import CreateEvent from "./pages/CreateEvent";
+import AdminEvents from "./pages/AdminEvents";
+import MyEvents from "./pages/MyEvents";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
-
-// An app layout that shows Navbar only on internal pages
 import Navbar from "./components/Navbar";
 
 function AppLayout({ children }) {
   return (
     <div>
       <Navbar />
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px" }}>
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
@@ -29,12 +36,21 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Public */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Protected the Profile */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/profile"
           element={
@@ -46,31 +62,127 @@ export default function App() {
           }
         />
 
-        {/* Protected the Alumni Directory */}
+        <Route
+          path="/edit-profile"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EditProfile />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/directory"
           element={
             <ProtectedRoute>
               <AppLayout>
-                <AlumniDirectory />
+                <Directory />
               </AppLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Protected the Announcements */}
         <Route
-          path="/announcements"
+          path="/directory/:id"
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Announcements />
+                <AlumniPublicProfile />
               </AppLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Admin */}
+        <Route
+          path="/request-mentorship/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <RequestMentorship />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-requests"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <StudentRequests />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mentor-requests"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MentorRequests />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-mentors"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MyMentors />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-mentees"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MyMentees />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Events />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/create-event"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <CreateEvent />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-events"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MyEvents />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/admin"
           element={
@@ -82,7 +194,17 @@ export default function App() {
           }
         />
 
-        {/* Catch all */}
+        <Route
+          path="/admin-events"
+          element={
+            <AdminRoute>
+              <AppLayout>
+                <AdminEvents />
+              </AppLayout>
+            </AdminRoute>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
