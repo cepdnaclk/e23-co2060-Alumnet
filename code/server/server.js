@@ -10,7 +10,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://your-frontend-url.vercel.app"
+    "https://e23-co2060-alumnet.vercel.app/"
   ],
   credentials: true
 }));
