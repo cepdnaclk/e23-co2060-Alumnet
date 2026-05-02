@@ -23,6 +23,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
 
+console.log("API URL:", import.meta.env.VITE_API_URL);
+
 function AppLayout({ children }) {
   return (
     <div>
