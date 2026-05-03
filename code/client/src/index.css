@@ -61,7 +61,6 @@ a {
   text-decoration: none;
 }
 
-/* subtle shared motion */
 .ui-lift {
   transition:
     transform 180ms ease,
@@ -75,7 +74,6 @@ a {
   transform: translateY(-2px);
 }
 
-/* simple page fade */
 @keyframes fadeUpSoft {
   from {
     opacity: 0;

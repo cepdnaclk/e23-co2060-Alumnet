@@ -1,5 +1,3 @@
-// src/api.js
-
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 async function handle(res) {
@@ -11,10 +9,6 @@ async function handle(res) {
 function authHeaders(token) {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
-
-////////////////////////////////////////////////////
-//////////////////// AUTH //////////////////////////
-////////////////////////////////////////////////////
 
 export async function loginUser({ email, password }) {
   const res = await fetch(`${API_URL}/api/auth/login`, {
@@ -45,10 +39,6 @@ export async function getProfile(token) {
   return handle(res);
 }
 
-////////////////////////////////////////////////////
-//////////////// PROFILE UPDATE ////////////////////
-////////////////////////////////////////////////////
-
 export async function updateProfile(token, payload) {
   const res = await fetch(`${API_URL}/api/auth/profile`, {
     method: "PUT",
@@ -61,10 +51,6 @@ export async function updateProfile(token, payload) {
 
   return handle(res);
 }
-
-////////////////////////////////////////////////////
-//////////////////// ADMIN /////////////////////////
-////////////////////////////////////////////////////
 
 export async function getPendingUsers(token) {
   const res = await fetch(`${API_URL}/api/auth/admin/pending`, {
@@ -83,10 +69,6 @@ export async function verifyUser(token, userId) {
 
   return handle(res);
 }
-
-////////////////////////////////////////////////////
-////////////////// DIRECTORY ///////////////////////
-////////////////////////////////////////////////////
 
 export async function getDirectory(search = "", department = "") {
   const params = new URLSearchParams();
@@ -112,10 +94,6 @@ export async function getAlumniProfile(id) {
   const res = await fetch(`${API_URL}/api/directory/${id}`);
   return handle(res);
 }
-
-////////////////////////////////////////////////////
-/////////////// MENTORSHIP REQUESTS ////////////////
-////////////////////////////////////////////////////
 
 export async function createMentorshipRequest(token, payload) {
   const res = await fetch(`${API_URL}/api/mentorship-requests`, {
@@ -161,10 +139,6 @@ export async function updateMentorshipRequest(token, id, status) {
   return handle(res);
 }
 
-////////////////////////////////////////////////////
-//////////////////// MENTORS ///////////////////////
-////////////////////////////////////////////////////
-
 export async function getMyMentors(token) {
   const res = await fetch(`${API_URL}/api/mentorship-requests/my-mentors`, {
     method: "GET",
@@ -182,10 +156,6 @@ export async function getMyMentees(token) {
 
   return handle(res);
 }
-
-////////////////////////////////////////////////////
-//////////////////// EVENTS ////////////////////////
-////////////////////////////////////////////////////
 
 export async function getEvents() {
   const res = await fetch(`${API_URL}/api/events`);
@@ -231,10 +201,6 @@ export async function rejectEvent(token, id) {
 
   return handle(res);
 }
-
-////////////////////////////////////////////////////
-/////////////// EVENT REGISTRATION //////////////////
-////////////////////////////////////////////////////
 
 export async function registerForEvent(token, eventId) {
   const res = await fetch(`${API_URL}/api/events/${eventId}/register`, {

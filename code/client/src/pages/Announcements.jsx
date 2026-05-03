@@ -14,7 +14,6 @@ export default function Announcements() {
   const [eventDate, setEventDate] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  // role detection from token
   const token = localStorage.getItem("token");
 
   const role = useMemo(() => {
@@ -46,7 +45,6 @@ export default function Announcements() {
     loadEvents();
   }, []);
 
-  // create event handler (POSTING)
   const handleCreate = async (e) => {
     e.preventDefault();
     setErr("");
