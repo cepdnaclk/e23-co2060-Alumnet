@@ -18,6 +18,7 @@ import Events from "./pages/Events";
 import CreateEvent from "./pages/CreateEvent";
 import AdminEvents from "./pages/AdminEvents";
 import MyEvents from "./pages/MyEvents";
+import EventDetails from "./pages/EventDetails";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -202,6 +203,17 @@ export default function App() {
                 <AdminEvents />
               </AppLayout>
             </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/events/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EventDetails />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
 

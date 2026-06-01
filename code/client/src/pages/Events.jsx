@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import PageShell from "../components/PageShell";
@@ -80,70 +81,72 @@ export default function Events() {
             const remaining = Math.max(slots - registered, 0);
 
             return (
-              <div key={event.id} style={card}>
-                <div style={topBlock}>
-                  <h3 style={title}>{event.title}</h3>
-                  <div style={createdBy}>By {event.created_by_name || "-"}</div>
-                </div>
-                <br></br>
+              <Link key={event.id} to={`/events/${event.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <div style={card}>
+                  <div style={topBlock}>
+                    <h3 style={title}>{event.title}</h3>
+                    <div style={createdBy}>By {event.created_by_name || "-"}</div>
+                  </div>
+                  <br></br>
 
-                <div style={metaRows}>
-                  <div style={metaRow}>
-                    <span style={metaLabel}>Date</span>
-                    <span style={metaValue}>{formatDate(event.event_date)}</span>
+                  <div style={metaRows}>
+                    <div style={metaRow}>
+                      <span style={metaLabel}>Date</span>
+                      <span style={metaValue}>{formatDate(event.event_date)}</span>
+                    </div>
+
+                    <div style={metaRow}>
+                      <span style={metaLabel}>Time</span>
+                      <span style={metaValue}>{formatTime(event.event_time)}</span>
+                    </div>
+
+                    <div style={metaRow}>
+                      <span style={metaLabel}>Venue</span>
+                      <span style={metaValue}>{event.venue || "-"}</span>
+                    </div>
+
+                    <div style={metaRow}>
+                      <span style={metaLabel}>Registered</span>
+                      <span style={metaValue}>
+                        {registered} / {slots}
+                      </span>
+                    </div>
+
+                    <div style={metaRow}>
+                      <span style={metaLabel}>Availability</span>
+                      <span
+                        style={{
+                          ...metaValue,
+                          color: remaining > 0 ? "#17a84f" : "#b91c1c",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {remaining > 0
+                          ? `${remaining} slots available`
+                          : "Event full"}
+                      </span>
+                    </div>
                   </div>
 
-                  <div style={metaRow}>
-                    <span style={metaLabel}>Time</span>
-                    <span style={metaValue}>{formatTime(event.event_time)}</span>
-                  </div>
+                  {event.description && (
+                    <p style={desc}>{event.description}</p>
+                  )}
 
-                  <div style={metaRow}>
-                    <span style={metaLabel}>Venue</span>
-                    <span style={metaValue}>{event.venue || "-"}</span>
-                  </div>
-
-                  <div style={metaRow}>
-                    <span style={metaLabel}>Registered</span>
-                    <span style={metaValue}>
-                      {registered} / {slots}
-                    </span>
-                  </div>
-
-                  <div style={metaRow}>
-                    <span style={metaLabel}>Availability</span>
-                    <span
+                  {isStudent && (
+                    <button
                       style={{
-                        ...metaValue,
-                        color: remaining > 0 ? "#17a84f" : "#b91c1c",
-                        fontWeight: 500,
+                        ...joinBtn,
+                        opacity: remaining > 0 ? 1 : 0.55,
+                        cursor: remaining > 0 ? "pointer" : "not-allowed",
                       }}
+                      onClick={() => handleRegister(event.id)}
+                      disabled={remaining <= 0}
                     >
-                      {remaining > 0
-                        ? `${remaining} slots available`
-                        : "Event full"}
-                    </span>
-                  </div>
+                      Join Event
+                    </button>
+                  )}
                 </div>
-
-                {event.description && (
-                  <p style={desc}>{event.description}</p>
-                )}
-
-                {isStudent && (
-                  <button
-                    style={{
-                      ...joinBtn,
-                      opacity: remaining > 0 ? 1 : 0.55,
-                      cursor: remaining > 0 ? "pointer" : "not-allowed",
-                    }}
-                    onClick={() => handleRegister(event.id)}
-                    disabled={remaining <= 0}
-                  >
-                    Join Event
-                  </button>
-                )}
-              </div>
+              </Link>
             );
           })}
         </div>

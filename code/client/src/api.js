@@ -219,3 +219,8 @@ export async function getMyRegisteredEvents(token) {
 
   return handle(res);
 }
+
+export async function getEventById(id) {
+  const res = await fetch(`${API_URL}/api/events/${id}`);
+  return handle(res);
+}

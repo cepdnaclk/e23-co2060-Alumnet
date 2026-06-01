@@ -304,6 +304,39 @@ const getMyRegisteredEvents = async (req, res) => {
   }
 };
 
+const getEventById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT
+        e.*,
+        u.full_name AS created_by_name,
+        (
+          SELECT COUNT(*)::int
+          FROM event_registrations er
+          WHERE er.event_id = e.id
+        ) AS registered_count
+      FROM events e
+      JOIN users u ON u.id = e.created_by
+      WHERE e.id = $1 AND e.approval_status = 'approved'
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("Get event by id error:", error);
+    return res.status(500).json({ message: "Failed to fetch event" });
+  }
+};
+
 module.exports = {
   createEvent,
   getApprovedEvents,
@@ -312,4 +345,5 @@ module.exports = {
   rejectEvent,
   registerForEvent,
   getMyRegisteredEvents,
+  getEventById,
 };
