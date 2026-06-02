@@ -8,7 +8,13 @@ const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: "https://e23-co2060-alumnet.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
