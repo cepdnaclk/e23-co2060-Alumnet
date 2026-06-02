@@ -12,6 +12,7 @@ import {
   PlusSquare,
   ClipboardCheck,
   Pencil,
+  MessageCircle,
 } from "lucide-react";
 
 import logo from "../assets/alumnet-logo.png";
@@ -139,6 +140,16 @@ const Navbar = () => {
             >
               <Users size={17} strokeWidth={1.9} />
               Directory
+            </NavLink>
+
+            <NavLink
+              to="/chat"
+              className={({ isActive }) =>
+                `navItem ${isActive ? "active" : ""}`
+              }
+            >
+              <MessageCircle size={17} strokeWidth={1.9} />
+              Chat
             </NavLink>
 
             <NavLink

@@ -292,16 +292,38 @@ const updateRequestStatus = async (req, res) => {
     }
 
     const result = await pool.query(
-      `
-      UPDATE mentorship_requests
-      SET status = $1
-      WHERE id = $2
-      RETURNING *
-      `,
-      [status, id]
-    );
+  `
+  UPDATE mentorship_requests
+  SET status = $1
+  WHERE id = $2
+  RETURNING *
+  `,
+  [status, id]
+);
 
-    res.json(result.rows[0]);
+const updatedRequest = result.rows[0];
+
+if (status === "accepted") {
+  await pool.query(
+    `
+    INSERT INTO conversations (
+      mentorship_request_id,
+      student_user_id,
+      alumni_user_id
+    )
+    VALUES ($1, $2, $3)
+    ON CONFLICT (mentorship_request_id)
+    DO NOTHING
+    `,
+    [
+      updatedRequest.id,
+      updatedRequest.student_user_id,
+      updatedRequest.alumni_user_id,
+    ]
+  );
+}
+
+res.json(updatedRequest);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update request" });

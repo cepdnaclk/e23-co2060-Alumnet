@@ -19,6 +19,7 @@ import CreateEvent from "./pages/CreateEvent";
 import AdminEvents from "./pages/AdminEvents";
 import MyEvents from "./pages/MyEvents";
 import EventDetails from "./pages/EventDetails";
+import Chat from "./pages/Chat";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -146,6 +147,17 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <MyMentees />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Chat />
               </AppLayout>
             </ProtectedRoute>
           }

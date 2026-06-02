@@ -224,3 +224,46 @@ export async function getEventById(id) {
   const res = await fetch(`${API_URL}/api/events/${id}`);
   return handle(res);
 }
+
+export async function getConversations(token) {
+  const res = await fetch(`${API_URL}/api/chat/conversations`, {
+    headers: {
+      ...authHeaders(token),
+    },
+  });
+
+  return handle(res);
+}
+
+export async function getConversationMessages(token, conversationId) {
+  const res = await fetch(
+    `${API_URL}/api/chat/conversations/${conversationId}/messages`,
+    {
+      headers: {
+        ...authHeaders(token),
+      },
+    }
+  );
+
+  return handle(res);
+}
+
+export async function sendMessage(
+  token,
+  conversationId,
+  message_text
+) {
+  const res = await fetch(
+    `${API_URL}/api/chat/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(token),
+      },
+      body: JSON.stringify({ message_text }),
+    }
+  );
+
+  return handle(res);
+}
