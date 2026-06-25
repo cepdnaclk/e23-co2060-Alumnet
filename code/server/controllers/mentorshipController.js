@@ -1,4 +1,5 @@
 const { pool } = require("../src/db");
+const { createNotification } = require("../utils/notify"); 
 
 const createMentorshipRequest = async (req, res) => {
   try {
@@ -117,6 +118,12 @@ const createMentorshipRequest = async (req, res) => {
       RETURNING *
       `,
       [studentUserId, alumni_user_id, message || null]
+    );
+    
+    await createNotification(
+      alumni_user_id,
+      "New Mentorship Request",
+      "A student has requested you as a mentor. Check your pending request page"
     );
 
     return res.status(201).json({
@@ -322,6 +329,19 @@ if (status === "accepted") {
     ]
   );
 }
+
+const title = status === "accepted" ? "Mentorship Accepted!" : "Mentorship Update";
+const msg = status === "accepted"
+  ? "An alumni has accepted your mentorship request. You can now chat with them!"
+  : "AN alumni has declined your mentorship request at this time."
+
+await createNotification(
+  updateRequest.student_user_id, 
+  title,
+  msg,
+  "REQUEST_UPDATE"
+);
+
 
 res.json(updatedRequest);
   } catch (error) {
