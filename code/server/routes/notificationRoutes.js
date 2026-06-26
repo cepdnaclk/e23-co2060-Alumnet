@@ -3,10 +3,10 @@ const router = express.Router();
 const  { getMyNotifications, markAsRead } = require("../controllers/notificationController");
 
 // Import your auth middleware (Make this matches how you export it in authMiddleware.js)
-const authMiddleware = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 
 // Apply the middleware to all routes in this file
-route.use(authMiddleware);
+router.use(protect);
 
 // GET: /api/notifications
 router.get("/", getMyNotifications);

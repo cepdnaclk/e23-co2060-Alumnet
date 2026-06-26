@@ -1,4 +1,4 @@
-const { pool } = require("../src/db");
+const  pool  = require("../config/db");
 
 const getAlumniDirectory = async (req, res) => {
   try {

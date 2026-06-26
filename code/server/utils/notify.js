@@ -1,7 +1,7 @@
-const pool = reuqire("../config/db");
+const pool = require("../config/db");
 
 // A reusable internal function to generate notifications
-const createNotifiction = async (useId, title, message, type) => {
+const createNotification = async (useId, title, message, type) => {
     try {
         await pool.query(
             `
@@ -18,4 +18,4 @@ const createNotifiction = async (useId, title, message, type) => {
     }
 };
 
-module.exports = { createNotification};
+module.exports = {createNotification};

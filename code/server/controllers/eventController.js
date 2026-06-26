@@ -1,4 +1,4 @@
-const { pool } = require("../src/db");
+const  pool  = require("../config/db");
 const { createNotification } = require("../utils/notify");
 
 const createEvent = async (req, res) => {
