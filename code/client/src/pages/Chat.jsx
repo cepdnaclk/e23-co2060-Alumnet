@@ -185,7 +185,7 @@ export default function Chat() {
                         transition: "all .2s ease",
                         background:
                           selectedConversation?.id === conversation.id
-                            ? "#E8F3FF"
+                            ? "#EAEAEA" // Clean, muted selected grey contrast
                             : "transparent",
                       }}
                     >
@@ -214,7 +214,7 @@ export default function Chat() {
                               width: "45px",
                               height: "45px",
                               borderRadius: "50%",
-                              background: "#0B93F6",
+                              background: "#222222", // Black fallback badge
                               color: "#fff",
                               display: "flex",
                               alignItems: "center",
@@ -229,14 +229,14 @@ export default function Chat() {
                         )}
 
                         <div style={{ flex: 1, overflow: "hidden" }}>
-                          <div style={{ fontWeight: 600, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                          <div style={{ fontWeight: 600, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", color: "#111" }}>
                             {conversation.other_user_name}
                           </div>
 
                           <div
                             style={{
                               fontSize: 13,
-                              color: "#777",
+                              color: "#666",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -275,11 +275,11 @@ export default function Chat() {
                 >
                   <div style={{ fontSize: "70px", marginBottom: "15px" }}>💬</div>
 
-                  <div style={{ fontSize: "18px", fontWeight: 600 }}>
+                  <div style={{ fontSize: "18px", fontWeight: 600, color: "#333" }}>
                     Select a conversation
                   </div>
 
-                  <div style={{ marginTop: "8px", fontSize: "14px" }}>
+                  <div style={{ marginTop: "8px", fontSize: "14px", color: "#666" }}>
                     Start chatting with your mentor.
                   </div>
                 </div>
@@ -315,7 +315,7 @@ export default function Chat() {
                           width: "45px",
                           height: "45px",
                           borderRadius: "50%",
-                          background: "#0B93F6",
+                          background: "#222222", // Black fallback badge
                           color: "#fff",
                           display: "flex",
                           alignItems: "center",
@@ -330,7 +330,7 @@ export default function Chat() {
                     )}
 
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: "17px" }}>
+                      <div style={{ fontWeight: 700, fontSize: "17px", color: "#111" }}>
                         {selectedConversation.other_user_name}
                       </div>
                     </div>
@@ -347,7 +347,7 @@ export default function Chat() {
                       display: "flex",
                       flexDirection: "column",
                       gap: "10px",
-                      background: "#F5F7FB",
+                      background: "#F8F9FA", // Light grey clean room background
                       minHeight: 0,
                     }}
                   >
@@ -378,13 +378,13 @@ export default function Chat() {
                           >
                             <div
                               style={{
-                                background: isMine ? "#0B93F6" : "#E9ECEF",
-                                color: isMine ? "#fff" : "#222",
+                                background: isMine ? "#222222" : "#EBEBEB", // Black vs Mid-Light Grey
+                                color: isMine ? "#fff" : "#111",
                                 padding: "10px 14px",
                                 borderRadius: "18px",
                                 maxWidth: "70%",
                                 wordBreak: "break-word",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
                                 transition: "all .2s ease",
                               }}
                             >
@@ -394,14 +394,14 @@ export default function Chat() {
                                 style={{
                                   fontSize: "11px",
                                   marginTop: "6px",
-                                  opacity: 0.8,
+                                  opacity: 0.65,
                                   textAlign: "right",
                                 }}
                               >
                                 {new Date(message.created_at).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
-                                  timeZone: "Asia/Colombo"
+                                  timeZone: "Asia/Colombo" // Optional localized timezone parameter
                                 })}
                               </div>
                             </div>
@@ -436,9 +436,10 @@ export default function Chat() {
                         flex: 1,
                         borderRadius: "25px",
                         padding: "14px 18px",
-                        border: "1px solid #ddd",
+                        border: "1px solid #E0E0E0",
                         outline: "none",
                         fontSize: 15,
+                        background: "#FAFAFA"
                       }}
                     />
 
@@ -448,7 +449,7 @@ export default function Chat() {
                         width: "52px",
                         height: "52px",
                         borderRadius: "50%",
-                        background: "#0B93F6",
+                        background: "#222222", // Sleek black send button
                         color: "#fff",
                         border: "none",
                         cursor: "pointer",
@@ -459,6 +460,8 @@ export default function Chat() {
                         justifyContent: "center",
                         paddingLeft: "4px",
                       }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#444444"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "#222222"}
                     >
                       ➤
                     </button>
