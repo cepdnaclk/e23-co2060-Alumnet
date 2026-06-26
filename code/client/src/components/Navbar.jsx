@@ -143,7 +143,8 @@ const Navbar = () => {
       <style>{css}</style>
 
       <aside className="sidebar">
-        <div>
+        {/* Dynamic content scroll wrapper */}
+        <div className="sidebarTopContent">
           <div className="sidebarHeader">
             <button className="logoBtn" onClick={() => navigate(homePath)}>
               <img src={logo} alt="Alumnet" className="logo" />
@@ -376,6 +377,7 @@ const Navbar = () => {
           </nav>
         </div>
 
+        {/* Retains steady sticky positioning along the bottom edge */}
         {token && (
           <button className="logoutBtn" onClick={handleLogout} type="button">
             <LogOut size={17} strokeWidth={1.9} />
@@ -396,6 +398,7 @@ const css = `
   top:18px;
   bottom:18px;
   width:238px;
+  height: calc(100vh - 36px); /* Locks explicit height based on view screen boundaries */
   background:rgba(250,249,246,0.78);
   border:1px solid rgba(0,0,0,0.06);
   border-radius:28px;
@@ -408,6 +411,24 @@ const css = `
   -webkit-backdrop-filter:blur(14px);
   box-shadow:0 10px 30px rgba(0,0,0,0.04);
   z-index:100;
+  box-sizing: border-box;
+}
+
+.sidebarTopContent {
+  flex: 1;
+  overflow-y: auto; /* Gracefully handles long dynamic link configurations on compact viewports */
+  min-height: 0;
+  padding-right: 2px;
+  margin-bottom: 12px;
+}
+
+/* Slim invisible minimal scrollbars formatting */
+.sidebarTopContent::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebarTopContent::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
 }
 
 .logoBtn{
@@ -416,7 +437,6 @@ const css = `
   gap:10px;
   width:100%;
   padding:6px 6px 14px;
-  margin-bottom:6px;
   color:#111111;
   text-align:left;
 }
@@ -440,6 +460,7 @@ const css = `
   cursor:pointer;
   text-align:left;
   transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  box-sizing: border-box;
 }
 
 .profileMini:hover{
@@ -509,6 +530,7 @@ const css = `
   font-family:"Google Sans", Arial, sans-serif;
   transition:transform .18s ease, background .18s ease, box-shadow .18s ease, color .18s ease, border-color .18s ease;
   border:1px solid transparent;
+  box-sizing: border-box;
 }
 
 .navItem:hover{
@@ -540,6 +562,8 @@ const css = `
   font-family:"Google Sans", Arial, sans-serif;
   border:1px solid rgba(0,0,0,0.06);
   transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease, background .18s ease;
+  box-shrink: 0;
+  box-sizing: border-box;
 }
 
 .logoutBtn:hover{
@@ -556,7 +580,7 @@ const css = `
 }
 
 .logoBtn {
-  margin-bottom: 0 !important; /* Override previous margin */
+  margin-bottom: 0 !important;
   padding: 0 !important;
 }
 
@@ -606,7 +630,7 @@ const css = `
 .notifDropdown {
   position: absolute;
   top: 0;
-  left: calc(100% + 14px); /* Pushes it outside the sidebar to the right */
+  left: calc(100% + 14px);
   width: 320px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(14px);
@@ -684,6 +708,7 @@ const css = `
     left:12px;
     top:12px;
     bottom:12px;
+    height: calc(100vh - 24px);
   }
 
   .navItem{

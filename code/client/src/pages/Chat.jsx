@@ -154,11 +154,11 @@ export default function Chat() {
                   borderBottom: `1px solid ${theme.borderSoft}`,
                 }}
               >
-                <h2 style={sectionTitleStyle}>Conversations</h2>
+                <h2 style={{ ...sectionTitleStyle, fontSize: "16px" }}>Conversations</h2>
               </div>
 
               {conversations.length === 0 ? (
-                <div style={{ padding: 20, color: theme.textSoft }}>
+                <div style={{ padding: 20, color: theme.textSoft, fontSize: "15px" }}>
                   No conversations yet
                 </div>
               ) : (
@@ -185,7 +185,7 @@ export default function Chat() {
                         transition: "all .2s ease",
                         background:
                           selectedConversation?.id === conversation.id
-                            ? "#EAEAEA" // Clean, muted selected grey contrast
+                            ? "#EAEAEA"
                             : "transparent",
                       }}
                     >
@@ -214,13 +214,13 @@ export default function Chat() {
                               width: "45px",
                               height: "45px",
                               borderRadius: "50%",
-                              background: "#222222", // Black fallback badge
+                              background: "#222222",
                               color: "#fff",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              fontWeight: 700,
-                              fontSize: "16px",
+                              fontWeight: 500,
+                              fontSize: "15px",
                               flexShrink: 0,
                             }}
                           >
@@ -229,13 +229,13 @@ export default function Chat() {
                         )}
 
                         <div style={{ flex: 1, overflow: "hidden" }}>
-                          <div style={{ fontWeight: 600, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", color: "#111" }}>
+                          <div style={{ fontWeight: 500, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", color: "#111", fontSize: "15px" }}>
                             {conversation.other_user_name}
                           </div>
 
                           <div
                             style={{
-                              fontSize: 13,
+                              fontSize: "13px",
                               color: "#666",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
@@ -275,12 +275,12 @@ export default function Chat() {
                 >
                   <div style={{ fontSize: "70px", marginBottom: "15px" }}>💬</div>
 
-                  <div style={{ fontSize: "18px", fontWeight: 600, color: "#333" }}>
+                  <div style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>
                     Select a conversation
                   </div>
 
                   <div style={{ marginTop: "8px", fontSize: "14px", color: "#666" }}>
-                    Start chatting with your mentor.
+                    Start chatting with your mentor/mentee.
                   </div>
                 </div>
               ) : (
@@ -315,13 +315,13 @@ export default function Chat() {
                           width: "45px",
                           height: "45px",
                           borderRadius: "50%",
-                          background: "#222222", // Black fallback badge
+                          background: "#222222",
                           color: "#fff",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontWeight: 700,
-                          fontSize: "18px",
+                          fontWeight: 500,
+                          fontSize: "15px",
                           flexShrink: 0,
                         }}
                       >
@@ -330,7 +330,7 @@ export default function Chat() {
                     )}
 
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: "17px", color: "#111" }}>
+                      <div style={{ fontWeight: 500, fontSize: "15px", color: "#111" }}>
                         {selectedConversation.other_user_name}
                       </div>
                     </div>
@@ -347,7 +347,7 @@ export default function Chat() {
                       display: "flex",
                       flexDirection: "column",
                       gap: "10px",
-                      background: "#F8F9FA", // Light grey clean room background
+                      background: "#F2F4F7",
                       minHeight: 0,
                     }}
                   >
@@ -357,6 +357,7 @@ export default function Chat() {
                           color: theme.textSoft,
                           textAlign: "center",
                           marginTop: "40px",
+                          fontSize: "15px"
                         }}
                       >
                         No messages yet. Start the conversation!
@@ -378,13 +379,23 @@ export default function Chat() {
                           >
                             <div
                               style={{
-                                background: isMine ? "#222222" : "#EBEBEB", // Black vs Mid-Light Grey
-                                color: isMine ? "#fff" : "#111",
+                                background: isMine 
+                                  ? "rgba(255, 255, 255, 0.65)" 
+                                  : "#E6E8EB",
+                                backdropFilter: isMine ? "blur(10px)" : "none",
+                                WebkitBackdropFilter: isMine ? "blur(10px)" : "none",
+                                color: "#111111",
                                 padding: "10px 14px",
                                 borderRadius: "18px",
                                 maxWidth: "70%",
                                 wordBreak: "break-word",
-                                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                                fontSize: "15px",
+                                border: isMine 
+                                  ? "1px solid rgba(255, 255, 255, 0.4)" 
+                                  : "1px solid transparent",
+                                boxShadow: isMine
+                                  ? "0 4px 12px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.2)"
+                                  : "0 2px 6px rgba(0, 0, 0, 0.02)",
                                 transition: "all .2s ease",
                               }}
                             >
@@ -394,14 +405,14 @@ export default function Chat() {
                                 style={{
                                   fontSize: "11px",
                                   marginTop: "6px",
-                                  opacity: 0.65,
+                                  opacity: 0.5,
                                   textAlign: "right",
                                 }}
                               >
                                 {new Date(message.created_at).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
-                                  timeZone: "Asia/Colombo" // Optional localized timezone parameter
+                                  timeZone: "Asia/Colombo"
                                 })}
                               </div>
                             </div>
@@ -438,7 +449,7 @@ export default function Chat() {
                         padding: "14px 18px",
                         border: "1px solid #E0E0E0",
                         outline: "none",
-                        fontSize: 15,
+                        fontSize: "15px",
                         background: "#FAFAFA"
                       }}
                     />
@@ -449,7 +460,7 @@ export default function Chat() {
                         width: "52px",
                         height: "52px",
                         borderRadius: "50%",
-                        background: "#222222", // Sleek black send button
+                        background: "#222222",
                         color: "#fff",
                         border: "none",
                         cursor: "pointer",
