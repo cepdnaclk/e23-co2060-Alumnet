@@ -1,5 +1,11 @@
-import { useEffect, useState } from "react";
-import { getConversations } from "../api";
+import { useEffect, useState, useRef } from "react";
+import {
+  getConversations,
+  getConversationMessages,
+  sendMessage,
+  getProfile,
+} from "../api";
+
 import {
   theme,
   cardStyle,
@@ -8,18 +14,96 @@ import {
 
 export default function Chat() {
   const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [brokenImages, setBrokenImages] = useState({});
+
+  const bottomRef = useRef(null);
+  const messagesRef = useRef(null);
 
   useEffect(() => {
     loadConversations();
+    loadCurrentUser();
   }, []);
+
+  useEffect(() => {
+    const container = messagesRef.current;
+    if (!container) return;
+
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
+
+  const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) return null;
+    return avatarPath.startsWith("http") 
+      ? avatarPath 
+      : `http://localhost:5000${avatarPath}`;
+  };
+
+  const handleImageError = (id) => {
+    setBrokenImages((prev) => ({ ...prev, [id]: true }));
+  };
+
+  async function loadCurrentUser() {
+    try {
+      const token = localStorage.getItem("token");
+      const user = await getProfile(token);
+      setCurrentUser(user);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   async function loadConversations() {
     try {
       const token = localStorage.getItem("token");
-
       const data = await getConversations(token);
-
       setConversations(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function openConversation(conversation) {
+    try {
+      const token = localStorage.getItem("token");
+      setSelectedConversation(conversation);
+
+      const data = await getConversationMessages(token, conversation.id);
+      setMessages(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleSend() {
+    if (!newMessage.trim()) return;
+    if (!selectedConversation) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await sendMessage(
+        token,
+        selectedConversation.id,
+        newMessage
+      );
+
+      setNewMessage("");
+
+      const updated = await getConversationMessages(token, selectedConversation.id);
+      setMessages(updated);
+
+      loadConversations();
     } catch (err) {
       console.error(err);
     }
@@ -55,6 +139,8 @@ export default function Chat() {
               height: "100%",
             }}
           >
+            {/* LEFT SIDEBAR */}
+
             <div
               style={{
                 borderRight: `1px solid ${theme.border}`,
@@ -68,75 +154,320 @@ export default function Chat() {
                   borderBottom: `1px solid ${theme.borderSoft}`,
                 }}
               >
-                <h2 style={sectionTitleStyle}>
-                  Messages
-                </h2>
+                <h2 style={sectionTitleStyle}>Conversations</h2>
               </div>
 
               {conversations.length === 0 ? (
-                <div
-                  style={{
-                    padding: "20px",
-                    color: theme.textSoft,
-                  }}
-                >
+                <div style={{ padding: 20, color: theme.textSoft }}>
                   No conversations yet
                 </div>
               ) : (
-                conversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    style={{
-                      padding: "16px 20px",
-                      borderBottom: `1px solid ${theme.borderSoft}`,
-                      cursor: "pointer",
-                      transition: "background 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background =
-                        "rgba(255,255,255,0.55)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background =
-                        "transparent";
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        marginBottom: 6,
-                        color: theme.text,
-                      }}
-                    >
-                      {conversation.other_user_name}
-                    </div>
+                conversations.map((conversation) => {
+                  const hasValidAvatar = 
+                    conversation.other_user_avatar && !brokenImages[conversation.id];
 
+                  return (
                     <div
+                      key={conversation.id}
+                      onClick={() => openConversation(conversation)}
+                      onMouseEnter={(e) => {
+                        if (selectedConversation?.id !== conversation.id)
+                          e.currentTarget.style.background = "#F4F6F8";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedConversation?.id !== conversation.id)
+                          e.currentTarget.style.background = "transparent";
+                      }}
                       style={{
-                        color: theme.textSoft,
-                        fontSize: 14,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        padding: "16px 20px",
+                        cursor: "pointer",
+                        borderBottom: `1px solid ${theme.borderSoft}`,
+                        transition: "all .2s ease",
+                        background:
+                          selectedConversation?.id === conversation.id
+                            ? "#EAEAEA" // Clean, muted selected grey contrast
+                            : "transparent",
                       }}
                     >
-                      {conversation.last_message ||
-                        "No messages yet"}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        {hasValidAvatar ? (
+                          <img
+                            src={getAvatarUrl(conversation.other_user_avatar)}
+                            onError={() => handleImageError(conversation.id)}
+                            alt=""
+                            style={{
+                              width: "45px",
+                              height: "45px",
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "45px",
+                              height: "45px",
+                              borderRadius: "50%",
+                              background: "#222222", // Black fallback badge
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 700,
+                              fontSize: "16px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {conversation.other_user_name ? conversation.other_user_name.charAt(0).toUpperCase() : "?"}
+                          </div>
+                        )}
+
+                        <div style={{ flex: 1, overflow: "hidden" }}>
+                          <div style={{ fontWeight: 600, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", color: "#111" }}>
+                            {conversation.other_user_name}
+                          </div>
+
+                          <div
+                            style={{
+                              fontSize: 13,
+                              color: "#666",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {conversation.last_message || "Start chatting"}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
+            {/* RIGHT SIDE */}
+
             <div
               style={{
-                display: "grid",
-                placeItems: "center",
-                color: theme.textSoft,
-                fontSize: 16,
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                minHeight: 0,
               }}
             >
-              Select a conversation
+              {!selectedConversation ? (
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    color: "#888",
+                  }}
+                >
+                  <div style={{ fontSize: "70px", marginBottom: "15px" }}>💬</div>
+
+                  <div style={{ fontSize: "18px", fontWeight: 600, color: "#333" }}>
+                    Select a conversation
+                  </div>
+
+                  <div style={{ marginTop: "8px", fontSize: "14px", color: "#666" }}>
+                    Start chatting with your mentor.
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Header */}
+
+                  <div
+                    style={{
+                      padding: "18px 24px",
+                      borderBottom: `1px solid ${theme.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      background: "#fff",
+                    }}
+                  >
+                    {selectedConversation.other_user_avatar && !brokenImages[`header-${selectedConversation.id}`] ? (
+                      <img
+                        src={getAvatarUrl(selectedConversation.other_user_avatar)}
+                        onError={() => handleImageError(`header-${selectedConversation.id}`)}
+                        alt="Profile"
+                        style={{
+                          width: "45px",
+                          height: "45px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "45px",
+                          height: "45px",
+                          borderRadius: "50%",
+                          background: "#222222", // Black fallback badge
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 700,
+                          fontSize: "18px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {selectedConversation.other_user_name ? selectedConversation.other_user_name.charAt(0).toUpperCase() : "?"}
+                      </div>
+                    )}
+
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "17px", color: "#111" }}>
+                        {selectedConversation.other_user_name}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Messages container */}
+
+                  <div
+                    ref={messagesRef}
+                    style={{
+                      flex: 1,
+                      overflowY: "auto",
+                      padding: "20px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      background: "#F8F9FA", // Light grey clean room background
+                      minHeight: 0,
+                    }}
+                  >
+                    {messages.length === 0 ? (
+                      <div
+                        style={{
+                          color: theme.textSoft,
+                          textAlign: "center",
+                          marginTop: "40px",
+                        }}
+                      >
+                        No messages yet. Start the conversation!
+                      </div>
+                    ) : (
+                      messages.map((message) => {
+                        const isMine =
+                          currentUser &&
+                          Number(message.sender_id) === Number(currentUser.id);
+
+                        return (
+                          <div
+                            key={message.id}
+                            style={{
+                              display: "flex",
+                              justifyContent: isMine ? "flex-end" : "flex-start",
+                              marginBottom: "10px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                background: isMine ? "#222222" : "#EBEBEB", // Black vs Mid-Light Grey
+                                color: isMine ? "#fff" : "#111",
+                                padding: "10px 14px",
+                                borderRadius: "18px",
+                                maxWidth: "70%",
+                                wordBreak: "break-word",
+                                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                                transition: "all .2s ease",
+                              }}
+                            >
+                              <div>{message.message_text}</div>
+
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  marginTop: "6px",
+                                  opacity: 0.65,
+                                  textAlign: "right",
+                                }}
+                              >
+                                {new Date(message.created_at).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  timeZone: "Asia/Colombo" // Optional localized timezone parameter
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={bottomRef}></div>
+                  </div>
+
+                  {/* Input */}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "18px",
+                      borderTop: `1px solid ${theme.border}`,
+                    }}
+                  >
+                    <input
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSend();
+                        }
+                      }}
+                      placeholder="Type a message..."
+                      style={{
+                        flex: 1,
+                        borderRadius: "25px",
+                        padding: "14px 18px",
+                        border: "1px solid #E0E0E0",
+                        outline: "none",
+                        fontSize: 15,
+                        background: "#FAFAFA"
+                      }}
+                    />
+
+                    <button
+                      onClick={handleSend}
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        borderRadius: "50%",
+                        background: "#222222", // Sleek black send button
+                        color: "#fff",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "22px",
+                        transition: "0.2s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        paddingLeft: "4px",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#444444"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "#222222"}
+                    >
+                      ➤
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
