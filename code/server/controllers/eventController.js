@@ -1,4 +1,5 @@
-const { pool } = require("../src/db");
+const  pool  = require("../config/db");
+const { createNotification } = require("../utils/notify");
 
 const createEvent = async (req, res) => {
   try {
@@ -148,6 +149,13 @@ const approveEvent = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    await createNotification(
+      result.rows[0].created_by, // The user ID of the event handler
+      "Event Approved",
+      `Your event "${result.rows[0].title}" has been approved and is now live!`,
+      "EVENT_UPDATE"
+    );
+
     return res.status(200).json({
       message: "Event approved successfully",
       event: result.rows[0],
@@ -181,6 +189,13 @@ const rejectEvent = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Event not found" });
     }
+
+    await createNotification(
+      result.rows[0].created_by,
+      "Event Rejected",
+      `Your event "${result.rows[0].title}" was declined by the administration.`,
+      "EVENT_UPDATE"
+    );
 
     return res.status(200).json({
       message: "Event rejected",
@@ -259,6 +274,13 @@ const registerForEvent = async (req, res) => {
       RETURNING *
       `,
       [eventId, studentUserId]
+    );
+
+    await createNotification(
+      event.created_by,
+      "New Event Registration",
+      `A student has been registered to your event: "${event.title}".`,
+      "EVENT_REGISTRATION"
     );
 
     return res.status(201).json({

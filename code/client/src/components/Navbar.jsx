@@ -13,10 +13,12 @@ import {
   ClipboardCheck,
   Pencil,
   MessageCircle,
+  Bell,
 } from "lucide-react";
 
 import logo from "../assets/alumnet-logo.png";
-import { getProfile } from "../api";
+import { getProfile, getMyNotifications, markNotificationAsRead } from "../api";
+import { supabase } from "../supabase";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -25,6 +27,9 @@ const Navbar = () => {
 
   const [role, setRole] = useState("");
   const [profile, setProfile] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     try {
@@ -57,6 +62,48 @@ const Navbar = () => {
     loadProfile();
   }, [token, location.pathname]);
 
+  useEffect(() => {
+    let subscription;
+
+    const loadNotifications = async () => {
+      try {
+        if (!token || !profile?.id) return;
+
+        const data = await getMyNotifications(token);
+        setNotifications(data);
+        setUnreadCount(data.filter((n) => !n.is_read).length);
+
+        subscription = supabase
+          .channel("public:notifications")
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "notifications",
+              filter: `user_id=eq.${profile.id}`,
+            },
+            (payload) => {
+              console.log("Live Notification Received!", payload);
+              setNotifications((prev) => [payload.new, ...prev]);
+              setUnreadCount((prev) => prev + 1);
+            }
+          )
+          .subscribe((status) => {
+            console.log("Supabase Realtime Status:", status);
+          });
+      } catch (err) {
+        console.error("Failed to load notifications", err);
+      }
+    };
+
+    loadNotifications();
+
+    return () => {
+      if (subscription) supabase.removeChannel(subscription);
+    };
+  }, [token, profile?.id]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -68,15 +115,80 @@ const Navbar = () => {
 
   const homePath = token ? "/home" : "/";
 
+  const handleNotificationClick = async (notif) => {
+    try {
+      if (!notif.is_read) {
+        await markNotificationAsRead(token, notif.id);
+
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
+        );
+
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+
+      setShowNotifications(false);
+
+      if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
+      else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
+      else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") navigate("/my-events");
+
+    } catch (err) {
+      console.error("Failed to mark read", err);
+    }
+  };
+
   return (
     <>
       <style>{css}</style>
 
       <aside className="sidebar">
         <div>
-          <button className="logoBtn" onClick={() => navigate(homePath)}>
-            <img src={logo} alt="Alumnet" className="logo" />
-          </button>
+          <div className="sidebarHeader">
+            <button className="logoBtn" onClick={() => navigate(homePath)}>
+              <img src={logo} alt="Alumnet" className="logo" />
+            </button>
+
+            {token && (
+              <div className="notifWrapper">
+                <button
+                  className="bellBtn"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  type="button"
+                >
+                  <Bell size={20} strokeWidth={1.9} />
+                  {unreadCount > 0 && <span className="notifBadge">{unreadCount}</span>}
+                </button>
+
+                {showNotifications && (
+                  <div className="notifDropdown">
+                    <div className="notifHeader">
+                      <h3>Notifications</h3>
+                    </div>
+                    <div className="notifList">
+                      {notifications.length === 0 ? (
+                        <div className="notifEmpty">No new notifications</div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            className={`notifItem ${!notif.is_read ? "unread" : ""}`}
+                            onClick={() => handleNotificationClick(notif)}
+                          >
+                            <div className="notifTitle">{notif.title}</div>
+                            <div className="notifMessage">{notif.message}</div>
+                            <div className="notifTime">
+                              {new Date(notif.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {token && (
             <button
@@ -434,6 +546,136 @@ const css = `
   transform:translateY(-1px);
   box-shadow:0 10px 20px rgba(0,0,0,0.05);
   background:rgba(255,255,255,0.9);
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.logoBtn {
+  margin-bottom: 0 !important; /* Override previous margin */
+  padding: 0 !important;
+}
+
+.notifWrapper {
+  position: relative;
+}
+
+.bellBtn {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #111;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.bellBtn:hover {
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.notifBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #e63946;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #faf9f6;
+}
+
+.notifDropdown {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 14px); /* Pushes it outside the sidebar to the right */
+  width: 320px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  z-index: 999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+}
+
+.notifHeader {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.notifHeader h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #111;
+}
+
+.notifList {
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.notifEmpty {
+  padding: 24px;
+  text-align: center;
+  color: rgba(17, 17, 17, 0.5);
+  font-size: 13px;
+}
+
+.notifItem {
+  padding: 12px 20px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.2s ease;
+}
+
+.notifItem:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.notifItem.unread {
+  background: rgba(0, 102, 255, 0.04);
+  border-left-color: #0066ff;
+}
+
+.notifTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.notifMessage {
+  font-size: 12px;
+  color: rgba(17, 17, 17, 0.7);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.notifTime {
+  font-size: 10px;
+  color: rgba(17, 17, 17, 0.4);
 }
 
 @media (max-width:900px){

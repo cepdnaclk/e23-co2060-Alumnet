@@ -267,3 +267,21 @@ export async function sendMessage(
 
   return handle(res);
 }
+
+export async function getMyNotifications(token) {
+  const res = await fetch(`${API_URL}/api/notifications`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
+export async function markNotificationAsRead(token, notificationId) {
+  const res = await fetch(`{API_URL}/api/notifications/${notificationId}/read`, {
+    method: "PATCH",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
