@@ -124,7 +124,7 @@ const createMentorshipRequest = async (req, res) => {
       alumni_user_id,
       "New Mentorship Request",
       "A student has requested you as a mentor. Check your pending request page",
-      "MENTORSHIP_REQUEST"
+      "MENTOR_REQUEST"
     );
 
     return res.status(201).json({

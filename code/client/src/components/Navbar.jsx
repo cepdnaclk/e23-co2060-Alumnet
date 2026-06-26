@@ -74,25 +74,27 @@ const Navbar = () => {
         setUnreadCount(data.filter((n) => !n.is_read).length);
 
         subscription = supabase
-        .channel("public:notifications")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${profile.id}`
-          },
-          (payload) => {
-            console.log("Live Notification Recieved!", payload);
-            setNotifications((prev) => [payload.new, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-          }
-        )
-        .subscribe();
-      } catch (err){
+          .channel("public:notifications")
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "notifications",
+              filter: `user_id=eq.${profile.id}`,
+            },
+            (payload) => {
+              console.log("Live Notification Received!", payload);
+              setNotifications((prev) => [payload.new, ...prev]);
+              setUnreadCount((prev) => prev + 1);
+            }
+          )
+          .subscribe((status) => {
+            console.log("Supabase Realtime Status:", status);
+          });
+      } catch (err) {
         console.error("Failed to load notifications", err);
-      } 
+      }
     };
 
     loadNotifications();
@@ -118,12 +120,16 @@ const Navbar = () => {
       if (!notif.is_read) {
         await markNotificationAsRead(token, notif.id);
 
-        setNotifications((prev) => Math.max(0, prev - 1));
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
+        );
+
+        setUnreadCount((prev) => Math.max(0, prev - 1));
       }
 
       setShowNotifications(false);
 
-      if (notif.type === "MENTOR_REQUEST") navigate("/mentor-request");
+      if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
       else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
       else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") navigate("/my-events");
 
