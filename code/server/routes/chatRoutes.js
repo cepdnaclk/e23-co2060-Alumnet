@@ -6,12 +6,24 @@ const { protect } = require("../middleware/authMiddleware");
 
 const {
   getMyConversations,
+  getChatContacts,
   getConversationMessages,
   sendMessage,
 } = require("../controllers/chatController");
 
+// NEW: Get all connected mentors/mentees
+router.get(
+  "/contacts",
+  protect,
+  getChatContacts
+);
 
-router.get("/conversations", protect, getMyConversations);
+// Existing routes
+router.get(
+  "/conversations",
+  protect,
+  getMyConversations
+);
 
 router.get(
   "/conversations/:id/messages",
