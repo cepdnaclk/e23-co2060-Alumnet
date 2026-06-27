@@ -1,4 +1,4 @@
-const  pool  = require("../config/db");
+const pool = require("../config/db");
 
 const getMyConversations = async (req, res) => {
   try {
@@ -76,6 +76,154 @@ const getMyConversations = async (req, res) => {
 
     res.status(500).json({
       message: "Failed to fetch conversations",
+    });
+  }
+};
+
+const getChatContacts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const role = req.user.role;
+
+    let contacts;
+
+    if (role === "student") {
+      contacts = await pool.query(
+        `
+        SELECT
+          u.id AS other_user_id,
+          u.full_name AS other_user_name,
+          u.avatar_url AS other_user_avatar
+        FROM mentorship_requests mr
+        JOIN users u
+          ON u.id = mr.alumni_user_id
+        WHERE mr.student_user_id = $1
+          AND mr.status = 'accepted'
+        ORDER BY u.full_name
+        `,
+        [userId]
+      );
+    } else if (role === "alumni") {
+      contacts = await pool.query(
+        `
+        SELECT
+          u.id AS other_user_id,
+          u.full_name AS other_user_name,
+          u.avatar_url AS other_user_avatar
+        FROM mentorship_requests mr
+        JOIN users u
+          ON u.id = mr.student_user_id
+        WHERE mr.alumni_user_id = $1
+          AND mr.status = 'accepted'
+        ORDER BY u.full_name
+        `,
+        [userId]
+      );
+    } else {
+      return res.json([]);
+    }
+
+    const result = [];
+
+    for (const contact of contacts.rows) {
+      let conversation;
+
+      if (role === "student") {
+        conversation = await pool.query(
+          `
+          SELECT *
+          FROM conversations
+          WHERE student_user_id=$1
+            AND alumni_user_id=$2
+          `,
+          [userId, contact.other_user_id]
+        );
+      } else {
+        conversation = await pool.query(
+          `
+          SELECT *
+          FROM conversations
+          WHERE student_user_id=$1
+            AND alumni_user_id=$2
+          `,
+          [contact.other_user_id, userId]
+        );
+      }
+
+      let conversationId;
+
+      if (conversation.rows.length === 0) {
+        const newConversation = await pool.query(
+          `
+          INSERT INTO conversations
+          (
+              mentorship_request_id,
+              student_user_id,
+              alumni_user_id
+          )
+          SELECT
+              mr.id,
+              mr.student_user_id,
+              mr.alumni_user_id
+          FROM mentorship_requests mr
+          WHERE mr.student_user_id = $1
+            AND mr.alumni_user_id = $2
+            AND mr.status = 'accepted'
+          RETURNING id
+          `,
+          role === "student"
+            ? [userId, contact.other_user_id]
+            : [contact.other_user_id, userId]
+        );
+
+        console.log("newConversation.rows output:", newConversation.rows);
+        conversationId = newConversation.rows[0]?.id || null;
+      } else {
+        conversationId = conversation.rows[0].id;
+      }
+
+      const lastMessage = await pool.query(
+        `
+        SELECT
+          message_text,
+          created_at
+        FROM messages
+        WHERE conversation_id=$1
+        ORDER BY created_at DESC
+        LIMIT 1
+        `,
+        [conversationId]
+      );
+
+      result.push({
+        id: conversationId,
+        other_user_id: contact.other_user_id,
+        other_user_name: contact.other_user_name,
+        other_user_avatar: contact.other_user_avatar,
+        last_message:
+          lastMessage.rows[0]?.message_text || null,
+        last_message_at:
+          lastMessage.rows[0]?.created_at || null,
+      });
+    }
+
+    result.sort((a, b) => {
+      const da = a.last_message_at
+        ? new Date(a.last_message_at)
+        : new Date(0);
+
+      const db = b.last_message_at
+        ? new Date(b.last_message_at)
+        : new Date(0);
+
+      return db - da;
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch chat contacts",
     });
   }
 };
@@ -203,6 +351,7 @@ const sendMessage = async (req, res) => {
 
 module.exports = {
   getMyConversations,
+  getChatContacts,
   getConversationMessages,
   sendMessage,
 };

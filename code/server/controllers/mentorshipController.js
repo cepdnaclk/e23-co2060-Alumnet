@@ -366,21 +366,35 @@ const getMyMentors = async (req, res) => {
         ap.job_title,
         ap.organization,
         ap.linkedin_url,
-        ap.primary_interests
+        ap.primary_interests,
+        c.id AS conversation_id
+
       FROM mentorship_requests mr
-      JOIN users u ON u.id = mr.alumni_user_id
-      LEFT JOIN alumni_profiles ap ON ap.user_id = u.id
+
+      JOIN users u
+        ON u.id = mr.alumni_user_id
+
+      LEFT JOIN alumni_profiles ap
+        ON ap.user_id = u.id
+
+      LEFT JOIN conversations c
+        ON c.mentorship_request_id = mr.id
+
       WHERE mr.student_user_id = $1
       AND mr.status = 'accepted'
+
       ORDER BY u.full_name ASC
       `,
       [studentId]
     );
 
     res.json(result.rows);
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to fetch mentors" });
+    res.status(500).json({
+      message: "Failed to fetch mentors",
+    });
   }
 };
 
@@ -399,21 +413,35 @@ const getMyMentees = async (req, res) => {
         sp.batch,
         sp.areas_of_interest,
         sp.linkedin_url,
-        sp.github_url
+        sp.github_url,
+        c.id AS conversation_id
+
       FROM mentorship_requests mr
-      JOIN users u ON u.id = mr.student_user_id
-      LEFT JOIN student_profiles sp ON sp.user_id = u.id
+
+      JOIN users u
+        ON u.id = mr.student_user_id
+
+      LEFT JOIN student_profiles sp
+        ON sp.user_id = u.id
+
+      LEFT JOIN conversations c
+        ON c.mentorship_request_id = mr.id
+
       WHERE mr.alumni_user_id = $1
       AND mr.status = 'accepted'
+
       ORDER BY u.full_name ASC
       `,
       [alumniId]
     );
 
     res.json(result.rows);
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to fetch mentees" });
+    res.status(500).json({
+      message: "Failed to fetch mentees",
+    });
   }
 };
 

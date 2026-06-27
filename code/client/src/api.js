@@ -225,6 +225,16 @@ export async function getEventById(id) {
   return handle(res);
 }
 
+export async function getChatContacts(token) {
+  const res = await fetch(`${API_URL}/api/chat/contacts`, {
+    headers: {
+      ...authHeaders(token),
+    },
+  });
+
+  return handle(res);
+}
+
 export async function getConversations(token) {
   const res = await fetch(`${API_URL}/api/chat/conversations`, {
     headers: {

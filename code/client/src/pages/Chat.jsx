@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import {
-  getConversations,
+  getChatContacts,
   getConversationMessages,
   sendMessage,
   getProfile,
@@ -14,6 +14,7 @@ import {
 
 export default function Chat() {
   const [conversations, setConversations] = useState([]);
+  const [search, setSearch] = useState("");
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -53,6 +54,22 @@ export default function Chat() {
     setBrokenImages((prev) => ({ ...prev, [id]: true }));
   };
 
+  const formatMessageTime = (dateInput) => {
+    try {
+      if (!dateInput) return "";
+      const date = new Date(dateInput);
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata", 
+      });
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "";
+    }
+  };
+
   async function loadCurrentUser() {
     try {
       const token = localStorage.getItem("token");
@@ -66,7 +83,7 @@ export default function Chat() {
   async function loadConversations() {
     try {
       const token = localStorage.getItem("token");
-      const data = await getConversations(token);
+      const data = await getChatContacts(token);
       setConversations(data);
     } catch (err) {
       console.error(err);
@@ -78,8 +95,12 @@ export default function Chat() {
       const token = localStorage.getItem("token");
       setSelectedConversation(conversation);
 
-      const data = await getConversationMessages(token, conversation.id);
-      setMessages(data);
+      if (conversation.id) {
+        const data = await getConversationMessages(token, conversation.id);
+        setMessages(data);
+      } else {
+        setMessages([]);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -87,7 +108,7 @@ export default function Chat() {
 
   async function handleSend() {
     if (!newMessage.trim()) return;
-    if (!selectedConversation) return;
+    if (!selectedConversation || !selectedConversation.id) return;
 
     try {
       const token = localStorage.getItem("token");
@@ -108,6 +129,12 @@ export default function Chat() {
       console.error(err);
     }
   }
+
+  const filteredConversations = conversations.filter((conversation) =>
+    conversation.other_user_name
+      ?.toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   return (
     <div
@@ -155,27 +182,44 @@ export default function Chat() {
                 }}
               >
                 <h2 style={{ ...sectionTitleStyle, fontSize: "16px" }}>Conversations</h2>
+                <input
+                  type="text"
+                  placeholder="Search mentor/mentee..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{
+                    width: "100%",
+                    marginTop: "14px",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    outline: "none",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                />
               </div>
 
-              {conversations.length === 0 ? (
+              {filteredConversations.length === 0 ? (
                 <div style={{ padding: 20, color: theme.textSoft, fontSize: "15px" }}>
-                  No conversations yet
+                  No active connections or history found.
                 </div>
               ) : (
-                conversations.map((conversation) => {
+                filteredConversations.map((conversation) => {
                   const hasValidAvatar = 
                     conversation.other_user_avatar && !brokenImages[conversation.id];
+                  const isSelected = selectedConversation?.id === conversation.id;
 
                   return (
                     <div
-                      key={conversation.id}
+                      key={conversation.id || `temp-${conversation.other_user_id}`}
                       onClick={() => openConversation(conversation)}
                       onMouseEnter={(e) => {
-                        if (selectedConversation?.id !== conversation.id)
+                        if (!isSelected)
                           e.currentTarget.style.background = "#F4F6F8";
                       }}
                       onMouseLeave={(e) => {
-                        if (selectedConversation?.id !== conversation.id)
+                        if (!isSelected)
                           e.currentTarget.style.background = "transparent";
                       }}
                       style={{
@@ -183,10 +227,7 @@ export default function Chat() {
                         cursor: "pointer",
                         borderBottom: `1px solid ${theme.borderSoft}`,
                         transition: "all .2s ease",
-                        background:
-                          selectedConversation?.id === conversation.id
-                            ? "#EAEAEA"
-                            : "transparent",
+                        background: isSelected ? "#EAEAEA" : "transparent",
                       }}
                     >
                       <div
@@ -232,11 +273,11 @@ export default function Chat() {
                           <div style={{ fontWeight: 500, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", color: "#111", fontSize: "15px" }}>
                             {conversation.other_user_name}
                           </div>
-
                           <div
                             style={{
                               fontSize: "13px",
-                              color: "#666",
+                              color: conversation.last_message ? "#666" : theme.textSoft,
+                              fontStyle: conversation.last_message ? "normal" : "italic",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -274,11 +315,9 @@ export default function Chat() {
                   }}
                 >
                   <div style={{ fontSize: "70px", marginBottom: "15px" }}>💬</div>
-
                   <div style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>
                     Select a conversation
                   </div>
-
                   <div style={{ marginTop: "8px", fontSize: "14px", color: "#666" }}>
                     Start chatting with your mentor/mentee.
                   </div>
@@ -286,7 +325,6 @@ export default function Chat() {
               ) : (
                 <>
                   {/* Header */}
-
                   <div
                     style={{
                       padding: "18px 24px",
@@ -337,7 +375,6 @@ export default function Chat() {
                   </div>
 
                   {/* Messages container */}
-
                   <div
                     ref={messagesRef}
                     style={{
@@ -346,7 +383,7 @@ export default function Chat() {
                       padding: "20px",
                       display: "flex",
                       flexDirection: "column",
-                      gap: "10px",
+                      gap: "14px",
                       background: "#F2F4F7",
                       minHeight: 0,
                     }}
@@ -364,85 +401,79 @@ export default function Chat() {
                       </div>
                     ) : (
                       messages.map((message) => {
-                        const isMine =
-                          currentUser &&
-                          Number(message.sender_id) === Number(currentUser.id);
+                        const isMine = currentUser && Number(message.sender_id) === Number(currentUser.id);
 
                         return (
                           <div
                             key={message.id}
                             style={{
                               display: "flex",
-                              justifyContent: isMine ? "flex-end" : "flex-start",
-                              marginBottom: "10px",
+                              flexDirection: "column",
+                              alignItems: isMine ? "flex-end" : "flex-start",
+                              marginBottom: "4px",
                             }}
                           >
+                            {/* Message Bubble */}
                             <div
                               style={{
                                 background: isMine 
-                                  ? "rgba(255, 255, 255, 0.65)" 
-                                  : "#E6E8EB",
-                                backdropFilter: isMine ? "blur(10px)" : "none",
-                                WebkitBackdropFilter: isMine ? "blur(10px)" : "none",
-                                color: "#111111",
-                                padding: "10px 14px",
-                                borderRadius: "18px",
-                                maxWidth: "70%",
-                                wordBreak: "break-word",
-                                fontSize: "15px",
+                                  ? "rgba(255, 255, 255, 0.65)" // Clear/Transparent side
+                                  : "#FFFFFF",                // Clean White side
+                                backdropFilter: isMine ? "blur(12px)" : "none",
+                                WebkitBackdropFilter: isMine ? "blur(12px)" : "none",
+                                color: "#111",
+                                padding: "12px 16px",
+                                borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                                maxWidth: "60%",
                                 border: isMine 
-                                  ? "1px solid rgba(255, 255, 255, 0.4)" 
-                                  : "1px solid transparent",
-                                boxShadow: isMine
-                                  ? "0 4px 12px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.2)"
-                                  : "0 2px 6px rgba(0, 0, 0, 0.02)",
-                                transition: "all .2s ease",
+                                  ? "1px solid rgba(255, 255, 255, 0.5)" 
+                                  : "1px solid rgba(0, 0, 0, 0.04)",
+                                boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                                fontSize: "15px",
+                                lineHeight: "1.4",
+                                wordBreak: "break-word",
                               }}
                             >
-                              <div>{message.message_text}</div>
-
-                              <div
-                                style={{
-                                  fontSize: "11px",
-                                  marginTop: "6px",
-                                  opacity: 0.5,
-                                  textAlign: "right",
-                                }}
-                              >
-                                {new Date(message.created_at).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  timeZone: "Asia/Colombo"
-                                })}
-                              </div>
+                              {message.message_text}
+                            </div>
+                            
+                            {/* Timestamp Outside Bubble */}
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                marginTop: "4px",
+                                opacity: 0.5,
+                                color: "#444",
+                                paddingLeft: isMine ? "0px" : "4px",
+                                paddingRight: isMine ? "4px" : "0px",
+                              }}
+                            >
+                              {formatMessageTime(message.created_at)}
                             </div>
                           </div>
                         );
                       })
                     )}
-                    <div ref={bottomRef}></div>
+                    <div ref={bottomRef} />
                   </div>
 
-                  {/* Input */}
-
+                  {/* Input area */}
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      padding: "18px",
+                      padding: "16px 24px",
+                      background: "#fff",
                       borderTop: `1px solid ${theme.border}`,
+                      display: "flex",
+                      gap: "12px",
+                      alignItems: "center",
                     }}
                   >
                     <input
+                      type="text"
+                      placeholder="Type a message..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSend();
-                        }
-                      }}
-                      placeholder="Type a message..."
+                      onKeyDown={(e) => e.key === "Enter" && handleSend()}
                       style={{
                         flex: 1,
                         borderRadius: "25px",
