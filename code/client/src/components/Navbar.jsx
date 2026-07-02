@@ -628,7 +628,7 @@ const css = `
 }
 
 .notifDropdown {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: calc(100% + 14px);
   width: 320px;
