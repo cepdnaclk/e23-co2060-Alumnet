@@ -1,25 +1,12 @@
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
-import { getEvents, registerForEvent } from "../api";
+import { getEvents } from "../api";
 
 export default function Events() {
-  const token = localStorage.getItem("token");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-
-  const currentUser = useMemo(() => {
-    try {
-      if (!token) return null;
-      return jwtDecode(token);
-    } catch {
-      return null;
-    }
-  }, [token]);
-
-  const isStudent = currentUser?.role === "student";
 
   const loadEvents = async () => {
     try {
@@ -37,16 +24,6 @@ export default function Events() {
   useEffect(() => {
     loadEvents();
   }, []);
-
-  const handleRegister = async (eventId) => {
-    try {
-      setErr("");
-      await registerForEvent(token, eventId);
-      loadEvents();
-    } catch (e) {
-      setErr(e.message || "Failed to register for event");
-    }
-  };
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -81,72 +58,63 @@ export default function Events() {
             const remaining = Math.max(slots - registered, 0);
 
             return (
-              <Link key={event.id} to={`/events/${event.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                <div style={card}>
-                  <div style={topBlock}>
-                    <h3 style={title}>{event.title}</h3>
-                    <div style={createdBy}>By {event.created_by_name || "-"}</div>
+              <div key={event.id} style={card}>
+                <div style={topBlock}>
+                  <h3 style={title}>{event.title}</h3>
+                  <div style={createdBy}>
+                    By {event.created_by_name || "-"}
                   </div>
-                  <br></br>
-
-                  <div style={metaRows}>
-                    <div style={metaRow}>
-                      <span style={metaLabel}>Date</span>
-                      <span style={metaValue}>{formatDate(event.event_date)}</span>
-                    </div>
-
-                    <div style={metaRow}>
-                      <span style={metaLabel}>Time</span>
-                      <span style={metaValue}>{formatTime(event.event_time)}</span>
-                    </div>
-
-                    <div style={metaRow}>
-                      <span style={metaLabel}>Venue</span>
-                      <span style={metaValue}>{event.venue || "-"}</span>
-                    </div>
-
-                    <div style={metaRow}>
-                      <span style={metaLabel}>Registered</span>
-                      <span style={metaValue}>
-                        {registered} / {slots}
-                      </span>
-                    </div>
-
-                    <div style={metaRow}>
-                      <span style={metaLabel}>Availability</span>
-                      <span
-                        style={{
-                          ...metaValue,
-                          color: remaining > 0 ? "#17a84f" : "#b91c1c",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {remaining > 0
-                          ? `${remaining} slots available`
-                          : "Event full"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {event.description && (
-                    <p style={desc}>{event.description}</p>
-                  )}
-
-                  {isStudent && (
-                    <button
-                      style={{
-                        ...joinBtn,
-                        opacity: remaining > 0 ? 1 : 0.55,
-                        cursor: remaining > 0 ? "pointer" : "not-allowed",
-                      }}
-                      onClick={() => handleRegister(event.id)}
-                      disabled={remaining <= 0}
-                    >
-                      Join Event
-                    </button>
-                  )}
                 </div>
-              </Link>
+
+                <div style={metaRows}>
+                  <div style={metaRow}>
+                    <span style={metaLabel}>Date</span>
+                    <span style={metaValue}>
+                      {formatDate(event.event_date)}
+                    </span>
+                  </div>
+
+                  <div style={metaRow}>
+                    <span style={metaLabel}>Time</span>
+                    <span style={metaValue}>
+                      {formatTime(event.event_time)}
+                    </span>
+                  </div>
+
+                  <div style={metaRow}>
+                    <span style={metaLabel}>Venue</span>
+                    <span style={metaValue}>{event.venue || "-"}</span>
+                  </div>
+
+                  <div style={metaRow}>
+                    <span style={metaLabel}>Registered</span>
+                    <span style={metaValue}>
+                      {registered} / {slots}
+                    </span>
+                  </div>
+
+                  <div style={metaRow}>
+                    <span style={metaLabel}>Availability</span>
+                    <span
+                      style={{
+                        ...metaValue,
+                        color: remaining > 0 ? "#17a84f" : "#b91c1c",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {remaining > 0
+                        ? `${remaining} slots available`
+                        : "Event full"}
+                    </span>
+                  </div>
+                </div>
+
+                {event.description && <p style={desc}>{event.description}</p>}
+
+                <Link to={`/events/${event.id}`} style={viewEventBtn}>
+                  View Event Page
+                </Link>
+              </div>
             );
           })}
         </div>
@@ -170,7 +138,7 @@ const card = {
 };
 
 const topBlock = {
-  marginBottom: 14,
+  marginBottom: 24,
 };
 
 const title = {
@@ -219,7 +187,8 @@ const desc = {
   color: "rgba(17,17,17,0.72)",
 };
 
-const joinBtn = {
+const viewEventBtn = {
+  display: "inline-block",
   marginTop: 16,
   padding: "10px 16px",
   borderRadius: 999,
@@ -229,6 +198,7 @@ const joinBtn = {
   fontSize: 14,
   fontWeight: 400,
   fontFamily: '"Google Sans", Arial, sans-serif',
+  textDecoration: "none",
 };
 
 const errorBox = {

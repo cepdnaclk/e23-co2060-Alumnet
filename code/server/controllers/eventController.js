@@ -317,13 +317,19 @@ const getEventById = async (req, res) => {
           SELECT COUNT(*)::int
           FROM event_registrations er
           WHERE er.event_id = e.id
-        ) AS registered_count
+        ) AS registered_count,
+        EXISTS (
+          SELECT 1
+          FROM event_registrations er
+          WHERE er.event_id = e.id
+          AND er.student_user_id = $2
+        ) AS is_registered
       FROM events e
       JOIN users u ON u.id = e.created_by
       WHERE e.id = $1 AND e.approval_status = 'approved'
       LIMIT 1
       `,
-      [id]
+      [id, req.user.id]
     );
 
     if (result.rows.length === 0) {

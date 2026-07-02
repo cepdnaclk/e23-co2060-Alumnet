@@ -22,6 +22,6 @@ router.patch("/reject/:id", protect, rejectEvent);
 
 router.post("/:eventId/register", protect, registerForEvent);
 router.get("/my-registrations", protect, getMyRegisteredEvents);
-router.get("/:id", getEventById);
+router.get("/:id", protect, getEventById);
 
 module.exports = router;
