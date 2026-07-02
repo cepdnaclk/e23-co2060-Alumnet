@@ -30,6 +30,14 @@ export async function registerUser(payload) {
   return handle(res);
 }
 
+export async function verifyEmail(token) {
+  const res = await fetch(`${API_URL}/api/auth/verify-email/${token}`, {
+    method: "GET",
+  });
+
+  return handle(res);
+}
+
 export async function getProfile(token) {
   const res = await fetch(`${API_URL}/api/auth/profile`, {
     method: "GET",

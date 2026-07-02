@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import PageShell from "../components/PageShell";
 import { getProfile, updateProfile } from "../api";
-import { supabase } from "../supabase";
+import { isSupabaseConfigured, supabase } from "../supabase";
 
 const DEPARTMENTS = [
   "Chemical & Process Engineering",
@@ -107,6 +107,10 @@ export default function EditProfile() {
     try {
       setUploading(true);
       setErr("");
+
+      if (!isSupabaseConfigured) {
+        throw new Error("Supabase is not configured for image uploads.");
+      }
 
       const ext = file.name.split(".").pop();
       const fileName = `${Date.now()}_${Math.random()

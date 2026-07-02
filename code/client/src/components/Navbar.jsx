@@ -18,7 +18,7 @@ import {
 
 import logo from "../assets/alumnet-logo.png";
 import { getProfile, getMyNotifications, markNotificationAsRead } from "../api";
-import { supabase } from "../supabase";
+import { isSupabaseConfigured, supabase } from "../supabase";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -73,6 +73,8 @@ const Navbar = () => {
         setNotifications(data);
         setUnreadCount(data.filter((n) => !n.is_read).length);
 
+        if (!isSupabaseConfigured) return;
+
         subscription = supabase
           .channel("public:notifications")
           .on(
@@ -100,7 +102,7 @@ const Navbar = () => {
     loadNotifications();
 
     return () => {
-      if (subscription) supabase.removeChannel(subscription);
+      if (subscription) supabase?.removeChannel(subscription);
     };
   }, [token, profile?.id]);
 

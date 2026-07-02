@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Announcements() {
   const [events, setEvents] = useState([]);
@@ -30,7 +30,7 @@ export default function Announcements() {
   const loadEvents = async () => {
     try {
       setErr("");
-      const res = await fetch(`${API_BASE}/events`);
+      const res = await fetch(`${API_BASE}/api/events`);
       if (!res.ok) throw new Error(`Failed: ${res.status}`);
       const data = await res.json();
       setEvents(data);
@@ -50,7 +50,7 @@ export default function Announcements() {
     setErr("");
 
     try {
-      const res = await fetch(`${API_BASE}/events`, {
+      const res = await fetch(`${API_BASE}/api/events`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
