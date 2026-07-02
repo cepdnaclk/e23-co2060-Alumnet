@@ -1,4 +1,5 @@
-const { pool } = require("../src/db");
+const  pool  = require("../config/db");
+const { createNotification } = require("../utils/notify"); 
 
 const createMentorshipRequest = async (req, res) => {
   try {
@@ -117,6 +118,13 @@ const createMentorshipRequest = async (req, res) => {
       RETURNING *
       `,
       [studentUserId, alumni_user_id, message || null]
+    );
+    
+    await createNotification(
+      alumni_user_id,
+      "New Mentorship Request",
+      "A student has requested you as a mentor. Check your pending request page",
+      "MENTOR_REQUEST"
     );
 
     return res.status(201).json({
@@ -292,16 +300,51 @@ const updateRequestStatus = async (req, res) => {
     }
 
     const result = await pool.query(
-      `
-      UPDATE mentorship_requests
-      SET status = $1
-      WHERE id = $2
-      RETURNING *
-      `,
-      [status, id]
-    );
+  `
+  UPDATE mentorship_requests
+  SET status = $1
+  WHERE id = $2
+  RETURNING *
+  `,
+  [status, id]
+);
 
-    res.json(result.rows[0]);
+const updatedRequest = result.rows[0];
+
+if (status === "accepted") {
+  await pool.query(
+    `
+    INSERT INTO conversations (
+      mentorship_request_id,
+      student_user_id,
+      alumni_user_id
+    )
+    VALUES ($1, $2, $3)
+    ON CONFLICT (mentorship_request_id)
+    DO NOTHING
+    `,
+    [
+      updatedRequest.id,
+      updatedRequest.student_user_id,
+      updatedRequest.alumni_user_id,
+    ]
+  );
+}
+
+const title = status === "accepted" ? "Mentorship Accepted!" : "Mentorship Update";
+const msg = status === "accepted"
+  ? "An alumni has accepted your mentorship request. You can now chat with them!"
+  : "AN alumni has declined your mentorship request at this time."
+
+await createNotification(
+  updatedRequest.student_user_id, 
+  title,
+  msg,
+  "REQUEST_UPDATE"
+);
+
+
+res.json(updatedRequest);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update request" });
@@ -323,21 +366,35 @@ const getMyMentors = async (req, res) => {
         ap.job_title,
         ap.organization,
         ap.linkedin_url,
-        ap.primary_interests
+        ap.primary_interests,
+        c.id AS conversation_id
+
       FROM mentorship_requests mr
-      JOIN users u ON u.id = mr.alumni_user_id
-      LEFT JOIN alumni_profiles ap ON ap.user_id = u.id
+
+      JOIN users u
+        ON u.id = mr.alumni_user_id
+
+      LEFT JOIN alumni_profiles ap
+        ON ap.user_id = u.id
+
+      LEFT JOIN conversations c
+        ON c.mentorship_request_id = mr.id
+
       WHERE mr.student_user_id = $1
       AND mr.status = 'accepted'
+
       ORDER BY u.full_name ASC
       `,
       [studentId]
     );
 
     res.json(result.rows);
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to fetch mentors" });
+    res.status(500).json({
+      message: "Failed to fetch mentors",
+    });
   }
 };
 
@@ -356,21 +413,35 @@ const getMyMentees = async (req, res) => {
         sp.batch,
         sp.areas_of_interest,
         sp.linkedin_url,
-        sp.github_url
+        sp.github_url,
+        c.id AS conversation_id
+
       FROM mentorship_requests mr
-      JOIN users u ON u.id = mr.student_user_id
-      LEFT JOIN student_profiles sp ON sp.user_id = u.id
+
+      JOIN users u
+        ON u.id = mr.student_user_id
+
+      LEFT JOIN student_profiles sp
+        ON sp.user_id = u.id
+
+      LEFT JOIN conversations c
+        ON c.mentorship_request_id = mr.id
+
       WHERE mr.alumni_user_id = $1
       AND mr.status = 'accepted'
+
       ORDER BY u.full_name ASC
       `,
       [alumniId]
     );
 
     res.json(result.rows);
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to fetch mentees" });
+    res.status(500).json({
+      message: "Failed to fetch mentees",
+    });
   }
 };
 

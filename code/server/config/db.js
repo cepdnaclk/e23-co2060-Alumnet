@@ -10,7 +10,7 @@ const isRender = process.env.DATABASE_URL?.includes("render.com");
 const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: isRender ? { rejectUnauthorized: false } : false,
+      ssl: { rejectUnauthorized: false },
     })
   : new Pool({
       user: process.env.DB_USER,

@@ -223,3 +223,70 @@ export async function getMyRegisteredEvents(token) {
 
   return handle(res);
 }
+
+export async function getChatContacts(token) {
+  const res = await fetch(`${API_URL}/api/chat/contacts`, {
+    headers: {
+      ...authHeaders(token),
+    },
+  });
+
+  return handle(res);
+}
+
+export async function getConversations(token) {
+  const res = await fetch(`${API_URL}/api/chat/conversations`, {
+    headers: {
+      ...authHeaders(token),
+    },
+  });
+
+  return handle(res);
+}
+
+export async function getConversationMessages(token, conversationId) {
+  const res = await fetch(
+    `${API_URL}/api/chat/conversations/${conversationId}/messages`,
+    {
+      headers: {
+        ...authHeaders(token),
+      },
+    }
+  );
+
+  return handle(res);
+}
+
+export async function sendMessage(token, conversationId, message_text) {
+  const res = await fetch(
+    `${API_URL}/api/chat/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(token),
+      },
+      body: JSON.stringify({ message_text }),
+    }
+  );
+
+  return handle(res);
+}
+
+export async function getMyNotifications(token) {
+  const res = await fetch(`${API_URL}/api/notifications`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
+export async function markNotificationAsRead(token, notificationId) {
+  const res = await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
+    method: "PATCH",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
