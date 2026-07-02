@@ -628,9 +628,9 @@ const css = `
 }
 
 .notifDropdown {
-  position: absolute;
-  top: 0;
-  left: calc(100% + 14px);
+  position: fixed;
+  top: 32px;
+  left: 270px;
   width: 320px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(14px);
@@ -713,6 +713,11 @@ const css = `
 
   .navItem{
     font-size:13px;
+  }
+
+  .notifDropdown{
+    top: 26px;
+    left: 236px;
   }
 }
 `;
