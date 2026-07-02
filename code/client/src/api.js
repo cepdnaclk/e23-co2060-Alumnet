@@ -30,6 +30,14 @@ export async function registerUser(payload) {
   return handle(res);
 }
 
+export async function verifyEmail(token) {
+  const res = await fetch(`${API_URL}/api/auth/verify-email/${token}`, {
+    method: "GET",
+  });
+
+  return handle(res);
+}
+
 export async function getProfile(token) {
   const res = await fetch(`${API_URL}/api/auth/profile`, {
     method: "GET",
@@ -288,5 +296,33 @@ export async function markNotificationAsRead(token, notificationId) {
     headers: { ...authHeaders(token) },
   });
 
+  return handle(res);
+}
+
+export async function getAdminStats(token) {
+  const res = await fetch(`${API_URL}/api/admin/stats`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+  return handle(res);
+}
+
+export async function getAdminPendingUsers(token) {
+  const res = await fetch(`${API_URL}/api/admin/pending-users`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+  return handle(res);
+}
+
+export async function verifyUserStatus(token, id, status) {
+  const res = await fetch(`${API_URL}/api/admin/verify-user/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ status }),
+  });
   return handle(res);
 }

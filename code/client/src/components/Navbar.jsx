@@ -131,7 +131,13 @@ const Navbar = () => {
 
       if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
       else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
-      else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") navigate("/my-events");
+      else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") {
+        if (isAdmin) {
+          navigate("/admin-events");
+        } else {
+          navigate("/my-events");
+        }
+      }
 
     } catch (err) {
       console.error("Failed to mark read", err);
@@ -247,23 +253,27 @@ const Navbar = () => {
               Home
             </NavLink>
 
-            <NavLink
-              to="/directory"
-              className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-            >
-              <Users size={17} strokeWidth={1.9} />
-              Directory
-            </NavLink>
+            {!isAdmin && (
+              <>
+                <NavLink
+                  to="/directory"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <Users size={17} strokeWidth={1.9} />
+                  Directory
+                </NavLink>
 
-            <NavLink
-              to="/chat"
-              className={({ isActive }) =>
-                `navItem ${isActive ? "active" : ""}`
-              }
-            >
-              <MessageCircle size={17} strokeWidth={1.9} />
-              Chat
-            </NavLink>
+                <NavLink
+                  to="/chat"
+                  className={({ isActive }) =>
+                    `navItem ${isActive ? "active" : ""}`
+                  }
+                >
+                  <MessageCircle size={17} strokeWidth={1.9} />
+                  Chat
+                </NavLink>
+              </>
+            )}
 
             <NavLink
               to="/events"
@@ -273,23 +283,27 @@ const Navbar = () => {
               Events
             </NavLink>
 
-            <div className="navGroupLabel">My Account</div>
+            {!isAdmin && (
+              <>
+                <div className="navGroupLabel">My Account</div>
 
-            <NavLink
-              to="/profile"
-              className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-            >
-              <User size={17} strokeWidth={1.9} />
-              My Profile
-            </NavLink>
+                <NavLink
+                  to="/profile"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <User size={17} strokeWidth={1.9} />
+                  My Profile
+                </NavLink>
 
-            <NavLink
-              to="/edit-profile"
-              className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-            >
-              <Pencil size={17} strokeWidth={1.9} />
-              Edit Profile
-            </NavLink>
+                <NavLink
+                  to="/edit-profile"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <Pencil size={17} strokeWidth={1.9} />
+                  Edit Profile
+                </NavLink>
+              </>
+            )}
 
             {isStudent && (
               <>
