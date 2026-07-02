@@ -73,13 +73,8 @@ export async function verifyUser(token, userId) {
 export async function getDirectory(search = "", department = "") {
   const params = new URLSearchParams();
 
-  if (search.trim()) {
-    params.append("search", search.trim());
-  }
-
-  if (department.trim()) {
-    params.append("department", department.trim());
-  }
+  if (search.trim()) params.append("search", search.trim());
+  if (department.trim()) params.append("department", department.trim());
 
   const query = params.toString();
 
@@ -162,6 +157,15 @@ export async function getEvents() {
   return handle(res);
 }
 
+export async function getEventById(token, id) {
+  const res = await fetch(`${API_URL}/api/events/${id}`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
 export async function createEvent(token, payload) {
   const res = await fetch(`${API_URL}/api/events`, {
     method: "POST",
@@ -220,11 +224,6 @@ export async function getMyRegisteredEvents(token) {
   return handle(res);
 }
 
-export async function getEventById(id) {
-  const res = await fetch(`${API_URL}/api/events/${id}`);
-  return handle(res);
-}
-
 export async function getChatContacts(token) {
   const res = await fetch(`${API_URL}/api/chat/contacts`, {
     headers: {
@@ -258,11 +257,7 @@ export async function getConversationMessages(token, conversationId) {
   return handle(res);
 }
 
-export async function sendMessage(
-  token,
-  conversationId,
-  message_text
-) {
+export async function sendMessage(token, conversationId, message_text) {
   const res = await fetch(
     `${API_URL}/api/chat/conversations/${conversationId}/messages`,
     {
@@ -288,7 +283,7 @@ export async function getMyNotifications(token) {
 }
 
 export async function markNotificationAsRead(token, notificationId) {
-  const res = await fetch(`{API_URL}/api/notifications/${notificationId}/read`, {
+  const res = await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
     method: "PATCH",
     headers: { ...authHeaders(token) },
   });
