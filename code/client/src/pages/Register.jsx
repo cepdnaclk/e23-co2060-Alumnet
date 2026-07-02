@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api";
 import AuthLayout from "../components/AuthLayout";
 import {
@@ -120,8 +120,12 @@ export default function Register() {
 
     try {
       const data = await registerUser(payload);
-      localStorage.setItem("token", data.token);
-      navigate("/profile");
+      navigate("/verify-email", {
+        state: {
+          email,
+          message: data.message || "Registration successful.",
+        },
+      });
     } catch (err) {
       setError(err.message || "Register failed");
     } finally {

@@ -1,9 +1,12 @@
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const pool  = require("../config/db");
+const sendEmail = require("../utils/sendEmail");
 
 const signup = async (req, res) => {
   const client = await pool.connect();
+  let transactionOpen = false;
 
   try {
     const {
@@ -50,6 +53,7 @@ const signup = async (req, res) => {
     }
 
     await client.query("BEGIN");
+    transactionOpen = true;
 
     const existingUser = await client.query(
       "SELECT id FROM users WHERE email = $1",
@@ -62,14 +66,33 @@ const signup = async (req, res) => {
     }
 
     const password_hash = await bcrypt.hash(password, 10);
+    const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+    const emailVerificationTokenExpiry = new Date(
+      Date.now() + 24 * 60 * 60 * 1000
+    );
 
     const userResult = await client.query(
       `
-      INSERT INTO users (full_name, email, password_hash, role)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, full_name, email, role, verification_status, created_at, verified_at, avatar_url
+      INSERT INTO users (
+        full_name,
+        email,
+        password_hash,
+        role,
+        email_verified,
+        email_verification_token,
+        email_verification_token_expiry
+      )
+      VALUES ($1, $2, $3, $4, false, $5, $6)
+      RETURNING id, full_name, email, role, email_verified, verification_status, created_at, verified_at, avatar_url
       `,
-      [full_name, email, password_hash, role]
+      [
+        full_name,
+        email,
+        password_hash,
+        role,
+        emailVerificationToken,
+        emailVerificationTokenExpiry,
+      ]
     );
 
     const user = userResult.rows[0];
@@ -139,24 +162,45 @@ const signup = async (req, res) => {
     }
 
     await client.query("COMMIT");
+    transactionOpen = false;
 
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173")
+      .replace(/\/$/, "");
+    const verificationUrl = `${clientUrl}/verify-email/${emailVerificationToken}`;
+
+    await sendEmail({
+      to: email,
+      subject: "Verify your Alumnet account",
+      html: `
+        <h2>Welcome to Alumnet!</h2>
+
+        <p>Please verify your email by clicking the button below.</p>
+
+        <a
+          href="${verificationUrl}"
+          style="
+            display:inline-block;
+            padding:12px 24px;
+            background:#2563eb;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+          "
+        >
+          Verify Email
+        </a>
+
+        <p>This link expires in 24 hours.</p>
+      `,
+    });
 
     return res.status(201).json({
-      message: "Account created successfully",
-      token,
-      user,
+      message: "Registration successful.",
     });
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (transactionOpen) {
+      await client.query("ROLLBACK");
+    }
     console.error("Signup error:", error);
     return res.status(500).json({ message: "Server error during signup" });
   } finally {
@@ -182,6 +226,7 @@ const login = async (req, res) => {
         email,
         password_hash,
         role,
+        email_verified,
         verification_status,
         created_at,
         verified_at,
@@ -204,6 +249,12 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    if (!user.email_verified) {
+      return res.status(403).json({
+        message: "Please verify your email before logging in.",
+      });
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -222,6 +273,7 @@ const login = async (req, res) => {
         full_name: user.full_name,
         email: user.email,
         role: user.role,
+        email_verified: user.email_verified,
         verification_status: user.verification_status,
         created_at: user.created_at,
         verified_at: user.verified_at,
@@ -231,6 +283,69 @@ const login = async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ message: "Server error during login" });
+  }
+};
+
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ message: "Verification token is required" });
+    }
+
+    const userResult = await pool.query(
+      `
+      SELECT
+        id,
+        email_verified,
+        email_verification_token_expiry
+      FROM users
+      WHERE email_verification_token = $1
+      `,
+      [token]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({
+        message: "Invalid or already used verification link.",
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    if (user.email_verified) {
+      return res.status(200).json({
+        message: "Your email is already verified. You can log in now.",
+      });
+    }
+
+    if (
+      user.email_verification_token_expiry &&
+      new Date(user.email_verification_token_expiry) < new Date()
+    ) {
+      return res.status(400).json({
+        message: "Verification link has expired. Please register again or request a new link.",
+      });
+    }
+
+    await pool.query(
+      `
+      UPDATE users
+      SET email_verified = true,
+          email_verification_token = NULL,
+          email_verification_token_expiry = NULL
+      WHERE id = $1
+      `,
+      [user.id]
+    );
+
+    return res.status(200).json({
+      message: "Verification successful. Please login again to continue.",
+    });
+  } catch (error) {
+    console.error("Email verification error:", error);
+    return res.status(500).json({ message: "Failed to verify email" });
   }
 };
 
@@ -497,6 +612,7 @@ const updateProfile = async (req, res) => {
 module.exports = {
   signup,
   login,
+  verifyEmail,
   getProfile,
   updateProfile,
   getPendingUsers,

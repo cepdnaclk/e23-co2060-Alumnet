@@ -27,3 +27,20 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+const sendEmail = require("./utils/sendEmail");
+
+app.get("/test-email", async (req, res) => {
+  try {
+    await sendEmail({
+      to: process.env.EMAIL_USER,
+      subject: "Alumnet test email",
+      html: "<h2>Email sending works ✅</h2>",
+    });
+
+    res.json({ message: "Email sent successfully" });
+  } catch (error) {
+    console.error("Email test error:", error);
+    res.status(500).json({ message: "Email failed", error: error.message });
+  }
+});
