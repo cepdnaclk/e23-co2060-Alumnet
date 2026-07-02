@@ -30,6 +30,14 @@ export async function registerUser(payload) {
   return handle(res);
 }
 
+export async function verifyEmail(token) {
+  const res = await fetch(`${API_URL}/api/auth/verify-email/${token}`, {
+    method: "GET",
+  });
+
+  return handle(res);
+}
+
 export async function getProfile(token) {
   const res = await fetch(`${API_URL}/api/auth/profile`, {
     method: "GET",
@@ -288,7 +296,7 @@ export async function getMyNotifications(token) {
 }
 
 export async function markNotificationAsRead(token, notificationId) {
-  const res = await fetch(`{API_URL}/api/notifications/${notificationId}/read`, {
+  const res = await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
     method: "PATCH",
     headers: { ...authHeaders(token) },
   });
