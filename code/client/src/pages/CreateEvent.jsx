@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PageShell from "../components/PageShell";
 import { createEvent } from "../api";
+import { supabase } from "../supabase";
 
 export default function CreateEvent() {
   const token = localStorage.getItem("token");
@@ -11,9 +12,50 @@ export default function CreateEvent() {
   const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
   const [availableSlots, setAvailableSlots] = useState("");
+  const [speaker, setSpeaker] = useState("");
+  const [zoomLink, setZoomLink] = useState("");
+
+  const [eventPoster, setEventPoster] = useState(null);
+  const [posterPreview, setPosterPreview] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [success, setSuccess] = useState("");
+
+  const handlePosterChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) {
+      setEventPoster(null);
+      setPosterPreview("");
+      return;
+    }
+
+    setEventPoster(file);
+    setPosterPreview(URL.createObjectURL(file));
+  };
+
+  const uploadPoster = async () => {
+    if (!eventPoster) return "";
+
+    const fileExt = eventPoster.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+    const filePath = `events/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("event-posters")
+      .upload(filePath, eventPoster);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const { data } = supabase.storage
+      .from("event-posters")
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,6 +64,8 @@ export default function CreateEvent() {
     setSuccess("");
 
     try {
+      const uploadedPosterUrl = await uploadPoster();
+
       const data = await createEvent(token, {
         title,
         event_date: eventDate,
@@ -29,15 +73,23 @@ export default function CreateEvent() {
         venue,
         description,
         available_slots: availableSlots ? Number(availableSlots) : 0,
+        speaker,
+        image_url: uploadedPosterUrl,
+        zoom_link: zoomLink,
       });
 
       setSuccess(data.message || "Event created successfully");
+
       setTitle("");
       setEventDate("");
       setEventTime("");
       setVenue("");
       setDescription("");
       setAvailableSlots("");
+      setSpeaker("");
+      setZoomLink("");
+      setEventPoster(null);
+      setPosterPreview("");
     } catch (e) {
       setErr(e.message || "Failed to create event");
     } finally {
@@ -48,6 +100,31 @@ export default function CreateEvent() {
   return (
     <PageShell title="Create Event" subtitle="Alumni and admins can add events">
       <form onSubmit={handleSubmit} style={card}>
+        <div style={posterUploadRow}>
+          <div style={posterPreviewBox}>
+            {posterPreview ? (
+              <img
+                src={posterPreview}
+                alt="Event poster preview"
+                style={posterImg}
+              />
+            ) : (
+              <span style={posterPlaceholder}>E</span>
+            )}
+          </div>
+
+          <div>
+            <h3 style={posterTitle}>Event Poster</h3>
+            <p style={posterText}>Upload a poster image for this event.</p>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handlePosterChange}
+              style={input}
+            />
+          </div>
+        </div>
+
         <div style={grid}>
           <Field label="Title">
             <input
@@ -58,11 +135,30 @@ export default function CreateEvent() {
             />
           </Field>
 
+          <Field label="Speaker">
+            <input
+              value={speaker}
+              onChange={(e) => setSpeaker(e.target.value)}
+              placeholder="Speaker name"
+              style={input}
+            />
+          </Field>
+
           <Field label="Venue">
             <input
               value={venue}
               onChange={(e) => setVenue(e.target.value)}
               required
+              style={input}
+            />
+          </Field>
+
+          <Field label="Zoom Link">
+            <input
+              type="url"
+              value={zoomLink}
+              onChange={(e) => setZoomLink(e.target.value)}
+              placeholder="For online events"
               style={input}
             />
           </Field>
@@ -134,6 +230,48 @@ const card = {
   border: "1px solid rgba(0,0,0,0.06)",
   backdropFilter: "blur(6px)",
   maxWidth: 760,
+};
+
+const posterUploadRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: 24,
+  marginBottom: 28,
+};
+
+const posterPreviewBox = {
+  width: 100,
+  height: 100,
+  borderRadius: "50%",
+  background: "rgba(0,0,0,0.05)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+  flexShrink: 0,
+};
+
+const posterImg = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+};
+
+const posterPlaceholder = {
+  fontSize: 34,
+  color: "#111111",
+};
+
+const posterTitle = {
+  margin: 0,
+  fontSize: 16,
+  fontWeight: 500,
+};
+
+const posterText = {
+  margin: "6px 0 10px",
+  fontSize: 14,
+  color: "rgba(17,17,17,0.56)",
 };
 
 const grid = {

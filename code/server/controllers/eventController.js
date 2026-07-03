@@ -19,6 +19,9 @@ const createEvent = async (req, res) => {
       venue,
       description,
       available_slots,
+      image_url,
+      speaker,
+      zoom_link,
     } = req.body;
 
     if (!title || !event_date || !event_time || !venue) {
@@ -41,10 +44,13 @@ const createEvent = async (req, res) => {
         venue,
         description,
         available_slots,
+        image_url,
+        speaker,
+        zoom_link,
         created_by,
         approval_status
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9, $10, $11)
       RETURNING *
       `,
       [
@@ -54,6 +60,9 @@ const createEvent = async (req, res) => {
         venue,
         description || null,
         Number(available_slots) || 0,
+        image_url || null,
+        speaker || null,
+        zoom_link || null,
         userId,
         approvalStatus,
       ]
