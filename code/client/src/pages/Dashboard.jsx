@@ -24,6 +24,7 @@ export default function Dashboard() {
   }, [token]);
 
   const role = currentUser?.role || "";
+  const isAdmin = role === "university_admin" || role === "system_admin";
 
   useEffect(() => {
     const load = async () => {
@@ -103,23 +104,27 @@ export default function Dashboard() {
           </div>
 
           <div style={grid}>
-            <QuickCard
-              title="My Profile"
-              text="View your account details and public information."
-              to="/profile"
-            />
+            {!isAdmin && (
+              <>
+                <QuickCard
+                  title="My Profile"
+                  text="View your account details and public information."
+                  to="/profile"
+                />
 
-            <QuickCard
-              title="Edit Profile"
-              text="Update your details, profile image, and links."
-              to="/edit-profile"
-            />
+                <QuickCard
+                  title="Edit Profile"
+                  text="Update your details, profile image, and links."
+                  to="/edit-profile"
+                />
 
-            <QuickCard
-              title="Directory"
-              text="Browse alumni and find relevant mentors."
-              to="/directory"
-            />
+                <QuickCard
+                  title="Directory"
+                  text="Browse alumni and find relevant mentors."
+                  to="/directory"
+                />
+              </>
+            )}
 
             <QuickCard
               title="Events"
