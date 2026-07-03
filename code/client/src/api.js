@@ -2,8 +2,34 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 async function handle(res) {
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Request failed");
+  if (!res.ok) {
+    throw new Error(data.message || `Request failed (${res.status})`);
+  }
   return data;
+}
+
+async function handleWithFallback(primaryRequest, fallbackRequest) {
+  const primary = await primaryRequest();
+
+  if (primary.status !== 404 || !fallbackRequest) {
+    return handle(primary);
+  }
+
+  return handle(await fallbackRequest());
+}
+
+async function handleFirstAvailable(requests) {
+  let lastResponse;
+
+  for (const request of requests) {
+    const response = await request();
+    if (response.status !== 404) {
+      return handle(response);
+    }
+    lastResponse = response;
+  }
+
+  return handle(lastResponse);
 }
 
 function authHeaders(token) {
@@ -313,29 +339,59 @@ export async function markNotificationAsRead(token, notificationId) {
 }
 
 export async function getAdminStats(token) {
-  const res = await fetch(`${API_URL}/api/admin/stats`, {
-    method: "GET",
-    headers: { ...authHeaders(token) },
-  });
-  return handle(res);
+  return handleWithFallback(
+    () =>
+      fetch(`${API_URL}/api/admin/stats`, {
+        method: "GET",
+        headers: { ...authHeaders(token) },
+      }),
+    () =>
+      fetch(`${API_URL}/api/auth/admin/stats`, {
+        method: "GET",
+        headers: { ...authHeaders(token) },
+      })
+  );
 }
 
 export async function getAdminPendingUsers(token) {
-  const res = await fetch(`${API_URL}/api/admin/pending-users`, {
-    method: "GET",
-    headers: { ...authHeaders(token) },
-  });
-  return handle(res);
+  return handleFirstAvailable([
+    () =>
+      fetch(`${API_URL}/api/admin/pending-users`, {
+        method: "GET",
+        headers: { ...authHeaders(token) },
+      }),
+    () =>
+      fetch(`${API_URL}/api/auth/admin/pending-users`, {
+        method: "GET",
+        headers: { ...authHeaders(token) },
+      }),
+    () =>
+      fetch(`${API_URL}/api/auth/admin/pending`, {
+        method: "GET",
+        headers: { ...authHeaders(token) },
+      }),
+  ]);
 }
 
 export async function verifyUserStatus(token, id, status) {
-  const res = await fetch(`${API_URL}/api/admin/verify-user/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(token),
-    },
-    body: JSON.stringify({ status }),
-  });
-  return handle(res);
+  return handleWithFallback(
+    () =>
+      fetch(`${API_URL}/api/admin/verify-user/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(token),
+        },
+        body: JSON.stringify({ status }),
+      }),
+    () =>
+      fetch(`${API_URL}/api/auth/admin/verify-user/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(token),
+        },
+        body: JSON.stringify({ status }),
+      })
+  );
 }

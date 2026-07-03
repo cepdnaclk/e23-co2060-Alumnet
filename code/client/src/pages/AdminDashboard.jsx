@@ -46,16 +46,35 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       setErr("");
-      const [statsData, usersData, eventsData] = await Promise.all([
+      const [statsResult, usersResult, eventsResult] = await Promise.allSettled([
         getAdminStats(token),
         getAdminPendingUsers(token),
         getPendingEvents(token),
       ]);
-      setStats(statsData);
-      setUsers(usersData);
-      setEvents(eventsData);
-    } catch (e) {
-      setErr(e.message || "Failed to load dashboard data");
+
+      const loadErrors = [];
+
+      if (statsResult.status === "fulfilled") {
+        setStats(statsResult.value);
+      } else {
+        loadErrors.push(`Stats: ${statsResult.reason?.message || "failed to load"}`);
+      }
+
+      if (usersResult.status === "fulfilled") {
+        setUsers(usersResult.value);
+      } else {
+        loadErrors.push(`Users: ${usersResult.reason?.message || "failed to load"}`);
+      }
+
+      if (eventsResult.status === "fulfilled") {
+        setEvents(eventsResult.value);
+      } else {
+        loadErrors.push(`Events: ${eventsResult.reason?.message || "failed to load"}`);
+      }
+
+      if (loadErrors.length) {
+        setErr(loadErrors.join(" | "));
+      }
     } finally {
       setLoading(false);
     }
@@ -348,20 +367,6 @@ const dashboardCss = `
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
 }
 
-<<<<<<< HEAD
-const verifyBtn = {
-  marginTop: 14,
-  padding: "10px 16px",
-  borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255, 255, 255, 0.76)",
-  color: "#111111",
-  cursor: "pointer",
-  fontSize: 14,
-  fontWeight: 400,
-  fontFamily: '"Google Sans"',
-};
-=======
 .statIcon {
   width: 48px;
   height: 48px;
@@ -371,7 +376,6 @@ const verifyBtn = {
   justify-content: center;
   flex-shrink: 0;
 }
->>>>>>> 614f450dcc46b6f979f42fb350bbb174e498fb60
 
 .alumni .statIcon {
   background: rgba(34, 197, 94, 0.1);
