@@ -14,6 +14,7 @@ import {
   Pencil,
   MessageCircle,
   Bell,
+  CalendarCheck
 } from "lucide-react";
 
 import logo from "../assets/alumnet-logo.png";
@@ -357,6 +358,14 @@ const Navbar = () => {
                 >
                   <PlusSquare size={17} strokeWidth={1.9} />
                   Create Event
+                </NavLink>
+
+                <NavLink
+                  to="/my-created-events"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <CalendarCheck size={17} strokeWidth={1.9} />
+                  My Created Events
                 </NavLink>
               </>
             )}
