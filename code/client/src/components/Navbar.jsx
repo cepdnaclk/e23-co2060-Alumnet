@@ -163,6 +163,8 @@ export default function Navbar() {
       if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
       else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
       else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") {
+        navigate("/my-events");
+      }
         if (isAdmin) {
           navigate("/admin-events");
         } else {
@@ -257,6 +259,39 @@ export default function Navbar() {
               )}
               <ChevronDown size={14} strokeWidth={2} />
             </button>
+
+            {menuOpen && (
+              <div className="profileDropdown">
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>
+                  My Profile
+                </Link>
+                <Link to="/edit-profile" onClick={() => setMenuOpen(false)}>
+                  <Pencil size={14} strokeWidth={2} />
+                  Edit Profile
+                </Link>
+                <Link to="/my-events" onClick={() => setMenuOpen(false)}>
+                  <Calendar size={14} strokeWidth={2} />
+            {!isAdmin && (
+              <>
+                <NavLink
+                  to="/directory"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <Users size={17} strokeWidth={1.9} />
+                  Directory
+                </NavLink>
+
+                <NavLink
+                  to="/chat"
+                  className={({ isActive }) =>
+                    `navItem ${isActive ? "active" : ""}`
+                  }
+                >
+                  <MessageCircle size={17} strokeWidth={1.9} />
+                  Chat
+                </NavLink>
+              </>
+            )}
 
             {menuOpen && (
               <div className="profileDropdown">
