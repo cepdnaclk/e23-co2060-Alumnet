@@ -165,6 +165,13 @@ export default function Navbar() {
       else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") {
         navigate("/my-events");
       }
+        if (isAdmin) {
+          navigate("/admin-events");
+        } else {
+          navigate("/my-events");
+        }
+      }
+
     } catch (err) {
       console.error("Failed to mark read", err);
     }
@@ -265,6 +272,81 @@ export default function Navbar() {
                 </Link>
                 <Link to="/my-events" onClick={() => setMenuOpen(false)}>
                   <Calendar size={14} strokeWidth={2} />
+            {!isAdmin && (
+              <>
+                <NavLink
+                  to="/directory"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <Users size={17} strokeWidth={1.9} />
+                  Directory
+                </NavLink>
+
+                <NavLink
+                  to="/chat"
+                  className={({ isActive }) =>
+                    `navItem ${isActive ? "active" : ""}`
+                  }
+                >
+                  <MessageCircle size={17} strokeWidth={1.9} />
+                  Chat
+                </NavLink>
+              </>
+            )}
+
+            <NavLink
+              to="/events"
+              className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+            >
+              <Calendar size={17} strokeWidth={1.9} />
+              Events
+            </NavLink>
+
+            {!isAdmin && (
+              <>
+                <div className="navGroupLabel">My Account</div>
+
+                <NavLink
+                  to="/profile"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <User size={17} strokeWidth={1.9} />
+                  My Profile
+                </NavLink>
+
+                <NavLink
+                  to="/edit-profile"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <Pencil size={17} strokeWidth={1.9} />
+                  Edit Profile
+                </NavLink>
+              </>
+            )}
+
+            {isStudent && (
+              <>
+                <NavLink
+                  to="/my-requests"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <Mail size={17} strokeWidth={1.9} />
+                  My Requests
+                </NavLink>
+
+                <NavLink
+                  to="/my-mentors"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <GraduationCap size={17} strokeWidth={1.9} />
+                  My Mentors
+                </NavLink>
+
+                <NavLink
+                  to="/my-events"
+                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+                >
+                  <Calendar size={17} strokeWidth={1.9} />
                   My Events
                 </Link>
                 {(isStudent || isAlumni) && (
