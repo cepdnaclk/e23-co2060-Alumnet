@@ -8,6 +8,7 @@ const {
   registerForEvent,
   getMyRegisteredEvents,
   getEventById,
+  getMyCreatedEvents,
 } = require("../controllers/eventController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -22,6 +23,7 @@ router.patch("/reject/:id", protect, rejectEvent);
 
 router.post("/:eventId/register", protect, registerForEvent);
 router.get("/my-registrations", protect, getMyRegisteredEvents);
+router.get("/my-created", protect, getMyCreatedEvents);
 router.get("/:id", protect, getEventById);
 
 module.exports = router;

@@ -374,6 +374,35 @@ const getEventById = async (req, res) => {
   }
 };
 
+const getMyCreatedEvents = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `
+      SELECT
+        e.*,
+        u.full_name AS created_by_name,
+        (
+          SELECT COUNT(*)::int
+          FROM event_registrations er
+          WHERE er.event_id = e.id
+        ) AS registered_count
+      FROM events e
+      JOIN users u ON u.id = e.created_by
+      WHERE e.created_by = $1
+      ORDER BY e.created_at DESC
+      `,
+      [userId]
+    );
+
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Get my created events error:", error);
+    return res.status(500).json({ message: "Failed to fetch your events" });
+  }
+};
+
 module.exports = {
   createEvent,
   getApprovedEvents,
@@ -383,4 +412,5 @@ module.exports = {
   registerForEvent,
   getMyRegisteredEvents,
   getEventById,
+  getMyCreatedEvents,
 };

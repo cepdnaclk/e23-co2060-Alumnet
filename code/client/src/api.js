@@ -395,3 +395,12 @@ export async function verifyUserStatus(token, id, status) {
       })
   );
 }
+
+export async function getMyCreatedEvents(token) {
+  const res = await fetch(`${API_URL}/api/events/my-created`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
