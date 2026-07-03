@@ -344,7 +344,7 @@ const requestBtn = {
   cursor: "pointer",
   fontSize: 14,
   fontWeight: 400,
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
 };
 
 const directoryLink = {

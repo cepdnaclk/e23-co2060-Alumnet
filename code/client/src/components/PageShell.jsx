@@ -26,23 +26,26 @@ const responsiveCss = `
 .page-shell-wrap{
   min-height:100vh;
   background:#f3f3f1;
-  font-family:"Google Sans", Arial, sans-serif;
-  margin-left:274px;
-  padding:22px 24px 30px 4px;
+  font-family:"Google Sans";
+  padding:26px 24px 30px;
+  animation:pageDissolve .22s ease both;
 }
 
 @media (max-width: 900px){
   .page-shell-wrap{
-    margin-left:236px;
-    padding:16px 16px 22px 0;
+    padding:18px 16px 24px;
   }
 }
 
 @media (max-width: 700px){
   .page-shell-wrap{
-    margin-left:0;
     padding:14px;
   }
+}
+
+@keyframes pageDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
 }
 `;
 

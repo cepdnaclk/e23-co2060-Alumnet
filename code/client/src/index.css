@@ -6,16 +6,16 @@
 }
 
 :root {
-  --bg: #f3f3f1;
-  --surface: rgba(255, 255, 255, 0.72);
+  --bg: #eef7fb;
+  --surface: rgba(255, 255, 255, 0.74);
   --surface-strong: rgba(255, 255, 255, 0.88);
   --border: rgba(0, 0, 0, 0.08);
   --border-strong: rgba(0, 0, 0, 0.14);
   --text: #111111;
   --text-soft: rgba(17, 17, 17, 0.68);
   --text-faint: rgba(17, 17, 17, 0.46);
-  --accent: #6ea7b3;
-  --accent-strong: #4f8f9d;
+  --accent: #5f9dad;
+  --accent-strong: #367f91;
   --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.05);
   --shadow-hover: 0 14px 34px rgba(0, 0, 0, 0.08);
   --radius-xl: 28px;
@@ -36,7 +36,7 @@ body,
 }
 
 body {
-  font-family: "Google Sans", Arial, sans-serif;
+  font-family: "Google Sans";
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
