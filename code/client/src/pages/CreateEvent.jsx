@@ -161,7 +161,7 @@ const input = {
   background: "rgba(255,255,255,0.76)",
   color: "#111111",
   fontSize: 14,
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
   outline: "none",
 };
 
@@ -179,7 +179,7 @@ const btn = {
   background: "rgba(255,255,255,0.8)",
   color: "#111111",
   fontSize: 14,
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
   fontWeight: 400,
   cursor: "pointer",
 };

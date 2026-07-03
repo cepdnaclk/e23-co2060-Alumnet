@@ -29,7 +29,18 @@ const getMyConversations = async (req, res) => {
         END AS other_user_avatar,
 
         (
-          SELECT m.message_text
+          SELECT COALESCE(
+            CASE
+              WHEN m.deleted_at IS NOT NULL THEN 'Message deleted'
+              ELSE m.message_text
+            END,
+            CASE
+              WHEN m.deleted_at IS NOT NULL THEN 'Message deleted'
+              WHEN m.message_type = 'voice' THEN 'Voice message'
+              WHEN m.message_type = 'file' THEN COALESCE(m.attachment_name, 'File attachment')
+              ELSE NULL
+            END
+          )
           FROM messages m
           WHERE m.conversation_id = c.id
           ORDER BY m.created_at DESC
@@ -43,6 +54,14 @@ const getMyConversations = async (req, res) => {
           ORDER BY m.created_at DESC
           LIMIT 1
         ) AS last_message_at
+
+        ,(
+          SELECT COUNT(*)
+          FROM messages m
+          WHERE m.conversation_id = c.id
+            AND m.sender_id <> $1
+            AND COALESCE(m.is_read, false) = false
+        )::int AS unread_count
 
       FROM conversations c
 
@@ -186,6 +205,9 @@ const getChatContacts = async (req, res) => {
         `
         SELECT
           message_text,
+          message_type,
+          attachment_name,
+          deleted_at,
           created_at
         FROM messages
         WHERE conversation_id=$1
@@ -195,15 +217,27 @@ const getChatContacts = async (req, res) => {
         [conversationId]
       );
 
+      const unreadCount = await pool.query(
+        `
+        SELECT COUNT(*)::int AS unread_count
+        FROM messages
+        WHERE conversation_id=$1
+          AND sender_id <> $2
+          AND COALESCE(is_read, false) = false
+        `,
+        [conversationId, userId]
+      );
+
       result.push({
         id: conversationId,
         other_user_id: contact.other_user_id,
         other_user_name: contact.other_user_name,
         other_user_avatar: contact.other_user_avatar,
         last_message:
-          lastMessage.rows[0]?.message_text || null,
+          formatLastMessagePreview(lastMessage.rows[0]) || null,
         last_message_at:
           lastMessage.rows[0]?.created_at || null,
+        unread_count: unreadCount.rows[0]?.unread_count || 0,
       });
     }
 
@@ -261,6 +295,17 @@ const getConversationMessages = async (req, res) => {
       });
     }
 
+    await pool.query(
+      `
+      UPDATE messages
+      SET is_read = true
+      WHERE conversation_id = $1
+        AND sender_id <> $2
+        AND COALESCE(is_read, false) = false
+      `,
+      [conversationId, userId]
+    );
+
     const messagesResult = await pool.query(
       `
       SELECT *
@@ -286,11 +331,33 @@ const sendMessage = async (req, res) => {
   try {
     const userId = req.user.id;
     const conversationId = req.params.id;
-    const { message_text } = req.body;
+    const {
+      message_text,
+      message_type = "text",
+      attachment_url,
+      attachment_name,
+      attachment_mime_type,
+      attachment_size,
+    } = req.body;
 
-    if (!message_text || !message_text.trim()) {
+    const cleanText = typeof message_text === "string" ? message_text.trim() : null;
+    const isAttachment = message_type === "file" || message_type === "voice";
+
+    if (!["text", "file", "voice"].includes(message_type)) {
+      return res.status(400).json({
+        message: "Invalid message type",
+      });
+    }
+
+    if (!cleanText && !isAttachment) {
       return res.status(400).json({
         message: "Message cannot be empty",
+      });
+    }
+
+    if (isAttachment && !attachment_url) {
+      return res.status(400).json({
+        message: "Attachment URL is required",
       });
     }
 
@@ -326,15 +393,25 @@ const sendMessage = async (req, res) => {
       INSERT INTO messages (
         conversation_id,
         sender_id,
-        message_text
+        message_text,
+        message_type,
+        attachment_url,
+        attachment_name,
+        attachment_mime_type,
+        attachment_size
       )
-      VALUES ($1, $2, $3)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
       `,
       [
         conversationId,
         userId,
-        message_text.trim()
+        cleanText,
+        message_type,
+        attachment_url || null,
+        attachment_name || null,
+        attachment_mime_type || null,
+        attachment_size || null,
       ]
     );
 
@@ -349,9 +426,84 @@ const sendMessage = async (req, res) => {
   }
 };
 
+const deleteMessage = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const messageId = req.params.id;
+
+    const messageResult = await pool.query(
+      `
+      SELECT m.*, c.student_user_id, c.alumni_user_id
+      FROM messages m
+      JOIN conversations c ON c.id = m.conversation_id
+      WHERE m.id = $1
+      `,
+      [messageId]
+    );
+
+    if (messageResult.rows.length === 0) {
+      return res.status(404).json({
+        message: "Message not found",
+      });
+    }
+
+    const message = messageResult.rows[0];
+    const hasAccess =
+      Number(message.student_user_id) === Number(userId) ||
+      Number(message.alumni_user_id) === Number(userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+
+    if (Number(message.sender_id) !== Number(userId)) {
+      return res.status(403).json({
+        message: "You can only delete your own messages",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE messages
+      SET
+        deleted_at = CURRENT_TIMESTAMP,
+        deleted_by = $2,
+        message_text = NULL,
+        attachment_url = NULL,
+        attachment_name = NULL,
+        attachment_mime_type = NULL,
+        attachment_size = NULL
+      WHERE id = $1
+      RETURNING *
+      `,
+      [messageId, userId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Delete message error:", error);
+
+    res.status(500).json({
+      message: "Failed to delete message",
+    });
+  }
+};
+
+function formatLastMessagePreview(message) {
+  if (!message) return null;
+  if (message.deleted_at) return "Message deleted";
+  if (message.message_text) return message.message_text;
+  if (message.message_type === "voice") return "Voice message";
+  if (message.message_type === "file") return message.attachment_name || "File attachment";
+  return null;
+}
+
 module.exports = {
   getMyConversations,
   getChatContacts,
   getConversationMessages,
   sendMessage,
+  deleteMessage,
 };

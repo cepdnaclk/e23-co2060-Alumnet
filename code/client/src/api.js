@@ -265,7 +265,7 @@ export async function getConversationMessages(token, conversationId) {
   return handle(res);
 }
 
-export async function sendMessage(token, conversationId, message_text) {
+export async function sendMessage(token, conversationId, payload) {
   const res = await fetch(
     `${API_URL}/api/chat/conversations/${conversationId}/messages`,
     {
@@ -274,9 +274,22 @@ export async function sendMessage(token, conversationId, message_text) {
         "Content-Type": "application/json",
         ...authHeaders(token),
       },
-      body: JSON.stringify({ message_text }),
+      body: JSON.stringify(
+        typeof payload === "string" ? { message_text: payload } : payload
+      ),
     }
   );
+
+  return handle(res);
+}
+
+export async function deleteChatMessage(token, messageId) {
+  const res = await fetch(`${API_URL}/api/chat/messages/${messageId}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeaders(token),
+    },
+  });
 
   return handle(res);
 }

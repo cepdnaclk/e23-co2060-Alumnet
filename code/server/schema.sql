@@ -219,9 +219,17 @@ CREATE TABLE public.messages (
     id bigint NOT NULL,
     conversation_id bigint NOT NULL,
     sender_id bigint NOT NULL,
-    message_text text NOT NULL,
+    message_text text,
+    message_type text DEFAULT 'text'::text NOT NULL,
+    attachment_url text,
+    attachment_name text,
+    attachment_mime_type text,
+    attachment_size bigint,
     is_read boolean DEFAULT false,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    deleted_at timestamp without time zone,
+    deleted_by bigint,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT messages_message_type_check CHECK ((message_type = ANY (ARRAY['text'::text, 'file'::text, 'voice'::text])))
 );
 
 
@@ -690,6 +698,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.messages
     ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: messages messages_deleted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT messages_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --

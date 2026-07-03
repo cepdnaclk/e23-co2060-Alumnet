@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import PageShell from "../components/PageShell";
-import { getProfile } from "../api";
 import { jwtDecode } from "jwt-decode";
+import { getProfile } from "../api";
 
+import bannerImage from "../assets/banner.png";
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
@@ -50,158 +50,155 @@ export default function Profile() {
     run();
   }, [navigate]);
 
+  const statusIcon =
+    profile?.verification_status === "verified"
+      ? verifiedIcon
+      : profile?.verification_status === "rejected"
+        ? rejectedIcon
+        : pendingIcon;
+
+  const isStudent = profile?.role === "student";
+  const isAlumni = profile?.role === "alumni";
+
   if (loading) {
     return (
-      <PageShell title="My Account" subtitle="Profile">
-        <div>Loading...</div>
-      </PageShell>
+      <div className="profilePage">
+        <style>{css}</style>
+        <div className="stateBox">Loading profile...</div>
+      </div>
     );
   }
 
-  if (err) {
+  if (err || !profile) {
     return (
-      <PageShell title="My Account" subtitle="Profile">
-        <div style={errorBox}>{err}</div>
-      </PageShell>
+      <div className="profilePage">
+        <style>{css}</style>
+        <div className="stateBox error">{err || "No profile found."}</div>
+      </div>
     );
   }
-
-  if (!profile) {
-    return (
-      <PageShell title="My Account" subtitle="Profile">
-        <div>No profile found.</div>
-      </PageShell>
-    );
-  }
-
-  const statusIcon =
-    profile.verification_status === "verified"
-      ? verifiedIcon
-      : profile.verification_status === "rejected"
-      ? rejectedIcon
-      : pendingIcon;
-
-  const isStudent = profile.role === "student";
-  const isAlumni = profile.role === "alumni";
 
   return (
-    <PageShell
-      title="My Account"
-      subtitle="Profile"
-      right={
-        isAdmin ? (
-          <Link to="/admin" style={adminBtn}>
+    <div className="profilePage">
+      <style>{css}</style>
+      <main className="profileMain">
+        <section className="profileHero">
+          <img src={bannerImage} alt="" className="profileBanner" />
+
+          <div className="identityBlock">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt="avatar"
+                className="profileAvatar"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <div className="profileAvatar fallback">
+                {profile.full_name?.slice(0, 1)?.toUpperCase() || "U"}
+              </div>
+            )}
+
+            <div className="nameRow">
+              <h1>{profile.full_name || "User"}</h1>
+              <img
+                src={statusIcon}
+                alt={profile.verification_status || "pending"}
+                className="verifiedBadge"
+              />
+            </div>
+            <a href={`mailto:${profile.email}`} className="emailText">
+              {profile.email}
+            </a>
+          </div>
+        </section>
+
+        <section className="detailsGrid">
+          <DetailPanel title="Personal Details">
+            {isStudent && (
+              <>
+                <InfoRow label="Role:" value="Student" />
+                <InfoRow label="Department:" value={profile.department} />
+                <InfoRow label="Batch:" value={profile.batch} />
+                <InfoRow label="Bio:" value={profile.bio} multiline />
+                <InfoRow label="Motivation:" value={profile.motivation} multiline />
+                <InfoRow label="Goal:" value={profile.goal} multiline />
+              </>
+            )}
+
+            {isAlumni && (
+              <>
+                <InfoRow label="Role:" value="Alumni" />
+                <InfoRow label="Department:" value={profile.department} />
+                <InfoRow label="Graduation Year:" value={profile.graduation_year} />
+                <InfoRow label="Bio:" value={profile.bio} multiline />
+                <InfoRow
+                  label="Mentee Capacity:"
+                  value={profile.preferred_mentee_capacity}
+                />
+              </>
+            )}
+          </DetailPanel>
+
+          <DetailPanel title="Professional Details">
+            {isStudent && (
+              <>
+                <InfoRow
+                  label="Areas of Interest:"
+                  value={profile.areas_of_interest}
+                  multiline
+                />
+                <InfoRow label="LinkedIn:" value={profile.linkedin_url} isLink />
+                <InfoRow label="GitHub:" value={profile.github_url} isLink />
+                <InfoRow label="Portfolio:" value={profile.portfolio_url} isLink />
+                <InfoRow label="CV:" value={profile.cv_url} isLink />
+              </>
+            )}
+
+            {isAlumni && (
+              <>
+                <InfoRow label="Job Title:" value={profile.job_title} />
+                <InfoRow label="Company:" value={profile.organization} />
+                <InfoRow
+                  label="Expertise/Interests:"
+                  value={profile.primary_interests}
+                  multiline
+                />
+                <InfoRow label="LinkedIn:" value={profile.linkedin_url} isLink />
+              </>
+            )}
+          </DetailPanel>
+        </section>
+
+        {isAdmin && (
+          <Link to="/admin" className="adminLink">
             User Verification
           </Link>
-        ) : null
-      }
-    >
-      <div style={pageWrap}>
-        <div style={topArea}>
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt="avatar"
-              style={avatar}
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
-          ) : (
-            <div style={avatarFallback}>
-              {profile.full_name?.slice(0, 1)?.toUpperCase() || "U"}
-            </div>
-          )}
+        )}
+      </main>
+    </div>
+  );
+}
 
-          <div style={nameWrap}>
-            <div style={nameRow}>
-              <h2 style={nameStyle}>{profile.full_name}</h2>
-              <img src={statusIcon} alt={profile.verification_status} style={statusIconStyle} />
-            </div>
-
-            <div style={emailStyle}>{profile.email}</div>
-          </div>
-        </div>
-
-        <div style={detailsGrid}>
-          <section>
-            <h3 style={sectionTitle}>Personal Details</h3>
-            <div style={rowsWrap}>
-              {isStudent && (
-                <>
-                  <InfoRow label="Department" value={profile.department} />
-                  <InfoRow label="Batch" value={profile.batch} />
-                  <InfoRow label="Bio" value={profile.bio} multiline />
-                  <InfoRow label="Motivation" value={profile.motivation} multiline />
-                  <InfoRow label="Goal" value={profile.goal} multiline />
-                </>
-              )}
-
-              {isAlumni && (
-                <>
-                  <InfoRow label="Department" value={profile.department} />
-                  <InfoRow label="Graduation Year" value={profile.graduation_year} />
-                  <InfoRow label="Bio" value={profile.bio} multiline />
-                  <InfoRow
-                    label="Mentee Capacity"
-                    value={profile.preferred_mentee_capacity}
-                  />
-                </>
-              )}
-            </div>
-          </section>
-
-          <section>
-            <h3 style={sectionTitle}>Professional Details</h3>
-            <div style={rowsWrap}>
-              {isStudent && (
-                <>
-                  <InfoRow label="Areas of Interest" value={profile.areas_of_interest} multiline />
-                  <InfoRow label="LinkedIn" value={profile.linkedin_url} isLink />
-                  <InfoRow label="GitHub" value={profile.github_url} isLink />
-                  <InfoRow label="Portfolio" value={profile.portfolio_url} isLink />
-                  <InfoRow label="CV" value={profile.cv_url} isLink />
-                </>
-              )}
-
-              {isAlumni && (
-                <>
-                  <InfoRow label="Job Title" value={profile.job_title} />
-                  <InfoRow label="Company" value={profile.organization} />
-                  <InfoRow
-                    label="Expertise / Interests"
-                    value={profile.primary_interests}
-                    multiline
-                  />
-                  <InfoRow label="LinkedIn URL" value={profile.linkedin_url} isLink />
-                </>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
-    </PageShell>
+function DetailPanel({ title, children }) {
+  return (
+    <section className="detailPanel">
+      <h2>{title}</h2>
+      <div>{children}</div>
+    </section>
   );
 }
 
 function InfoRow({ label, value, isLink = false, multiline = false }) {
   return (
-    <div style={row}>
-      <div style={rowLabel}>{label}</div>
-      <div
-        style={{
-          ...rowValue,
-          whiteSpace: multiline ? "pre-wrap" : "normal",
-        }}
-      >
+    <div className="infoRow">
+      <div className="infoLabel">{label}</div>
+      <div className={`infoValue ${multiline ? "multiline" : ""}`}>
         {value ? (
           isLink ? (
-            <a
-              href={value}
-              target="_blank"
-              rel="noreferrer"
-              style={linkValue}
-            >
+            <a href={value} target="_blank" rel="noreferrer">
               {value}
             </a>
           ) : (
@@ -215,127 +212,208 @@ function InfoRow({ label, value, isLink = false, multiline = false }) {
   );
 }
 
-const pageWrap = {
-  paddingTop: 10,
-};
+const css = `
+.profilePage{
+  min-height:100vh;
+  background:#fbfbfa;
+  color:#111111;
+  font-family:"Google Sans";
+  animation:pageDissolve .22s ease both;
+}
 
-const topArea = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  marginBottom: 34,
-};
+.profileMain{
+  max-width:1180px;
+  margin:0 auto;
+  padding:34px 28px 34px;
+}
 
-const avatar = {
-  width: 100,
-  height: 100,
-  borderRadius: "50%",
-  objectFit: "cover",
-  border: "1px solid rgba(0,0,0,0.06)",
-  marginBottom: 14,
-};
+.profileHero{
+  position:relative;
+  margin-bottom:20px;
+}
 
-const avatarFallback = {
-  width: 74,
-  height: 74,
-  borderRadius: "50%",
-  display: "grid",
-  placeItems: "center",
-  background: "#ecebe7",
-  color: "#111111",
-  fontSize: 26,
-  fontWeight: 400,
-  marginBottom: 14,
-};
+.profileBanner{
+  width:100%;
+  height:170px;
+  object-fit:cover;
+  border-radius:18px;
+  display:block;
+}
 
-const nameWrap = {
-  textAlign: "center",
-};
+.identityBlock{
+  position:relative;
+  width:min(430px, 100%);
+  margin:-52px 0 0 24px;
+  text-align:left;
+}
 
-const nameRow = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-};
+.profileAvatar{
+  width:78px;
+  height:78px;
+  border-radius:50%;
+  object-fit:cover;
+  display:grid;
+  place-items:center;
+  margin:0 0 12px;
+  border:3px solid #fbfbfa;
+  background:#ecebe7;
+  box-shadow:0 10px 24px rgba(0,0,0,.10);
+}
 
-const nameStyle = {
-  margin: 0,
-  fontSize: 22,
-  lineHeight: 1.1,
-  letterSpacing: "-0.03em",
-  fontWeight: 400,
-  color: "#111111",
-};
+.profileAvatar.fallback{
+  color:#111111;
+  font-size:30px;
+}
 
-const statusIconStyle = {
-  width: 16,
-  height: 16,
-  objectFit: "contain",
-};
+.nameRow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:4px;
+}
 
-const emailStyle = {
-  marginTop: 6,
-  color: "rgba(17,17,17,0.56)",
-  fontSize: 13,
-};
+.nameRow h1{
+  margin:0;
+  font-size:16px;
+  line-height:1.15;
+  font-weight:500;
+  letter-spacing:0;
+}
 
-const detailsGrid = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: 26,
-};
+.verifiedBadge{
+  width:17px;
+  height:17px;
+  object-fit:contain;
+}
 
-const sectionTitle = {
-  margin: "0 0 14px",
-  fontSize: 15,
-  fontWeight: 400,
-  color: "#111111",
-};
+.emailText{
+  display:inline-block;
+  margin:5px 0 0;
+  color:rgba(17,17,17,.42);
+  font-size:14px;
+  line-height:1;
+  text-decoration:none;
+  transition:color .18s ease;
+}
 
-const rowsWrap = {
-  display: "grid",
-};
+.emailText:hover{
+  color:rgba(17,17,17,.62);
+}
 
-const row = {
-  display: "grid",
-  gridTemplateColumns: "180px 1fr",
-  gap: 16,
-  padding: "10px 0",
-  borderBottom: "1px solid rgba(0,0,0,0.05)",
-};
+.detailsGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:26px;
+}
 
-const rowLabel = {
-  fontSize: 13,
-  color: "rgba(17,17,17,0.54)",
-};
+.detailPanel{
+  min-width:0;
+}
 
-const rowValue = {
-  fontSize: 14,
-  color: "#111111",
-  lineHeight: 1.7,
-  wordBreak: "break-word",
-};
+.detailPanel h2{
+  margin:0 0 8px;
+  font-size:13px;
+  font-weight:600;
+  color:#111111;
+}
 
-const linkValue = {
-  color: "#2527be",
-  textDecoration: "none",
-  borderBottom: "1px solid rgba(17,17,17,0.14)",
-};
+.infoRow{
+  display:grid;
+  grid-template-columns:180px minmax(0, 1fr);
+  gap:16px;
+  padding:7px 0;
+  border-bottom:1px solid rgba(0,0,0,.06);
+}
 
-const adminBtn = {
-  background: "rgba(255,255,255,0.7)",
-  color: "#111111",
-  padding: "10px 16px",
-  borderRadius: 999,
-  textDecoration: "none",
-  fontWeight: 400,
-  border: "1px solid rgba(0,0,0,0.06)",
-};
+.infoLabel{
+  color:rgba(17,17,17,.50);
+  font-size:13px;
+}
 
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 14,
-};
+.infoValue{
+  color:#111111;
+  font-size:13px;
+  line-height:1.55;
+  word-break:break-word;
+}
+
+.infoValue.multiline{
+  white-space:pre-wrap;
+}
+
+.infoValue a{
+  color:#111111;
+  text-decoration:none;
+  border-bottom:1px solid rgba(17,17,17,.18);
+}
+
+.adminLink{
+  display:inline-flex;
+  margin-top:26px;
+  padding:10px 16px;
+  border-radius:999px;
+  background:#050505;
+  color:#ffffff;
+  text-decoration:none;
+  font-size:14px;
+  box-shadow:0 8px 18px rgba(25, 62, 182, 0.18);
+}
+
+.stateBox{
+  max-width:520px;
+  margin:120px auto;
+  padding:18px 20px;
+  border-radius:16px;
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(0,0,0,.06);
+  text-align:center;
+}
+
+.stateBox.error{
+  color:#b91c1c;
+  background:rgba(254,226,226,.86);
+}
+
+@keyframes pageDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media (max-width:900px){
+  .detailsGrid{
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+
+  .identityBlock{
+    margin-left:20px;
+  }
+}
+
+@media (max-width:640px){
+  .profileMain{
+    padding:18px 16px 36px;
+  }
+
+  .profileBanner{
+    height:132px;
+    border-radius:14px;
+  }
+
+  .identityBlock{
+    width:100%;
+    margin:-46px 0 0 16px;
+  }
+
+  .profileAvatar{
+    width:68px;
+    height:68px;
+    margin-bottom:10px;
+  }
+
+  .infoRow{
+    grid-template-columns:1fr;
+    gap:5px;
+  }
+}
+`;

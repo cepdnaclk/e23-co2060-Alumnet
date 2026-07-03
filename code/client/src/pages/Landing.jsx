@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import alumnetLogo from "../assets/alumnet-logo.png";
+import heroBg from "../assets/bg.png";
 
 const steps = [
   {
@@ -40,37 +42,53 @@ export default function Landing() {
 
       <header className={`landingNav ${mounted ? "in" : ""}`}>
         <div className="landingNavInner">
+          <button className="brandMark" onClick={() => nav("/")}>
+            <img src={alumnetLogo} alt="Alumnet" />
+          </button>
+
           <nav className="landingNavLinks">
-            <button className="navLink" onClick={() => nav("/")}>
-              Home
-            </button>
-            <button className="navLink" onClick={() => nav("/login")}>
-              Login
-            </button>
-            <button className="navLink" onClick={() => nav("/register")}>
+            <a className="navLink" href="#about">
+              About
+            </a>
+            <a className="navLink" href="#features">
+              Features
+            </a>
+            <a className="navLink" href="#alumni">
+              For alumni
+            </a>
+            <a className="navLink" href="#students">
+              For students
+            </a>
+          </nav>
+
+          <div className="navActions">
+            <button className="pillButton pillButtonDark" onClick={() => nav("/register")}>
               Register
             </button>
-          </nav>
+            <button className="pillButton pillButtonLight" onClick={() => nav("/login")}>
+              Login
+            </button>
+          </div>
         </div>
       </header>
 
       <main className={`landingMain ${mounted ? "in" : ""}`}>
         <section className="heroSection">
-          <div className="heroInner">
-            <p className="eyebrow">University of Peradeniya Alumni Network</p>
-
-            <div className="logoTitleWrap">
-              <img src={alumnetLogo} alt="Alumnet logo" className="titleLogo" />
-            </div>
-
+          <img src={heroBg} alt="" className="heroImage" />
+          <div className="heroContent">
+            <h1 className="heroTitle">Reconnect. Mentor. Inspire.</h1>
             <p className="heroSubtitle">
-              A minimal platform for students, alumni, events, and mentorship
-              connections.
+              Empowering alumni and students to build meaningful connections,
+              share knowledge, and grow together.
             </p>
+            <button className="pillButton pillButtonDark heroCta" onClick={() => nav("/register")}>
+              <span>Get started</span>
+              <ArrowRight size={14} strokeWidth={2.4} />
+            </button>
           </div>
         </section>
 
-        <section className="whiteSection">
+        <section className="whiteSection" id="about">
           <div className="sectionInner introInner">
             <h2 className="sectionTitle">
               Connect students and alumni through one simple platform.
@@ -83,7 +101,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="greySection">
+        <section className="greySection" id="features">
           <div className="sectionInner">
             <div className="stepsGrid">
               {steps.map((step) => (
@@ -99,12 +117,24 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="whiteSection whiteSectionLast">
-          <div className="sectionInner closingInner">
-            <p className="closingText">
-              Whether you're a student looking for a path or an alum ready to
-              give back, your journey starts here.
-            </p>
+        <section className="whiteSection whiteSectionLast" id="alumni">
+          <div className="sectionInner audienceInner">
+            <div>
+              <p className="audienceLabel">For alumni</p>
+              <h2 className="audienceTitle">Share experience that opens doors.</h2>
+              <p className="audienceText">
+                Guide students through mentoring, events, and professional
+                conversations shaped by real career journeys.
+              </p>
+            </div>
+            <div id="students">
+              <p className="audienceLabel">For students</p>
+              <h2 className="audienceTitle">Find people who have walked ahead.</h2>
+              <p className="audienceText">
+                Discover alumni, request mentorship, and build the confidence
+                to make your next academic or career move.
+              </p>
+            </div>
           </div>
         </section>
       </main>
@@ -115,18 +145,21 @@ export default function Landing() {
 const css = `
 .landingRoot{
   min-height:100vh;
-  background:#e7e6e2;
+  background:#eef7fb;
   color:#111111;
   overflow:hidden;
-  padding:20px 20px 40px;
+  font-family:"Google Sans";
 }
 
 .landingNav{
-  max-width:1120px;
-  margin:0 auto;
+  position:fixed;
+  z-index:10;
+  top:0;
+  left:0;
+  width:100%;
   opacity:0;
   transform:translateY(-10px);
-  transition:opacity .55s ease, transform .55s ease;
+  transition:opacity .55s ease, transform .55s ease, background-color .22s ease, box-shadow .22s ease, backdrop-filter .22s ease;
 }
 
 .landingNav.in{
@@ -135,42 +168,107 @@ const css = `
 }
 
 .landingNavInner{
-  display:flex;
-  justify-content:center;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
   align-items:center;
-  width:fit-content;
+  width:100%;
+  max-width:1440px;
   margin:0 auto;
-  padding:7px 10px;
-  border-radius:999px;
-  background:rgba(255,255,255,0.68);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(0,0,0,0.06);
-  box-shadow:0 8px 20px rgba(0,0,0,0.04);
+  padding:22px 38px 0;
+  gap:24px;
+}
+
+.brandMark{
+  display:inline-flex;
+  align-items:center;
+  justify-self:start;
+  width:118px;
+  transition:transform .2s ease, opacity .2s ease;
+}
+
+.brandMark:hover{
+  opacity:.76;
+  transform:translateY(-1px);
+}
+
+.brandMark img{
+  display:block;
+  width:100%;
+  height:auto;
 }
 
 .landingNavLinks{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:4px;
+  gap:34px;
+  justify-self:center;
 }
 
 .navLink{
-  color:#111111;
-  padding:8px 16px;
-  border-radius:999px;
-  transition:transform .18s ease, background .18s ease, opacity .18s ease;
+  color:#080808;
+  font-size:14px;
+  line-height:1;
+  white-space:nowrap;
+  transition:opacity .18s ease, transform .18s ease;
 }
 
 .navLink:hover{
-  transform:translateY(-1px) scale(1.01);
-  background:rgba(255,255,255,0.58);
+  opacity:.64;
+  transform:translateY(-1px);
+}
+
+.navActions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:14px;
+}
+
+.pillButton{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-width:78px;
+  padding:11px 18px 12px;
+  border-radius:999px;
+  border:1px solid transparent;
+  font-size:14px;
+  font-weight:500;
+  line-height:1;
+  text-decoration:none;
+  transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease, opacity .2s ease;
+}
+
+.pillButton:hover{
+  transform:translateY(-1px);
+}
+
+.pillButtonDark{
+  background:#000000;
+  color:#ffffff;
+  border-color:#000000;
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+}
+
+.pillButtonDark:hover{
+  box-shadow:0 8px 22px rgba(0,0,0,.22);
+}
+
+.pillButtonLight{
+  background:rgba(255,255,255,.90);
+  color:#111111;
+  border-color:rgba(255,255,255,.50);
+  box-shadow:0 6px 15px rgba(0,0,0,.10);
+}
+
+.pillButtonLight:hover{
+  background:#ffffff;
 }
 
 .landingMain{
-  max-width:1120px;
-  margin:0 auto;
+  width:100%;
   opacity:0;
   transform:translateY(16px);
   transition:opacity .7s ease .05s, transform .7s ease .05s;
@@ -182,67 +280,72 @@ const css = `
 }
 
 .heroSection{
-  min-height:72vh;
+  position:relative;
+  min-height:max(100vh, calc(100vw * 768 / 1364));
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:center;
-  padding:30px 24px 26px;
+  padding:168px 24px 0;
+  overflow:hidden;
 }
 
-.heroInner{
+.heroImage{
+  position:absolute;
+  top:0;
+  left:50%;
   width:100%;
-  text-align:center;
-  padding:46px 18px 56px;
-  background:#e7e6e2;
-  border-radius:44px;
-}
-
-.eyebrow{
-  font-size:16px;
-  color:rgba(17,17,17,0.5);
-  margin-bottom:18px;
-  letter-spacing:-0.01em;
-}
-
-.logoTitleWrap{
-  display:flex;
-  justify-content:center;
-  margin-bottom:10px;
-}
-
-.titleLogo{
-  width:min(500px, 72vw);
+  max-width:none;
   height:auto;
+  transform:translateX(-50%);
   object-fit:contain;
+  object-position:top center;
+}
+
+.heroContent{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  width:min(760px, 100%);
+}
+
+.heroTitle{
+  margin:0 0 16px;
+  font-size:54px;
+  line-height:1.12;
+  letter-spacing:-0.035em;
+  color:#000000;
+  font-weight:500;
 }
 
 .heroSubtitle{
-  max-width:650px;
-  margin:0 auto;
-  font-size:18px;
-  line-height:1.6;
-  color:rgba(17,17,17,0.66);
-  font-weight:400;
+  max-width:590px;
+  margin:0 auto 20px;
+  font-size:16px;
+  line-height:1.35;
+  color:#000000;
+  font-weight:300;
+}
+
+.heroCta{
+  min-width:148px;
 }
 
 .whiteSection{
-  background:#f7f6f3;
-  border-radius:44px;
-  margin-top:18px;
+  background:#f8fbf9;
 }
 
 .greySection{
-  background:#e7e6e2;
-  border-radius:44px;
-  margin-top:18px;
+  background:#e9f2f4;
 }
 
 .whiteSectionLast{
-  margin-bottom:12px;
+  scroll-margin-top:90px;
 }
 
 .sectionInner{
-  padding:58px 30px 64px;
+  max-width:1120px;
+  margin:0 auto;
+  padding:70px 30px 76px;
 }
 
 .introInner{
@@ -263,7 +366,7 @@ const css = `
 .sectionText{
   font-size:17px;
   line-height:1.75;
-  color:rgba(17,17,17,0.64);
+  color:rgba(17,17,17,0.68);
   max-width:760px;
   margin:0 auto;
 }
@@ -275,7 +378,10 @@ const css = `
 }
 
 .stepItem{
-  padding:8px 6px;
+  padding:24px 22px;
+  border:1px solid rgba(0,0,0,.07);
+  border-radius:8px;
+  background:rgba(255,255,255,.52);
   transition:transform .18s ease, opacity .18s ease;
 }
 
@@ -307,23 +413,61 @@ const css = `
   color:rgba(17,17,17,0.62);
 }
 
-.closingInner{
-  text-align:center;
-  max-width:760px;
-  margin:0 auto;
-  padding-top:72px;
-  padding-bottom:78px;
+.audienceInner{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:28px;
 }
 
-.closingText{
-  font-size:32px;
-  line-height:1.22;
-  letter-spacing:-0.03em;
+.audienceLabel{
+  margin:0 0 14px;
+  font-size:15px;
+  line-height:1;
+  color:rgba(17,17,17,.56);
+}
+
+.audienceTitle{
+  margin:0 0 14px;
+  font-size:34px;
+  line-height:1.08;
+  letter-spacing:-0.035em;
   color:#111111;
   font-weight:400;
 }
 
+.audienceText{
+  max-width:470px;
+  font-size:16px;
+  line-height:1.7;
+  color:rgba(17,17,17,.66);
+}
+
 @media (max-width: 960px){
+  .landingNavInner{
+    grid-template-columns:1fr auto;
+    padding:22px 22px 0;
+  }
+
+  .landingNavLinks{
+    grid-column:1 / -1;
+    grid-row:2;
+    gap:18px;
+    padding-top:16px;
+  }
+
+  .brandMark{
+    width:108px;
+  }
+
+  .navLink,
+  .pillButton{
+    font-size:13px;
+  }
+
+  .heroTitle{
+    font-size:44px;
+  }
+
   .sectionTitle{
     font-size:36px;
   }
@@ -333,47 +477,69 @@ const css = `
     gap:18px 22px;
   }
 
-  .closingText{
-    font-size:26px;
+  .audienceTitle{
+    font-size:28px;
   }
 }
 
 @media (max-width: 640px){
-  .landingRoot{
-    padding:14px 14px 28px;
+  .landingNavInner{
+    padding:18px 16px 0;
+    flex-wrap:wrap;
+    gap:16px 12px;
   }
 
-  .landingNavInner{
-    padding:7px 10px;
+  .brandMark{
+    width:96px;
+  }
+
+  .landingNavLinks{
+    order:3;
+    width:100%;
+    justify-content:space-between;
+    gap:10px;
+    overflow-x:auto;
+    padding-bottom:4px;
   }
 
   .navLink{
-    padding:8px 12px;
-    font-size:14px;
+    font-size:13px;
+  }
+
+  .navActions{
+    gap:8px;
+  }
+
+  .pillButton{
+    min-width:auto;
+    padding:10px 13px 11px;
+    font-size:12px;
   }
 
   .heroSection{
-    min-height:62vh;
-    padding:30px 10px 14px;
+    min-height:max(100vh, calc(100vw * 768 / 1364));
+    padding:168px 18px 0;
   }
 
-  .heroInner{
-    border-radius:28px;
-    padding:42px 14px 46px;
-  }
-
-  .titleLogo{
-    width:min(300px, 76vw);
+  .heroTitle{
+    font-size:36px;
+    line-height:1.1;
   }
 
   .heroSubtitle{
-    font-size:16px;
+    max-width:335px;
+    font-size:14px;
+    line-height:1.36;
+    margin-bottom:18px;
+  }
+
+  .heroCta{
+    min-width:134px;
   }
 
   .whiteSection,
   .greySection{
-    border-radius:28px;
-    margin-top:14px;
+    border-radius:0;
   }
 
   .sectionInner{
@@ -397,13 +563,13 @@ const css = `
     font-size:18px;
   }
 
-  .closingInner{
-    padding-top:48px;
-    padding-bottom:50px;
+  .audienceInner{
+    grid-template-columns:1fr;
+    gap:32px;
   }
 
-  .closingText{
-    font-size:22px;
+  .audienceTitle{
+    font-size:25px;
   }
 }
 `;

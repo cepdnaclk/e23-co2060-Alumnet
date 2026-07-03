@@ -28,7 +28,7 @@ import Navbar from "./components/Navbar";
 
 function AppLayout({ children }) {
   return (
-    <div>
+    <div className="appRouteFrame">
       <Navbar />
       {children}
     </div>

@@ -1,32 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ArrowRight, Check, Loader2, LogIn, MailCheck, X } from "lucide-react";
 import { verifyEmail } from "../api";
-import alumnetLogo from "../assets/alumnet-logo.png";
-import AuthLayout from "../components/AuthLayout";
-import {
-  titleStyle,
-  subtitleStyle,
-  btnPrimaryStyle,
-  linkStyle,
-  uiCss,
-} from "../styles/ui";
-
-const logoStyle = {
-  display: "block",
-  width: 140,
-  maxWidth: "70%",
-  height: "auto",
-  margin: "0 auto 28px",
-};
+import heroBg from "../assets/bg.png";
 
 export default function VerifyEmail() {
   const { token } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const email = location.state?.email;
+  const [mounted, setMounted] = useState(false);
   const [status, setStatus] = useState(token ? "loading" : "check-email");
   const [message, setMessage] = useState(
     "Please login if you already verified your email, or register again if the link expired."
   );
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 40);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -42,7 +34,7 @@ export default function VerifyEmail() {
         setMessage(
           data.message || "Verification successful. Please login again to continue."
         );
-      } catch (err) {
+      } catch {
         if (!active) return;
 
         setStatus("error");
@@ -69,53 +61,213 @@ export default function VerifyEmail() {
   const isLoading = status === "loading";
   const isCheckEmail = status === "check-email";
 
+  const goHome = () => {
+    navigate("/");
+    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }));
+  };
+
+  const title = isLoading
+    ? "Verifying email"
+    : isSuccess
+      ? "Verification successful"
+      : isCheckEmail
+        ? "Check your email"
+        : "Verification failed";
+
+  const body = isLoading
+    ? "Please wait while we confirm your Alumnet account."
+    : isCheckEmail && email
+      ? `We sent a verification link to ${email}. Open it to continue.`
+      : isCheckEmail
+        ? "We sent a verification link to your email. Open it to continue."
+        : isSuccess
+          ? "Verification successful. Please login again to continue."
+          : isError
+            ? message
+            : message;
+
   return (
-    <AuthLayout maxWidth={520}>
-      <style>{uiCss}</style>
-      <img src={alumnetLogo} alt="Alumnet" style={logoStyle} />
+    <main className="verifyPage">
+      <style>{css}</style>
+      <img src={heroBg} alt="" className="verifyBg" />
 
-      <h1 style={titleStyle}>
-        {isLoading
-          ? "Verifying Email"
-          : isSuccess
-            ? "Verification Successful"
-            : isCheckEmail
-              ? "Check Your Email"
-              : ""}
-      </h1>
-      <p style={subtitleStyle}>
-        {isLoading
-          ? "Please wait while we confirm your Alumnet account."
-          : isCheckEmail && email
-            ? `We sent a verification link to ${email}. Open it to continue.`
-          : isSuccess
-              ? "Verification successful. Please login again to continue."
-              : isError
-                ? message
-              : message}
-      </p>
+      <section className={`verifyCard ${mounted ? "in" : ""}`}>
+        <button className="iconButton" type="button" onClick={goHome}>
+          {isLoading ? (
+            <Loader2 className="spin" size={21} strokeWidth={2} />
+          ) : isSuccess ? (
+            <Check size={21} strokeWidth={2.2} />
+          ) : isError ? (
+            <X size={21} strokeWidth={2.2} />
+          ) : (
+            <MailCheck size={21} strokeWidth={2} />
+          )}
+        </button>
 
-      {!isLoading && !isCheckEmail && (
-        <Link
-          className="btnPrimary"
-          to="/login"
-          style={{
-            ...btnPrimaryStyle,
-            display: "block",
-            textAlign: "center",
-            textDecoration: "none",
-            marginTop: 16,
-          }}
-        >
-          {isSuccess ? "Login Again to Continue" : "Go to Login"}
-        </Link>
-      )}
+        <h1>{title}</h1>
+        <p className="verifySubtitle">{body}</p>
 
-      <div style={{ textAlign: "center", marginTop: 14 }}>
-        <Link className="link" style={linkStyle} to="/">
+        {!isLoading && !isCheckEmail && (
+          <Link className="verifyButton" to="/login">
+            <span>{isSuccess ? "Login again" : "Go to login"}</span>
+            <ArrowRight size={15} strokeWidth={2.4} />
+          </Link>
+        )}
+
+        {isCheckEmail && (
+          <Link className="verifyButton" to="/login">
+            <LogIn size={15} strokeWidth={2.2} />
+            <span>Go to login</span>
+          </Link>
+        )}
+
+        <Link className="backHomeLink" to="/" onClick={goHome}>
           Back to Home
         </Link>
-      </div>
-    </AuthLayout>
+      </section>
+    </main>
   );
 }
+
+const css = `
+.verifyPage{
+  position:relative;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:#d8ecfb;
+  color:#050505;
+  font-family:"Google Sans";
+  padding:24px;
+}
+
+.verifyBg{
+  position:fixed;
+  top:0;
+  left:50%;
+  width:100%;
+  height:auto;
+  min-height:100%;
+  transform:translateX(-50%);
+  object-fit:cover;
+  object-position:center top;
+}
+
+.verifyCard{
+  position:relative;
+  z-index:1;
+  width:min(360px, calc(100vw - 42px));
+  border-radius:18px;
+  padding:28px 28px 24px;
+  text-align:center;
+  background:linear-gradient(180deg, rgba(231,250,255,.72), rgba(255,255,255,.82) 58%, rgba(255,255,255,.76));
+  border:1px solid rgba(255,255,255,.58);
+  box-shadow:0 18px 44px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.52);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  opacity:0;
+  transform:translateY(14px) scale(.985);
+  transition:opacity .55s ease, transform .55s ease;
+}
+
+.verifyCard.in{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+
+.iconButton{
+  width:44px;
+  height:44px;
+  display:inline-grid;
+  place-items:center;
+  border-radius:14px;
+  color:#111111;
+  background:rgba(255,255,255,.60);
+  border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
+  margin-bottom:17px;
+  transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+
+.iconButton:hover{
+  transform:translateY(-1px);
+  background:#ffffff;
+  box-shadow:0 10px 22px rgba(0,0,0,.15);
+}
+
+.verifyCard h1{
+  margin:0 0 8px;
+  font-size:24px;
+  line-height:1.15;
+  font-weight:600;
+  letter-spacing:-.02em;
+}
+
+.verifySubtitle{
+  margin:0 auto 20px;
+  max-width:290px;
+  font-size:14px;
+  line-height:1.45;
+  color:rgba(0,0,0,.84);
+}
+
+.verifyButton{
+  height:35px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:100%;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.84);
+  background:#050505;
+  color:#ffffff;
+  font:inherit;
+  font-size:14px;
+  font-weight:500;
+  text-decoration:none;
+  box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.20);
+  transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+}
+
+.verifyButton:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 23px rgba(0,0,0,.27), inset 0 1px 0 rgba(255,255,255,.20);
+}
+
+.backHomeLink{
+  display:inline-flex;
+  margin-top:14px;
+  color:rgba(17,17,17,.72);
+  font-size:13px;
+  text-decoration:none;
+  transition:opacity .18s ease;
+}
+
+.backHomeLink:hover{
+  opacity:.68;
+}
+
+.spin{
+  animation:spin 900ms linear infinite;
+}
+
+@keyframes spin{
+  to{
+    transform:rotate(360deg);
+  }
+}
+
+@media (max-width:640px){
+  .verifyPage{
+    padding:18px;
+  }
+
+  .verifyBg{
+    height:100%;
+    width:auto;
+    min-width:100%;
+  }
+}
+`;

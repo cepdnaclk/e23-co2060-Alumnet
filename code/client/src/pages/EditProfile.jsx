@@ -499,7 +499,7 @@ const fileInput = {
   borderRadius: 12,
   border: "1px solid rgba(0,0,0,0.08)",
   background: "rgba(255,255,255,0.76)",
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
   fontSize: 14,
 };
 
@@ -545,7 +545,7 @@ const input = {
   border: "1px solid rgba(0,0,0,0.08)",
   background: "rgba(255,255,255,0.76)",
   color: "#111111",
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
   fontSize: 13,
   outline: "none",
 };
@@ -577,7 +577,7 @@ const saveBtn = {
   border: "1px solid rgba(0,0,0,0.06)",
   borderRadius: 999,
   fontWeight: 400,
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
   fontSize: 14,
   cursor: "pointer",
 };
