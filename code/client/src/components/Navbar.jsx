@@ -294,9 +294,12 @@ export default function Navbar() {
                       <Pencil size={14} strokeWidth={2} />
                       Edit Profile
                     </Link>
-                    <Link to="/my-events" onClick={() => setMenuOpen(false)}>
+                    <Link
+                      to={isStudent ? "/my-events" : "/my-created-events"}
+                      onClick={() => setMenuOpen(false)}
+                    >
                       <Calendar size={14} strokeWidth={2} />
-                      My Events
+                      {isStudent ? "My Events" : "Created Events"}
                     </Link>
                     {(isStudent || isAlumni) && (
                       <Link to={mentorRoute} onClick={() => setMenuOpen(false)}>
