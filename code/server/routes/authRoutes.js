@@ -8,6 +8,11 @@ const {
   getPendingUsers,
   verifyUser,
 } = require("../controllers/authController");
+const {
+  getStats: getAdminStats,
+  getPendingUsers: getAdminPendingUsers,
+  verifyUserStatus,
+} = require("../controllers/adminController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -20,5 +25,8 @@ router.put("/profile", protect, updateProfile);
 
 router.get("/admin/pending", protect, getPendingUsers);
 router.patch("/admin/verify/:userId", protect, verifyUser);
+router.get("/admin/stats", protect, getAdminStats);
+router.get("/admin/pending-users", protect, getAdminPendingUsers);
+router.put("/admin/verify-user/:id", protect, verifyUserStatus);
 
 module.exports = router;

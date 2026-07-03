@@ -171,7 +171,6 @@ export default function Navbar() {
           navigate("/my-events");
         }
       }
-
     } catch (err) {
       console.error("Failed to mark read", err);
     }
@@ -294,59 +293,17 @@ export default function Navbar() {
               </>
             )}
 
-            <NavLink
-              to="/events"
-              className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-            >
-              <Calendar size={17} strokeWidth={1.9} />
-              Events
-            </NavLink>
-
-            {!isAdmin && (
-              <>
-                <div className="navGroupLabel">My Account</div>
-
-                <NavLink
-                  to="/profile"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <User size={17} strokeWidth={1.9} />
+            {menuOpen && (
+              <div className="profileDropdown">
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>
                   My Profile
-                </NavLink>
-
-                <NavLink
-                  to="/edit-profile"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <Pencil size={17} strokeWidth={1.9} />
+                </Link>
+                <Link to="/edit-profile" onClick={() => setMenuOpen(false)}>
+                  <Pencil size={14} strokeWidth={2} />
                   Edit Profile
-                </NavLink>
-              </>
-            )}
-
-            {isStudent && (
-              <>
-                <NavLink
-                  to="/my-requests"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <Mail size={17} strokeWidth={1.9} />
-                  My Requests
-                </NavLink>
-
-                <NavLink
-                  to="/my-mentors"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <GraduationCap size={17} strokeWidth={1.9} />
-                  My Mentors
-                </NavLink>
-
-                <NavLink
-                  to="/my-events"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <Calendar size={17} strokeWidth={1.9} />
+                </Link>
+                <Link to="/my-events" onClick={() => setMenuOpen(false)}>
+                  <Calendar size={14} strokeWidth={2} />
                   My Events
                 </Link>
                 {(isStudent || isAlumni) && (

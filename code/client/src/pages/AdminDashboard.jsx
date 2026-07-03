@@ -46,16 +46,35 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       setErr("");
-      const [statsData, usersData, eventsData] = await Promise.all([
+      const [statsResult, usersResult, eventsResult] = await Promise.allSettled([
         getAdminStats(token),
         getAdminPendingUsers(token),
         getPendingEvents(token),
       ]);
-      setStats(statsData);
-      setUsers(usersData);
-      setEvents(eventsData);
-    } catch (e) {
-      setErr(e.message || "Failed to load dashboard data");
+
+      const loadErrors = [];
+
+      if (statsResult.status === "fulfilled") {
+        setStats(statsResult.value);
+      } else {
+        loadErrors.push(`Stats: ${statsResult.reason?.message || "failed to load"}`);
+      }
+
+      if (usersResult.status === "fulfilled") {
+        setUsers(usersResult.value);
+      } else {
+        loadErrors.push(`Users: ${usersResult.reason?.message || "failed to load"}`);
+      }
+
+      if (eventsResult.status === "fulfilled") {
+        setEvents(eventsResult.value);
+      } else {
+        loadErrors.push(`Events: ${eventsResult.reason?.message || "failed to load"}`);
+      }
+
+      if (loadErrors.length) {
+        setErr(loadErrors.join(" | "));
+      }
     } finally {
       setLoading(false);
     }
