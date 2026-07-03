@@ -5,9 +5,13 @@ import {
   Bell,
   Calendar,
   ChevronDown,
+  ClipboardCheck,
+  LayoutDashboard,
   LogOut,
+  Mail,
   MessageCircle,
   Pencil,
+  PlusSquare,
   Search,
   UserRound,
   Users,
@@ -138,6 +142,7 @@ export default function Navbar() {
 
   const isStudent = role === "student";
   const isAlumni = role === "alumni";
+  const isAdmin = role === "university_admin" || role === "system_admin";
   const mentorRoute = isStudent ? "/my-mentors" : "/my-mentees";
   const mentorText = isStudent ? "My Mentors" : "My Mentees";
   const requestRoute = isStudent ? "/my-requests" : "/mentor-requests";
@@ -163,8 +168,6 @@ export default function Navbar() {
       if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
       else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
       else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") {
-        navigate("/my-events");
-      }
         if (isAdmin) {
           navigate("/admin-events");
         } else {
@@ -262,60 +265,58 @@ export default function Navbar() {
 
             {menuOpen && (
               <div className="profileDropdown">
-                <Link to="/profile" onClick={() => setMenuOpen(false)}>
-                  My Profile
-                </Link>
-                <Link to="/edit-profile" onClick={() => setMenuOpen(false)}>
-                  <Pencil size={14} strokeWidth={2} />
-                  Edit Profile
-                </Link>
-                <Link to="/my-events" onClick={() => setMenuOpen(false)}>
-                  <Calendar size={14} strokeWidth={2} />
-            {!isAdmin && (
-              <>
-                <NavLink
-                  to="/directory"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <Users size={17} strokeWidth={1.9} />
-                  Directory
-                </NavLink>
-
-                <NavLink
-                  to="/chat"
-                  className={({ isActive }) =>
-                    `navItem ${isActive ? "active" : ""}`
-                  }
-                >
-                  <MessageCircle size={17} strokeWidth={1.9} />
-                  Chat
-                </NavLink>
-              </>
-            )}
-
-            {menuOpen && (
-              <div className="profileDropdown">
-                <Link to="/profile" onClick={() => setMenuOpen(false)}>
-                  My Profile
-                </Link>
-                <Link to="/edit-profile" onClick={() => setMenuOpen(false)}>
-                  <Pencil size={14} strokeWidth={2} />
-                  Edit Profile
-                </Link>
-                <Link to="/my-events" onClick={() => setMenuOpen(false)}>
-                  <Calendar size={14} strokeWidth={2} />
-                  My Events
-                </Link>
-                {(isStudent || isAlumni) && (
-                  <Link to={mentorRoute} onClick={() => setMenuOpen(false)}>
-                    <Users size={14} strokeWidth={2} />
-                    {mentorText}
-                  </Link>
-                )}
-                {(isStudent || isAlumni) && (
-                  <Link to={requestRoute} onClick={() => setMenuOpen(false)}>
-                    My Requests
-                  </Link>
+                {isAdmin ? (
+                  <>
+                    <Link to="/events" onClick={() => setMenuOpen(false)}>
+                      <Calendar size={14} strokeWidth={2} />
+                      Events
+                    </Link>
+                    <Link to="/admin" onClick={() => setMenuOpen(false)}>
+                      <LayoutDashboard size={14} strokeWidth={2} />
+                      Admin Dashboard
+                    </Link>
+                    <Link to="/admin-events" onClick={() => setMenuOpen(false)}>
+                      <ClipboardCheck size={14} strokeWidth={2} />
+                      Event Approvals
+                    </Link>
+                    <Link to="/create-event" onClick={() => setMenuOpen(false)}>
+                      <PlusSquare size={14} strokeWidth={2} />
+                      Create Event
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/profile" onClick={() => setMenuOpen(false)}>
+                      <UserRound size={14} strokeWidth={2} />
+                      My Profile
+                    </Link>
+                    <Link to="/edit-profile" onClick={() => setMenuOpen(false)}>
+                      <Pencil size={14} strokeWidth={2} />
+                      Edit Profile
+                    </Link>
+                    <Link to="/my-events" onClick={() => setMenuOpen(false)}>
+                      <Calendar size={14} strokeWidth={2} />
+                      My Events
+                    </Link>
+                    {(isStudent || isAlumni) && (
+                      <Link to={mentorRoute} onClick={() => setMenuOpen(false)}>
+                        <Users size={14} strokeWidth={2} />
+                        {mentorText}
+                      </Link>
+                    )}
+                    {(isStudent || isAlumni) && (
+                      <Link to={requestRoute} onClick={() => setMenuOpen(false)}>
+                        <Mail size={14} strokeWidth={2} />
+                        My Requests
+                      </Link>
+                    )}
+                    {isAlumni && (
+                      <Link to="/create-event" onClick={() => setMenuOpen(false)}>
+                        <PlusSquare size={14} strokeWidth={2} />
+                        Create Event
+                      </Link>
+                    )}
+                  </>
                 )}
                 <button className="dropdownLogout" type="button" onClick={handleLogout}>
                   <LogOut size={14} strokeWidth={2} />

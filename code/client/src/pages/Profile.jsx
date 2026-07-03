@@ -38,6 +38,19 @@ export default function Profile() {
           return;
         }
 
+        try {
+          const decoded = jwtDecode(t);
+          if (
+            decoded?.role === "system_admin" ||
+            decoded?.role === "university_admin"
+          ) {
+            navigate("/admin", { replace: true });
+            return;
+          }
+        } catch {
+          // Continue to profile loading so the existing error handling can respond.
+        }
+
         const data = await getProfile(t);
         setProfile(data);
       } catch (e) {
