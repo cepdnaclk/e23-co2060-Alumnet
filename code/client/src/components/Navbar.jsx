@@ -1,44 +1,43 @@
-import React, { useEffect, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import {
-  Home,
-  Users,
-  Calendar,
-  User,
-  Mail,
-  LogOut,
-  GraduationCap,
-  PlusSquare,
-  ClipboardCheck,
-  Pencil,
-  MessageCircle,
   Bell,
+  Calendar,
+  ChevronDown,
+  LogOut,
+  MessageCircle,
+  Pencil,
+  Search,
+  UserRound,
+  Users,
 } from "lucide-react";
 
 import logo from "../assets/alumnet-logo.png";
-import { getProfile, getMyNotifications, markNotificationAsRead } from "../api";
+import {
+  getChatContacts,
+  getMyNotifications,
+  getProfile,
+  markNotificationAsRead,
+} from "../api";
 import { supabase } from "../supabase";
 
-const Navbar = () => {
+export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem("token");
 
   const [role, setRole] = useState("");
   const [profile, setProfile] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     try {
-      if (token) {
-        const decoded = jwtDecode(token);
-        setRole(decoded?.role || "");
-      } else {
-        setRole("");
-      }
+      setRole(token ? jwtDecode(token)?.role || "" : "");
     } catch {
       setRole("");
     }
@@ -52,8 +51,7 @@ const Navbar = () => {
           return;
         }
 
-        const data = await getProfile(token);
-        setProfile(data);
+        setProfile(await getProfile(token));
       } catch {
         setProfile(null);
       }
@@ -84,14 +82,11 @@ const Navbar = () => {
               filter: `user_id=eq.${profile.id}`,
             },
             (payload) => {
-              console.log("Live Notification Received!", payload);
               setNotifications((prev) => [payload.new, ...prev]);
               setUnreadCount((prev) => prev + 1);
             }
           )
-          .subscribe((status) => {
-            console.log("Supabase Realtime Status:", status);
-          });
+          .subscribe();
       } catch (err) {
         console.error("Failed to load notifications", err);
       }
@@ -104,26 +99,62 @@ const Navbar = () => {
     };
   }, [token, profile?.id]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+  const loadChatUnread = useCallback(async () => {
+    try {
+      if (!token) {
+        setChatUnreadCount(0);
+        return;
+      }
+
+      const contacts = await getChatContacts(token);
+      const count = contacts.reduce(
+        (sum, contact) => sum + Number(contact.unread_count || 0),
+        0
+      );
+      setChatUnreadCount(count);
+    } catch (err) {
+      console.error("Failed to load chat unread count", err);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadChatUnread();
+  }, [loadChatUnread, location.pathname]);
+
+  useEffect(() => {
+    const handleChatUnreadChange = () => loadChatUnread();
+    const handleFocus = () => loadChatUnread();
+    const interval = window.setInterval(loadChatUnread, 8000);
+
+    window.addEventListener("alumnet:chat-unread-changed", handleChatUnreadChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("alumnet:chat-unread-changed", handleChatUnreadChange);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [loadChatUnread]);
 
   const isStudent = role === "student";
   const isAlumni = role === "alumni";
-  const isAdmin = role === "university_admin" || role === "system_admin";
+  const mentorRoute = isStudent ? "/my-mentors" : "/my-mentees";
+  const mentorText = isStudent ? "My Mentors" : "My Mentees";
+  const requestRoute = isStudent ? "/my-requests" : "/mentor-requests";
 
-  const homePath = token ? "/home" : "/";
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setMenuOpen(false);
+    navigate("/login");
+  };
 
   const handleNotificationClick = async (notif) => {
     try {
       if (!notif.is_read) {
         await markNotificationAsRead(token, notif.id);
-
         setNotifications((prev) =>
           prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
         );
-
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
 
@@ -132,6 +163,8 @@ const Navbar = () => {
       if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
       else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
       else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") {
+        navigate("/my-events");
+      }
         if (isAdmin) {
           navigate("/admin-events");
         } else {
@@ -147,112 +180,98 @@ const Navbar = () => {
   return (
     <>
       <style>{css}</style>
+      <header className="appTopNav">
+        <button className="appBrandBtn" type="button" onClick={() => navigate("/home")}>
+          <img src={logo} alt="Alumnet" />
+        </button>
 
-      <aside className="sidebar">
-        {/* Dynamic content scroll wrapper */}
-        <div className="sidebarTopContent">
-          <div className="sidebarHeader">
-            <button className="logoBtn" onClick={() => navigate(homePath)}>
-              <img src={logo} alt="Alumnet" className="logo" />
+        <nav className="appCenterNav">
+          <Link to="/directory">Directory</Link>
+          <Link to="/events">Events</Link>
+        </nav>
+
+        <div className="appNavTools">
+          <button className="appToolBtn" type="button" onClick={() => navigate("/directory")}>
+            <Search size={17} strokeWidth={2} />
+          </button>
+
+          <div className="notifWrapper">
+            <button
+              className="appToolBtn"
+              type="button"
+              onClick={() => {
+                setShowNotifications((open) => !open);
+                setMenuOpen(false);
+              }}
+            >
+              <Bell size={17} strokeWidth={2} />
+              {unreadCount > 0 && <span className="notifBadge">{unreadCount}</span>}
             </button>
 
-            {token && (
-              <div className="notifWrapper">
-                <button
-                  className="bellBtn"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  type="button"
-                >
-                  <Bell size={20} strokeWidth={1.9} />
-                  {unreadCount > 0 && <span className="notifBadge">{unreadCount}</span>}
-                </button>
-
-                {showNotifications && (
-                  <div className="notifDropdown">
-                    <div className="notifHeader">
-                      <h3>Notifications</h3>
-                    </div>
-                    <div className="notifList">
-                      {notifications.length === 0 ? (
-                        <div className="notifEmpty">No new notifications</div>
-                      ) : (
-                        notifications.map((notif) => (
-                          <div
-                            key={notif.id}
-                            className={`notifItem ${!notif.is_read ? "unread" : ""}`}
-                            onClick={() => handleNotificationClick(notif)}
-                          >
-                            <div className="notifTitle">{notif.title}</div>
-                            <div className="notifMessage">{notif.message}</div>
-                            <div className="notifTime">
-                              {new Date(notif.created_at).toLocaleDateString()}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
+            {showNotifications && (
+              <div className="notifDropdown">
+                <div className="notifHeader">Notifications</div>
+                <div className="notifList">
+                  {notifications.length === 0 ? (
+                    <div className="notifEmpty">No new notifications</div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <button
+                        key={notif.id}
+                        className={`notifItem ${!notif.is_read ? "unread" : ""}`}
+                        type="button"
+                        onClick={() => handleNotificationClick(notif)}
+                      >
+                        <span className="notifTitle">{notif.title}</span>
+                        <span className="notifMessage">{notif.message}</span>
+                        <span className="notifTime">
+                          {new Date(notif.created_at).toLocaleDateString()}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {token && (
+          <button className="appToolBtn" type="button" onClick={() => navigate("/chat")}>
+            <MessageCircle size={17} strokeWidth={2} />
+            {chatUnreadCount > 0 && (
+              <span className="chatBadge">
+                {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+              </span>
+            )}
+          </button>
+
+          <div className="profileMenuWrap">
             <button
-              className="profileMini"
-              onClick={() => navigate("/profile")}
+              className="profileTool"
               type="button"
+              onClick={() => {
+                setMenuOpen((open) => !open);
+                setShowNotifications(false);
+              }}
             >
               {profile?.avatar_url ? (
-                <img
-                  src={`${profile.avatar_url}${
-                    profile.avatar_url.includes("?") ? "&" : "?"
-                  }t=${Date.now()}`}
-                  alt="avatar"
-                  className="profileMiniAvatar"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    const fallback = e.currentTarget.nextSibling;
-                    if (fallback) fallback.style.display = "grid";
-                  }}
-                />
-              ) : null}
-
-              <div
-                className="profileMiniAvatarFallback"
-                style={{ display: profile?.avatar_url ? "none" : "grid" }}
-              >
-                {profile?.full_name?.slice(0, 1)?.toUpperCase() || "U"}
-              </div>
-
-              <div className="profileMiniText">
-                <div className="profileMiniName">
-                  {profile?.full_name || "User"}
-                </div>
-                <div className="profileMiniRole">
-                  {isStudent
-                    ? "Student"
-                    : isAlumni
-                    ? "Alumni"
-                    : role === "university_admin"
-                    ? "University Admin"
-                    : role === "system_admin"
-                    ? "System Admin"
-                    : role}
-                </div>
-              </div>
+                <img src={profile.avatar_url} alt="" />
+              ) : (
+                <UserRound size={16} strokeWidth={2} />
+              )}
+              <ChevronDown size={14} strokeWidth={2} />
             </button>
-          )}
 
-          <nav className="navLinks">
-            <NavLink
-              to={homePath}
-              className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-            >
-              <Home size={17} strokeWidth={1.9} />
-              Home
-            </NavLink>
-
+            {menuOpen && (
+              <div className="profileDropdown">
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>
+                  My Profile
+                </Link>
+                <Link to="/edit-profile" onClick={() => setMenuOpen(false)}>
+                  <Pencil size={14} strokeWidth={2} />
+                  Edit Profile
+                </Link>
+                <Link to="/my-events" onClick={() => setMenuOpen(false)}>
+                  <Calendar size={14} strokeWidth={2} />
             {!isAdmin && (
               <>
                 <NavLink
@@ -329,404 +348,324 @@ const Navbar = () => {
                 >
                   <Calendar size={17} strokeWidth={1.9} />
                   My Events
-                </NavLink>
-              </>
+                </Link>
+                {(isStudent || isAlumni) && (
+                  <Link to={mentorRoute} onClick={() => setMenuOpen(false)}>
+                    <Users size={14} strokeWidth={2} />
+                    {mentorText}
+                  </Link>
+                )}
+                {(isStudent || isAlumni) && (
+                  <Link to={requestRoute} onClick={() => setMenuOpen(false)}>
+                    My Requests
+                  </Link>
+                )}
+                <button className="dropdownLogout" type="button" onClick={handleLogout}>
+                  <LogOut size={14} strokeWidth={2} />
+                  Logout
+                </button>
+              </div>
             )}
-
-            {isAlumni && (
-              <>
-                <NavLink
-                  to="/mentor-requests"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <Mail size={17} strokeWidth={1.9} />
-                  Mentor Requests
-                </NavLink>
-
-                <NavLink
-                  to="/my-mentees"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <GraduationCap size={17} strokeWidth={1.9} />
-                  My Mentees
-                </NavLink>
-
-                <NavLink
-                  to="/create-event"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <PlusSquare size={17} strokeWidth={1.9} />
-                  Create Event
-                </NavLink>
-              </>
-            )}
-
-            {isAdmin && (
-              <>
-                <NavLink
-                  to="/admin"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <ClipboardCheck size={17} strokeWidth={1.9} />
-                  Admin Dashboard
-                </NavLink>
-
-                <NavLink
-                  to="/admin-events"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <ClipboardCheck size={17} strokeWidth={1.9} />
-                  Event Approvals
-                </NavLink>
-
-                <NavLink
-                  to="/create-event"
-                  className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
-                >
-                  <PlusSquare size={17} strokeWidth={1.9} />
-                  Create Event
-                </NavLink>
-              </>
-            )}
-          </nav>
+          </div>
         </div>
-
-        {/* Retains steady sticky positioning along the bottom edge */}
-        {token && (
-          <button className="logoutBtn" onClick={handleLogout} type="button">
-            <LogOut size={17} strokeWidth={1.9} />
-            Log Out
-          </button>
-        )}
-      </aside>
+      </header>
     </>
   );
-};
-
-export default Navbar;
+}
 
 const css = `
-.sidebar{
-  position:fixed;
-  left:18px;
-  top:18px;
-  bottom:18px;
-  width:238px;
-  height: calc(100vh - 36px); /* Locks explicit height based on view screen boundaries */
-  background:rgba(250,249,246,0.78);
-  border:1px solid rgba(0,0,0,0.06);
-  border-radius:28px;
-  padding:18px 14px 14px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  font-family:"Google Sans", Arial, sans-serif;
+.appTopNav{
+  height:72px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:24px;
+  padding:0 60px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  background:rgba(255,255,255,.86);
   backdrop-filter:blur(14px);
   -webkit-backdrop-filter:blur(14px);
-  box-shadow:0 10px 30px rgba(0,0,0,0.04);
+  position:sticky;
+  top:0;
   z-index:100;
-  box-sizing: border-box;
+  font-family:"Google Sans";
 }
 
-.sidebarTopContent {
-  flex: 1;
-  overflow-y: auto; /* Gracefully handles long dynamic link configurations on compact viewports */
-  min-height: 0;
-  padding-right: 2px;
-  margin-bottom: 12px;
-}
-
-/* Slim invisible minimal scrollbars formatting */
-.sidebarTopContent::-webkit-scrollbar {
-  width: 4px;
-}
-.sidebarTopContent::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 4px;
-}
-
-.logoBtn{
-  display:flex;
+.appBrandBtn{
+  justify-self:start;
+  width:122px;
+  display:inline-flex;
   align-items:center;
-  gap:10px;
-  width:100%;
-  padding:6px 6px 14px;
-  color:#111111;
-  text-align:left;
+  transition:opacity .18s ease, transform .18s ease;
 }
 
-.logo{
-  width:100px;
-  height:30px;
-  object-fit:contain;
-}
-
-.profileMini{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  width:100%;
-  padding:10px;
-  border-radius:18px;
-  background:rgba(255,255,255,0.72);
-  border:1px solid rgba(0,0,0,0.05);
-  margin-bottom:14px;
-  cursor:pointer;
-  text-align:left;
-  transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
-  box-sizing: border-box;
-}
-
-.profileMini:hover{
-  transform:translateY(-1px);
-  box-shadow:0 8px 18px rgba(0,0,0,0.04);
-}
-
-.profileMiniAvatar,
-.profileMiniAvatarFallback{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  object-fit:cover;
-  flex-shrink:0;
-}
-
-.profileMiniAvatarFallback{
-  display:grid;
-  place-items:center;
-  background:#ecebe7;
-  color:#111111;
-  font-size:14px;
-}
-
-.profileMiniText{
-  min-width:0;
-}
-
-.profileMiniName{
-  font-size:13px;
-  color:#111111;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.profileMiniRole{
-  font-size:12px;
-  color:rgba(17,17,17,0.52);
-  margin-top:2px;
-}
-
-.navLinks{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-}
-
-.navGroupLabel{
-  margin:10px 8px 6px;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:0.08em;
-  color:rgba(17,17,17,0.42);
-}
-
-.navItem{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  text-decoration:none;
-  color:#111111;
-  padding:10px 12px;
-  border-radius:14px;
-  font-size:14px;
-  font-weight:400;
-  font-family:"Google Sans", Arial, sans-serif;
-  transition:transform .18s ease, background .18s ease, box-shadow .18s ease, color .18s ease, border-color .18s ease;
-  border:1px solid transparent;
-  box-sizing: border-box;
-}
-
-.navItem:hover{
-  background:rgba(255,255,255,0.68);
+.appBrandBtn:hover{
+  opacity:.72;
   transform:translateY(-1px);
 }
 
-.navItem.active{
-  background:rgba(255,255,255,0.68);
-  color:#111111;
-  border:1px solid rgba(0,0,0,0.06);
-  box-shadow:0 8px 18px rgba(0,0,0,0.035);
+.appBrandBtn img{
+  width:100%;
+  height:auto;
+  display:block;
 }
 
-.logoutBtn{
+.appCenterNav{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:8px;
-  width:100%;
-  border:none;
-  background:rgba(255,255,255,0.72);
-  color:#111111;
-  padding:12px;
-  border-radius:999px;
-  cursor:pointer;
-  font-weight:400;
+  gap:40px;
   font-size:14px;
-  font-family:"Google Sans", Arial, sans-serif;
-  border:1px solid rgba(0,0,0,0.06);
-  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease, background .18s ease;
-  box-shrink: 0;
-  box-sizing: border-box;
 }
 
-.logoutBtn:hover{
+.appCenterNav a{
+  text-decoration:none;
+  color:#111111;
+  transition:opacity .18s ease, transform .18s ease;
+}
+
+.appCenterNav a:hover{
+  opacity:.68;
   transform:translateY(-1px);
-  box-shadow:0 10px 20px rgba(0,0,0,0.05);
-  background:rgba(255,255,255,0.9);
 }
 
-.sidebarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
+.appNavTools{
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
-.logoBtn {
-  margin-bottom: 0 !important;
-  padding: 0 !important;
+.appToolBtn,
+.profileTool{
+  position:relative;
+  min-width:38px;
+  height:38px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background:#050505;
+  border:1px solid rgba(0,0,0,.84);
+  color:#ffffff;
+  box-shadow:0 8px 18px rgba(0,0,0,.18);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
 
-.notifWrapper {
-  position: relative;
+.appToolBtn:hover,
+.profileTool:hover{
+  transform:translateY(-1px);
+  background:#050505;
+  box-shadow:0 10px 22px rgba(0,0,0,.22);
 }
 
-.bellBtn {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #111;
-  position: relative;
-  transition: all 0.2s ease;
+.profileTool{
+  gap:7px;
+  padding:0 9px;
 }
 
-.bellBtn:hover {
-  background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
+.profileTool img{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1px solid rgba(255,255,255,.58);
 }
 
-.notifBadge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background: #e63946;
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-  height: 16px;
-  min-width: 16px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  border: 2px solid #faf9f6;
+.profileMenuWrap,
+.notifWrapper{
+  position:relative;
 }
 
-.notifDropdown {
-  position: fixed;
-  top: 0;
-  left: calc(100% + 14px);
-  width: 320px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  z-index: 999;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-height: 400px;
+.profileDropdown,
+.notifDropdown{
+  position:absolute;
+  top:48px;
+  right:0;
+  border-radius:14px;
+  background:rgba(255,255,255,.96);
+  border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 18px 40px rgba(0,0,0,.12);
+  animation:dropdownFade .16s ease both;
 }
 
-.notifHeader {
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+.profileDropdown{
+  width:202px;
+  padding:8px;
+  display:grid;
+  gap:3px;
 }
 
-.notifHeader h3 {
-  margin: 0;
-  font-size: 14px;
-  color: #111;
+.profileDropdown a,
+.dropdownLogout{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 10px;
+  border-radius:10px;
+  text-decoration:none;
+  color:#111111;
+  font-size:13px;
+  font-family:"Google Sans";
+  transition:background .18s ease;
 }
 
-.notifList {
-  overflow-y: auto;
-  padding: 8px 0;
+.profileDropdown a:hover,
+.dropdownLogout:hover{
+  background:rgba(0,0,0,.04);
 }
 
-.notifEmpty {
-  padding: 24px;
-  text-align: center;
-  color: rgba(17, 17, 17, 0.5);
-  font-size: 13px;
+.dropdownLogout{
+  width:100%;
+  border:0;
+  background:#050505;
+  color:#ffffff;
+  justify-content:center;
+  margin-top:4px;
+  box-shadow:0 8px 18px rgba(0,0,0,.18);
 }
 
-.notifItem {
-  padding: 12px 20px;
-  cursor: pointer;
-  border-left: 3px solid transparent;
-  transition: background 0.2s ease;
+.dropdownLogout:hover{
+  background:#050505;
+  transform:translateY(-1px);
 }
 
-.notifItem:hover {
-  background: rgba(0, 0, 0, 0.02);
+.notifBadge{
+  position:absolute;
+  top:-4px;
+  right:-4px;
+  min-width:16px;
+  height:16px;
+  padding:0 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background:#D7263D;
+  color:#ffffff;
+  font-size:10px;
+  border:2px solid #050505;
+  box-shadow:0 6px 14px rgba(215,38,61,.24);
 }
 
-.notifItem.unread {
-  background: rgba(0, 102, 255, 0.04);
-  border-left-color: #0066ff;
+.chatBadge{
+  position:absolute;
+  top:-4px;
+  right:-4px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background:#D7263D;
+  color:#ffffff;
+  font-size:10px;
+  font-weight:500;
+  border:2px solid #050505;
+  box-shadow:0 6px 14px rgba(215,38,61,.24);
 }
 
-.notifTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111;
-  margin-bottom: 4px;
+.notifDropdown{
+  width:320px;
+  overflow:hidden;
 }
 
-.notifMessage {
-  font-size: 12px;
-  color: rgba(17, 17, 17, 0.7);
-  line-height: 1.4;
-  margin-bottom: 6px;
+.notifHeader{
+  padding:14px 16px;
+  border-bottom:1px solid rgba(0,0,0,.06);
+  font-size:14px;
+  color:#111111;
 }
 
-.notifTime {
-  font-size: 10px;
-  color: rgba(17, 17, 17, 0.4);
+.notifList{
+  max-height:340px;
+  overflow-y:auto;
+  padding:6px;
+}
+
+.notifEmpty{
+  padding:20px 12px;
+  text-align:center;
+  color:rgba(17,17,17,.54);
+  font-size:13px;
+}
+
+.notifItem{
+  width:100%;
+  display:grid;
+  gap:4px;
+  text-align:left;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  padding:10px;
+  font-family:"Google Sans";
+  transition:background .18s ease;
+}
+
+.notifItem:hover,
+.notifItem.unread{
+  background:rgba(0,0,0,.04);
+}
+
+.notifTitle{
+  color:#111111;
+  font-size:13px;
+  font-weight:500;
+}
+
+.notifMessage{
+  color:rgba(17,17,17,.62);
+  font-size:12px;
+  line-height:1.35;
+}
+
+.notifTime{
+  color:rgba(17,17,17,.42);
+  font-size:11px;
+}
+
+@keyframes dropdownFade{
+  from{ opacity:0; transform:translateY(-4px); }
+  to{ opacity:1; transform:translateY(0); }
 }
 
 @media (max-width:900px){
-  .sidebar{
-    width:212px;
-    left:12px;
-    top:12px;
-    bottom:12px;
-    height: calc(100vh - 24px);
+  .appTopNav{
+    grid-template-columns:1fr auto;
+    height:auto;
+    padding:18px 20px;
   }
 
-  .navItem{
-    font-size:13px;
+  .appCenterNav{
+    grid-column:1 / -1;
+    order:3;
+    justify-content:flex-start;
+    gap:22px;
+    overflow-x:auto;
+    padding-top:12px;
+  }
+}
+
+@media (max-width:640px){
+  .appTopNav{
+    padding:14px 16px;
+  }
+
+  .appBrandBtn{
+    width:108px;
+  }
+
+  .appNavTools{
+    gap:7px;
+  }
+
+  .appToolBtn,
+  .profileTool{
+    min-width:35px;
+    height:35px;
   }
 }
 `;

@@ -315,6 +315,53 @@ export default function AdminDashboard() {
   );
 }
 
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+  gap: 20,
+};
+
+const card = {
+  padding: 20,
+  borderRadius: 16,
+  background: "rgba(255,255,255,0.7)",
+  border: "1px solid rgba(0,0,0,0.06)",
+  backdropFilter: "blur(6px)",
+};
+
+const name = {
+  margin: 0,
+  fontSize: 15,
+  fontWeight: 500,
+  color: "#111111",
+};
+
+const meta = {
+  marginTop: 6,
+  fontSize: 14,
+  color: "rgba(17,17,17,0.72)",
+  wordBreak: "break-word",
+};
+
+const verifyBtn = {
+  marginTop: 14,
+  padding: "10px 16px",
+  borderRadius: 999,
+  border: "1px solid rgba(0,0,0,0.08)",
+  background: "rgba(255, 255, 255, 0.76)",
+  color: "#111111",
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 400,
+  fontFamily: '"Google Sans"',
+};
+
+const errorBox = {
+  background: "#fee2e2",
+  padding: 12,
+  borderRadius: 12,
+  marginBottom: 14,
+};
 const dashboardCss = `
 .adminDashboardContainer {
   display: flex;

@@ -113,7 +113,7 @@ border:"1px solid rgba(0,0,0,0.08)",
 background:"rgba(255,255,255,0.7)",
 resize:"vertical",
 marginBottom:16,
-fontFamily:'"Google Sans", Arial, sans-serif'
+fontFamily:'"Google Sans"'
 }
 
 const primaryBtn={
@@ -124,7 +124,7 @@ borderRadius:999,
 border:"1px solid rgba(0,0,0,0.08)",
 cursor:"pointer",
 fontSize: 14,
-fontFamily:'"Google Sans", Arial, sans-serif'
+fontFamily:'"Google Sans"'
 }
 
 const secondaryBtn={
@@ -135,7 +135,7 @@ borderRadius:999,
 border:"1px solid rgba(0,0,0,0.06)",
 cursor:"pointer",
 fontSize: 14,
-fontFamily:'"Google Sans", Arial, sans-serif'
+fontFamily:'"Google Sans"'
 }
 
 const successBox={

@@ -1,15 +1,23 @@
-import { useEffect, useState, useRef } from "react";
-import PageShell from "../components/PageShell";
+import { useEffect, useRef, useState } from "react";
+import { Mic, Paperclip, Search, Send, Smile, Trash2, Type, X } from "lucide-react";
 import {
+  deleteChatMessage,
   getChatContacts,
   getConversationMessages,
-  sendMessage,
   getProfile,
+  sendMessage,
 } from "../api";
+import { supabase } from "../supabase";
+import docIcon from "../assets/doc.png";
+import fileIcon from "../assets/file.png";
+import imageIcon from "../assets/image.png";
+import pdfIcon from "../assets/pdf.png";
+import recIcon from "../assets/rec.png";
 
-import {
-  theme,
-} from "../styles/ui";
+const CRIMSON = "#D7263D";
+const LASER_BLUE = "#2B59C3";
+const CHAT_BUCKET = "chat-attachments";
+const EMOJIS = ["\u{1F600}", "\u{1F602}", "\u{1F60A}", "\u{1F60D}", "\u{1F44D}", "\u{1F64F}", "\u{1F393}", "\u{1F4A1}", "\u{1F525}", "\u{2705}", "\u{1F64C}", "\u{1F680}"];
 
 export default function Chat() {
   const [conversations, setConversations] = useState([]);
@@ -19,10 +27,23 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [brokenImages, setBrokenImages] = useState({});
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null);
+  const [voiceClip, setVoiceClip] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState("");
 
   const bottomRef = useRef(null);
   const messagesRef = useRef(null);
   const currentChatIdRef = useRef(null);
+  const pendingScrollToBottomRef = useRef(false);
+  const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingChunksRef = useRef([]);
+  const recordingStreamRef = useRef(null);
 
   useEffect(() => {
     loadConversations();
@@ -37,9 +58,12 @@ export default function Chat() {
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight < 150;
 
-    if (isNewConversation || isNearBottom) {
-      bottomRef.current?.scrollIntoView({
-        behavior: isNewConversation ? "auto" : "smooth",
+    if (pendingScrollToBottomRef.current || isNewConversation || isNearBottom) {
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({
+          behavior: pendingScrollToBottomRef.current || isNewConversation ? "auto" : "smooth",
+        });
+        pendingScrollToBottomRef.current = false;
       });
       currentChatIdRef.current = selectedConversation?.id;
     }
@@ -47,8 +71,8 @@ export default function Chat() {
 
   const getAvatarUrl = (avatarPath) => {
     if (!avatarPath) return null;
-    return avatarPath.startsWith("http") 
-      ? avatarPath 
+    return avatarPath.startsWith("http")
+      ? avatarPath
       : `http://localhost:5000${avatarPath}`;
   };
 
@@ -59,15 +83,27 @@ export default function Chat() {
   const formatMessageTime = (dateInput) => {
     try {
       if (!dateInput) return "";
-      const date = new Date(dateInput);
-      return date.toLocaleTimeString([], {
+      return new Date(dateInput).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
-        timeZone: "Asia/Kolkata", 
+        timeZone: "Asia/Colombo",
       });
-    } catch (e) {
-      console.error("Error formatting date:", e);
+    } catch {
+      return "";
+    }
+  };
+
+  const formatConversationTime = (dateInput) => {
+    try {
+      if (!dateInput) return "";
+      return new Date(dateInput).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Colombo",
+      });
+    } catch {
       return "";
     }
   };
@@ -95,17 +131,19 @@ export default function Chat() {
   async function openConversation(conversation) {
     try {
       const token = localStorage.getItem("token");
+      pendingScrollToBottomRef.current = true;
       setSelectedConversation(conversation);
 
       setConversations((prevList) =>
         prevList.map((c) =>
-          c.id === conversation.id ? { ...c, unread: false } : c
+          c.id === conversation.id ? { ...c, unread: false, unread_count: 0 } : c
         )
       );
 
       if (conversation.id) {
         const data = await getConversationMessages(token, conversation.id);
         setMessages(data);
+        window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
       } else {
         setMessages([]);
       }
@@ -115,28 +153,134 @@ export default function Chat() {
   }
 
   async function handleSend() {
-    if (!newMessage.trim()) return;
-    if (!selectedConversation || !selectedConversation.id) return;
+    if (!selectedConversation?.id) return;
+
+    const cleanText = newMessage.trim();
+    const attachment = voiceClip
+      ? {
+          file: new File([voiceClip.blob], voiceClip.name, { type: "audio/webm" }),
+          type: "voice",
+        }
+      : attachedFile
+        ? { file: attachedFile, type: "file" }
+        : null;
+
+    if (!cleanText && !attachment) return;
 
     try {
+      setIsSending(true);
+      setSendError("");
       const token = localStorage.getItem("token");
 
-      await sendMessage(
-        token,
-        selectedConversation.id,
-        newMessage
-      );
+      let payload = {
+        message_type: "text",
+        message_text: cleanText,
+      };
 
+      if (attachment) {
+        const uploaded = await uploadChatAttachment(
+          selectedConversation.id,
+          attachment.file
+        );
+
+        payload = {
+          message_type: attachment.type,
+          message_text: cleanText || null,
+          attachment_url: uploaded.url,
+          attachment_name: attachment.file.name,
+          attachment_mime_type: attachment.file.type || "application/octet-stream",
+          attachment_size: attachment.file.size,
+        };
+      }
+
+      await sendMessage(token, selectedConversation.id, payload);
       setNewMessage("");
+      setAttachedFile(null);
+      setVoiceClip(null);
+      setShowEmojiPicker(false);
 
       const updated = await getConversationMessages(token, selectedConversation.id);
       setMessages(updated);
-
       loadConversations();
+      window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
     } catch (err) {
       console.error(err);
+      setSendError(err.message || "Failed to send message");
+    } finally {
+      setIsSending(false);
     }
   }
+
+  async function handleDeleteMessage(messageId) {
+    if (!selectedConversation?.id) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await deleteChatMessage(token, messageId);
+      const updated = await getConversationMessages(token, selectedConversation.id);
+      setMessages(updated);
+      loadConversations();
+      window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
+    } catch (err) {
+      console.error(err);
+      setSendError(err.message || "Failed to delete message");
+    }
+  }
+
+  const focusComposer = () => {
+    textareaRef.current?.focus();
+  };
+
+  const addEmoji = (emoji) => {
+    setNewMessage((value) => `${value}${emoji}`);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAttachedFile(file);
+      setVoiceClip(null);
+    }
+    e.target.value = "";
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      recordingChunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
+        setVoiceClip({
+          name: `voice-${new Date().toISOString().replace(/[:.]/g, "-")}.webm`,
+          blob,
+        });
+        setAttachedFile(null);
+        setIsRecording(false);
+        recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+        recordingStreamRef.current = null;
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start recording", err);
+    }
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -145,414 +289,1007 @@ export default function Chat() {
     }
   };
 
+  const getUnreadCount = (conversation) => {
+    if (Number(conversation.unread_count) > 0) return Number(conversation.unread_count);
+    return conversation.unread ? 1 : 0;
+  };
+
   const filteredConversations = conversations.filter((conversation) =>
-    conversation.other_user_name
-      ?.toLowerCase()
-      .includes(search.toLowerCase())
+    conversation.other_user_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const sortedConversations = [...filteredConversations].sort((a, b) => {
-    const timeA = a.last_message_time ? new Date(a.last_message_time).getTime() : 0;
-    const timeB = b.last_message_time ? new Date(b.last_message_time).getTime() : 0;
-    return timeB - timeA;
+    const timeA = a.last_message_time || a.last_message_at;
+    const timeB = b.last_message_time || b.last_message_at;
+    const valueA = timeA ? new Date(timeA).getTime() : 0;
+    const valueB = timeB ? new Date(timeB).getTime() : 0;
+    return sortOrder === "newest" ? valueB - valueA : valueA - valueB;
   });
 
+  const renderAvatar = (conversation, size = "normal", keyPrefix = "") => {
+    const brokenKey = `${keyPrefix}${conversation.id}`;
+    const hasValidAvatar = conversation.other_user_avatar && !brokenImages[brokenKey];
+
+    if (hasValidAvatar) {
+      return (
+        <img
+          src={getAvatarUrl(conversation.other_user_avatar)}
+          onError={() => handleImageError(brokenKey)}
+          alt=""
+          className={`chatAvatar ${size}`}
+        />
+      );
+    }
+
+    return (
+      <div className={`chatAvatar fallback ${size}`}>
+        {conversation.other_user_name?.charAt(0)?.toUpperCase() || "A"}
+      </div>
+    );
+  };
+
+  const renderMessageContent = (message) => {
+    if (message.deleted_at) {
+      return <span className="deletedMessageText">Message deleted</span>;
+    }
+
+    if (message.message_type === "voice" && message.attachment_url) {
+      return (
+        <div className="attachmentMessage">
+          {message.message_text && <p>{message.message_text}</p>}
+          <AttachmentChip
+            name={message.attachment_name || "Voice recording"}
+            mimeType={message.attachment_mime_type || "audio/webm"}
+            href={message.attachment_url}
+            variant="voice"
+          />
+          <audio controls src={message.attachment_url} />
+        </div>
+      );
+    }
+
+    if (message.message_type === "file" && message.attachment_url) {
+      return (
+        <div className="attachmentMessage">
+          {message.message_text && <p>{message.message_text}</p>}
+          <AttachmentChip
+            name={message.attachment_name || "Download file"}
+            mimeType={message.attachment_mime_type}
+            href={message.attachment_url}
+          />
+        </div>
+      );
+    }
+
+    return message.message_text;
+  };
+
   return (
-    <PageShell title="Messages" subtitle="Connect and chat with your matches">
-      <div style={chatLayoutContainer}>
-        <div style={gridContainer}>
-          <div style={sidebarPanel}>
-            <div style={sidebarHeader}>
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={sidebarSearchInput}
-              />
-            </div>
+    <main className="chatPage">
+      <style>{css}</style>
 
-            <div style={conversationsListWrapper}>
-              {sortedConversations.length === 0 ? (
-                <div style={{ padding: 18, color: "rgba(17,17,17,0.52)", fontSize: "14px" }}>
-                  No active connections or history found.
-                </div>
-              ) : (
-                sortedConversations.map((conversation) => {
-                  const hasValidAvatar = 
-                    conversation.other_user_avatar && !brokenImages[conversation.id];
-                  const isSelected = selectedConversation?.id === conversation.id;
-
-                  return (
-                    <div
-                      key={conversation.id || `temp-${conversation.other_user_id}`}
-                      onClick={() => openConversation(conversation)}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) e.currentTarget.style.background = "rgba(0,0,0,0.03)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) e.currentTarget.style.background = "transparent";
-                      }}
-                      style={{
-                        ...conversationItemRow,
-                        background: isSelected ? "rgba(0, 0, 0, 0.05)" : "transparent",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        {hasValidAvatar ? (
-                          <img
-                            src={getAvatarUrl(conversation.other_user_avatar)}
-                            onError={() => handleImageError(conversation.id)}
-                            alt=""
-                            style={avatarStyle}
-                          />
-                        ) : (
-                          <div style={avatarFallbackStyle}>
-                            {conversation.other_user_name ? conversation.other_user_name.charAt(0).toUpperCase() : "A"}
-                          </div>
-                        )}
-
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div style={conversationNameText}>
-                              {conversation.other_user_name}
-                            </div>
-                            {conversation.unread && !isSelected && (
-                              <div style={unreadBadgeDot} />
-                            )}
-                          </div>
-                          <div
-                            style={{
-                              ...conversationLastMessageText,
-                              fontWeight: conversation.unread && !isSelected ? "500" : "400",
-                              color: conversation.last_message ? "rgba(17,17,17,0.72)" : "rgba(17,17,17,0.52)",
-                            }}
-                          >
-                            {conversation.last_message || "Start chatting"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+      <section className="inboxShell">
+        <aside className="inboxSidebar">
+          <div className="inboxTitleRow">
+            <h1>Your Inbox</h1>
+            <select
+              className="sortSelect"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              aria-label="Sort conversations"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+            </select>
           </div>
 
-          <div style={chatPanelWindow}>
-            {!selectedConversation ? (
-              <div style={emptyChatPlaceholderWindow}>
-                <div style={{ fontSize: "54px", marginBottom: "12px" }}>💬</div>
-                <div style={placeholderTitle}>Select a conversation</div>
-                <div style={placeholderSubtitle}>Start chatting with your mentor/mentee.</div>
-              </div>
-            ) : (
-              <>
-                <div style={chatTopHeaderBar}>
-                  {selectedConversation.other_user_avatar && !brokenImages[`header-${selectedConversation.id}`] ? (
-                    <img
-                      src={getAvatarUrl(selectedConversation.other_user_avatar)}
-                      onError={() => handleImageError(`header-${selectedConversation.id}`)}
-                      alt="Profile"
-                      style={avatarStyle}
-                    />
-                  ) : (
-                    <div style={avatarFallbackStyle}>
-                      {selectedConversation.other_user_name ? selectedConversation.other_user_name.charAt(0).toUpperCase() : "A"}
-                    </div>
-                  )}
+          <label className="conversationSearch">
+            <Search size={15} strokeWidth={2} />
+            <input
+              type="text"
+              placeholder="Search conversations"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
 
+          <div className="conversationList">
+            {sortedConversations.length === 0 ? (
+              <div className="emptyList">No active connections or history found.</div>
+            ) : (
+              sortedConversations.map((conversation) => {
+                const isSelected = selectedConversation?.id === conversation.id;
+                const unreadCount = getUnreadCount(conversation);
+                const lastMessageTime =
+                  conversation.last_message_time || conversation.last_message_at;
+
+                return (
+                  <button
+                    key={conversation.id || `temp-${conversation.other_user_id}`}
+                    type="button"
+                    className={`conversationItem ${isSelected ? "selected" : ""}`}
+                    onClick={() => openConversation(conversation)}
+                  >
+                    {renderAvatar(conversation)}
+
+                    <span className="conversationCopy">
+                      <span className="conversationNameRow">
+                        <strong>{conversation.other_user_name}</strong>
+                      </span>
+
+                      <span
+                        className={`conversationPreview ${
+                          unreadCount > 0 && !isSelected ? "unread" : ""
+                        }`}
+                      >
+                        {conversation.last_message || "Start chatting"}
+                      </span>
+                    </span>
+
+                    <span className="conversationMeta">
+                      {unreadCount > 0 && !isSelected && (
+                        <span className="unreadBadge">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                      <span className="conversationTime">
+                        {formatConversationTime(lastMessageTime)}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </aside>
+
+        <section className="chatWindow">
+          {!selectedConversation ? (
+            <div className="emptyChat">
+              <h2>Select a conversation</h2>
+              <p>Start chatting with your mentor or mentee.</p>
+            </div>
+          ) : (
+            <>
+              <header className="chatHeader">
+                <div className="chatHeaderIdentity">
+                  {renderAvatar(selectedConversation, "small", "header-")}
                   <div>
-                    <div style={headerConversationNameText}>
-                      {selectedConversation.other_user_name}
-                    </div>
+                    <h2>{selectedConversation.other_user_name}</h2>
                   </div>
                 </div>
+              </header>
 
-                <div ref={messagesRef} style={messageThreadContainer}>
-                  {messages.length === 0 ? (
-                    <div style={emptyHistoryMessageText}>
-                      No messages yet. Start the conversation!
-                    </div>
-                  ) : (
-                    messages.map((message) => {
-                      const isMine = currentUser && Number(message.sender_id) === Number(currentUser.id);
+              <div ref={messagesRef} className="messageThread">
+                {messages.length === 0 ? (
+                  <div className="emptyHistory">No messages yet. Start the conversation.</div>
+                ) : (
+                  messages.map((message) => {
+                    const isMine =
+                      currentUser && Number(message.sender_id) === Number(currentUser.id);
 
-                      return (
-                        <div
-                          key={message.id}
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: isMine ? "flex-end" : "flex-start",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              ...chatMessageBubbleStyle,
-                              background: isMine ? "rgba(255, 255, 255, 0.65)" : "#FFFFFF",
-                              backdropFilter: isMine ? "blur(12px)" : "none",
-                              WebkitBackdropFilter: isMine ? "blur(12px)" : "none",
-                              borderRadius: isMine ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
-                              border: isMine ? "1px solid rgba(255, 255, 255, 0.4)" : "1px solid rgba(0, 0, 0, 0.05)",
-                            }}
-                          >
-                            {message.message_text}
-                          </div>
-                          
-                          <div
-                            style={{
-                              fontSize: "11px",
-                              marginTop: "4px",
-                              color: "rgba(17, 17, 17, 0.65)",
-                              fontWeight: "500",
-                              paddingLeft: isMine ? "0px" : "4px",
-                              paddingRight: isMine ? "4px" : "0px",
-                            }}
-                          >
-                            {formatMessageTime(message.created_at)}
-                          </div>
+                    return (
+                      <div
+                        key={message.id}
+                        className={`messageGroup ${isMine ? "mine" : "theirs"}`}
+                      >
+                        <div className="messageMeta">
+                          <span className="messageSender">
+                            {isMine ? `${currentUser?.full_name || "Me"} (Me)` : selectedConversation.other_user_name}
+                          </span>
+                          <span className="messageTime">{formatMessageTime(message.created_at)}</span>
                         </div>
-                      );
-                    })
-                  )}
-                  <div ref={bottomRef} />
-                </div>
+                        <div className={`messageBubble ${message.deleted_at ? "deleted" : ""}`}>
+                          {renderMessageContent(message)}
+                          {isMine && !message.deleted_at && (
+                            <button
+                              className="deleteMessageBtn"
+                              type="button"
+                              onClick={() => handleDeleteMessage(message.id)}
+                              aria-label="Delete message"
+                            >
+                              <Trash2 size={13} strokeWidth={2} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={bottomRef} />
+              </div>
 
-                <div style={messageInputConsolePanel}>
+              <footer className="composer">
+                <div className="composerBox">
                   <textarea
+                    ref={textareaRef}
                     placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     rows={1}
-                    style={messageInputTextArea}
                   />
-
-                  <button onClick={handleSend} style={messageSendBtnAction}>
-                    ➤
+                  {(attachedFile || voiceClip) && (
+                    <div className="pendingAttachments">
+                      {attachedFile && (
+                        <AttachmentChip
+                          name={attachedFile.name}
+                          mimeType={attachedFile.type}
+                          onRemove={() => setAttachedFile(null)}
+                        />
+                      )}
+                      {voiceClip && (
+                        <AttachmentChip
+                          name={voiceClip.name}
+                          mimeType="audio/webm"
+                          variant="voice"
+                          onRemove={() => setVoiceClip(null)}
+                        />
+                      )}
+                    </div>
+                  )}
+                  {showEmojiPicker && (
+                    <div className="emojiPicker">
+                      {EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => addEmoji(emoji)}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="composerTools" aria-label="Message options">
+                    <button type="button" aria-label="Text options" onClick={focusComposer}>
+                      <Type size={15} strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Emoji"
+                      onClick={() => setShowEmojiPicker((open) => !open)}
+                    >
+                      <Smile size={15} strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={isRecording ? "Stop recording" : "Voice message"}
+                      className={isRecording ? "recording" : ""}
+                      onClick={toggleRecording}
+                    >
+                      <Mic size={15} strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Attach file"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Paperclip size={15} strokeWidth={2} />
+                    </button>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="fileInput"
+                    onChange={handleFileSelect}
+                  />
+                  <button
+                    className="sendButton"
+                    type="button"
+                    onClick={handleSend}
+                    disabled={isSending}
+                  >
+                    <span>{isSending ? "Sending" : "Send"}</span>
+                    <Send size={15} strokeWidth={2.2} />
                   </button>
                 </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </PageShell>
+                {sendError && <div className="sendError">{sendError}</div>}
+              </footer>
+            </>
+          )}
+        </section>
+      </section>
+    </main>
   );
 }
 
-const chatLayoutContainer = {
-  paddingTop: 10,
-};
+async function uploadChatAttachment(conversationId, file) {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+  const id =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const path = `${conversationId}/${id}-${safeName}`;
 
-const gridContainer = {
-  display: "grid",
-  gridTemplateColumns: "320px 1fr", 
-  gap: 20,
-  height: "75vh", 
-};
+  const { error } = await supabase.storage.from(CHAT_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
 
-const sidebarPanel = {
-  display: "flex",
-  flexDirection: "column",
-  background: "rgba(255, 255, 255, 0.65)",
-  border: "1px solid rgba(0, 0, 0, 0.06)",
-  backdropFilter: "blur(6px)",
-  borderRadius: 14,
-  overflow: "hidden",
-};
+  if (error) throw new Error(error.message || "Upload failed");
 
-const sidebarHeader = {
-  padding: "18px",
-  borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
-};
+  const { data } = supabase.storage.from(CHAT_BUCKET).getPublicUrl(path);
+  return { path, url: data.publicUrl };
+}
 
-const sidebarSearchInput = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid rgba(0, 0, 0, 0.08)",
-  background: "rgba(255, 255, 255, 0.7)",
-  outline: "none",
-  fontSize: "14px",
-  boxSizing: "border-box",
-};
+function AttachmentChip({ name, mimeType = "", href, onRemove, variant }) {
+  const icon = getAttachmentIcon(name, mimeType, variant);
+  const content = (
+    <>
+      <span className="attachmentIcon">
+        <img src={icon} alt="" />
+      </span>
+      <span className="attachmentName">{name}</span>
+      {onRemove && (
+        <span className="attachmentRemove" aria-hidden="true">
+          <X size={12} strokeWidth={2.2} />
+        </span>
+      )}
+    </>
+  );
 
-const conversationsListWrapper = {
-  flex: 1,
-  overflowY: "auto",
-};
+  if (href) {
+    return (
+      <a
+        className="attachmentChip"
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        download
+      >
+        {content}
+      </a>
+    );
+  }
 
-const conversationItemRow = {
-  padding: "16px 18px",
-  cursor: "pointer",
-  borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
-  transition: "all .15s ease",
-};
+  return (
+    <button className="attachmentChip" type="button" onClick={onRemove}>
+      {content}
+    </button>
+  );
+}
 
-const avatarStyle = {
-  width: 46,
-  height: 46,
-  borderRadius: "50%",
-  objectFit: "cover",
-  flexShrink: 0,
-};
+function getAttachmentIcon(name = "", mimeType = "", variant) {
+  const lowerName = name.toLowerCase();
+  if (variant === "voice" || mimeType.startsWith("audio/")) return recIcon;
+  if (mimeType.startsWith("image/")) return imageIcon;
+  if (mimeType.includes("pdf") || lowerName.endsWith(".pdf")) return pdfIcon;
+  if (
+    mimeType.includes("word") ||
+    mimeType.includes("document") ||
+    lowerName.endsWith(".doc") ||
+    lowerName.endsWith(".docx")
+  ) {
+    return docIcon;
+  }
+  return fileIcon;
+}
 
-const avatarFallbackStyle = {
-  width: 46,
-  height: 46,
-  borderRadius: "50%",
-  display: "grid",
-  placeItems: "center",
-  background: "#ecebe7",
-  color: "#111111",
-  fontWeight: 500,
-  fontSize: "14px",
-  flexShrink: 0,
-};
+const css = `
+.chatPage{
+  height:calc(100dvh - 72px);
+  min-height:0;
+  background:#fbfbfa;
+  color:#111111;
+  font-family:"Google Sans";
+  padding:26px 28px 28px;
+  overflow:hidden;
+  animation:chatDissolve .22s ease both;
+}
 
-const conversationNameText = {
-  fontSize: "16px",
-  fontWeight: 500,
-  color: "#111111",
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  letterSpacing: "-0.01em",
-};
+.inboxShell{
+  width:min(1180px, 100%);
+  height:100%;
+  min-height:0;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:300px minmax(0, 1fr);
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:hidden;
+  box-shadow:none;
+}
 
-const unreadBadgeDot = {
-  width: "7px",
-  height: "7px",
-  borderRadius: "50%",
-  background: "#2527be",
-  marginLeft: "6px",
-  flexShrink: 0,
-};
+.inboxSidebar{
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  border-right:1px solid rgba(0,0,0,.08);
+  background:#fbfbfa;
+}
 
-const conversationLastMessageText = {
-  fontSize: "13px",
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  marginTop: "4px",
-};
+.inboxTitleRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:22px 16px 14px;
+}
 
-const chatPanelWindow = {
-  display: "flex",
-  flexDirection: "column",
-  background: "rgba(255, 255, 255, 0.65)",
-  border: "1px solid rgba(0, 0, 0, 0.06)",
-  backdropFilter: "blur(6px)",
-  borderRadius: 14,
-  overflow: "hidden",
-};
+.inboxTitleRow h1{
+  margin:0;
+  font-size:18px;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
 
-const emptyChatPlaceholderWindow = {
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  background: "#f0f4f9", 
-};
+.sortSelect{
+  border:0;
+  outline:0;
+  background:transparent;
+  color:rgba(17,17,17,.58);
+  font-size:12px;
+  font-family:"Google Sans";
+  cursor:pointer;
+  transition:color .18s ease;
+}
 
-const placeholderTitle = {
-  fontSize: "16px", 
-  fontWeight: 500, 
-  color: "#111111",
-  letterSpacing: "-0.01em",
-};
+.sortSelect:hover,
+.sortSelect:focus{
+  color:#111111;
+}
 
-const placeholderSubtitle = {
-  marginTop: "6px", 
-  fontSize: "14px", 
-  color: "rgba(17,17,17,0.54)",
-};
+.conversationSearch{
+  height:34px;
+  margin:0 12px 12px;
+  padding:0 10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-radius:7px;
+  background:#eef1f4;
+  color:rgba(17,17,17,.48);
+}
 
-const chatTopHeaderBar = {
-  padding: "16px 20px",
-  borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-  background: "rgba(255, 255, 255, 0.4)",
-};
+.conversationSearch input{
+  min-width:0;
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#111111;
+  font:inherit;
+  font-size:14px;
+}
 
-const headerConversationNameText = {
-  fontWeight: 500, 
-  fontSize: "16px", 
-  color: "#111111", 
-  letterSpacing: "-0.01em"
-};
+.conversationSearch input::placeholder{
+  color:rgba(17,17,17,.44);
+}
 
-const messageThreadContainer = {
-  flex: 1,
-  overflowY: "auto",
-  padding: "20px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  background: "#f0f4f9", 
-};
+.conversationList{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  padding:4px 10px 12px;
+}
 
-const emptyHistoryMessageText = {
-  color: "rgba(17,17,17,0.52)",
-  textAlign: "center",
-  marginTop: "30px",
-  fontSize: "14px",
-};
+.emptyList{
+  padding:18px 8px;
+  color:rgba(17,17,17,.50);
+  font-size:14px;
+  line-height:1.4;
+}
 
-const chatMessageBubbleStyle = {
-  color: "#111111",
-  padding: "10px 14px",
-  maxWidth: "60%",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-  fontSize: "14px",
-  lineHeight: "1.6",
-  wordBreak: "break-word",
-  whiteSpace: "pre-wrap",
-};
+.conversationItem{
+  position:relative;
+  width:100%;
+  display:grid;
+  grid-template-columns:42px minmax(0, 1fr) 42px;
+  gap:10px;
+  padding:10px 9px;
+  border-radius:7px;
+  text-align:left;
+  font-family:"Google Sans";
+  transition:background .16s ease;
+}
 
-const messageInputConsolePanel = {
-  padding: "14px 20px",
-  background: "rgba(255, 255, 255, 0.5)",
-  borderTop: "1px solid rgba(0, 0, 0, 0.05)",
-  display: "flex",
-  gap: "12px",
-  alignItems: "center",
-};
+.conversationItem:hover,
+.conversationItem.selected{
+  background:#e8f0ff;
+}
 
-const messageInputTextArea = {
-  flex: 1,
-  borderRadius: "12px",
-  padding: "10px 14px",
-  border: "1px solid rgba(0, 0, 0, 0.08)",
-  outline: "none",
-  fontSize: "14px",
-  background: "rgba(255, 255, 255, 0.85)",
-  resize: "none",
-  fontFamily: "inherit",
-  lineHeight: "1.5",
-  maxHeight: "80px",
-  overflowY: "auto",
-};
+.chatAvatar{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  object-fit:cover;
+  flex-shrink:0;
+}
 
-const messageSendBtnAction = {
-  width: "42px",
-  height: "42px",
-  borderRadius: "50%",
-  background: "#111111",
-  color: "#FFFFFF",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "15px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  paddingLeft: "2px",
-  flexShrink: 0,
-  transition: "opacity 0.15s ease",
-};
+.chatAvatar.small{
+  width:34px;
+  height:34px;
+}
+
+.chatAvatar.fallback{
+  display:grid;
+  place-items:center;
+  background:#ecebe7;
+  color:#111111;
+  font-size:14px;
+  font-weight:500;
+}
+
+.conversationCopy{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+.conversationNameRow{
+  display:flex;
+  align-items:center;
+}
+
+.conversationNameRow strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#111111;
+  font-size:14px;
+  font-weight:500;
+}
+
+.conversationPreview{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:rgba(17,17,17,.58);
+  font-size:13px;
+}
+
+.conversationPreview.unread{
+  color:#111111;
+  font-weight:500;
+}
+
+.conversationMeta{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:flex-start;
+  gap:5px;
+  padding-top:1px;
+}
+
+.conversationTime{
+  color:rgba(17,17,17,.46);
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.unreadBadge{
+  min-width:20px;
+  height:18px;
+  padding:0 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background:${CRIMSON};
+  color:#ffffff;
+  font-size:11px;
+  font-weight:500;
+  box-shadow:0 6px 14px rgba(215,38,61,.22);
+}
+
+.chatWindow{
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  background:#fbfbfa;
+}
+
+.emptyChat{
+  flex:1;
+  display:grid;
+  place-content:center;
+  text-align:center;
+  background:#fbfbfa;
+}
+
+.emptyChat h2{
+  margin:0;
+  font-size:18px;
+  font-weight:500;
+}
+
+.emptyChat p{
+  margin:6px 0 0;
+  color:rgba(17,17,17,.52);
+  font-size:14px;
+}
+
+.chatHeader{
+  min-height:58px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  padding:0 18px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  background:#fbfbfa;
+}
+
+.chatHeaderIdentity{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+
+.chatHeader h2{
+  margin:0;
+  font-size:14px;
+  font-weight:500;
+  line-height:1.2;
+}
+
+.messageThread{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  padding:18px 28px 26px;
+  background:#fbfbfa;
+}
+
+.emptyHistory{
+  margin-top:32px;
+  text-align:center;
+  color:rgba(17,17,17,.52);
+  font-size:14px;
+}
+
+.messageGroup{
+  display:flex;
+  flex-direction:column;
+  margin-bottom:18px;
+}
+
+.messageGroup.theirs{
+  align-items:flex-start;
+}
+
+.messageGroup.mine{
+  align-items:flex-end;
+}
+
+.messageMeta{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:0 0 6px;
+  font-size:12px;
+}
+
+.messageSender{
+  color:rgba(17,17,17,.68);
+  font-weight:600;
+}
+
+.messageTime{
+  color:rgba(17,17,17,.52);
+  font-weight:400;
+}
+
+.messageBubble{
+  position:relative;
+  max-width:min(460px, 72%);
+  padding:10px 14px;
+  color:#111111;
+  font-size:14px;
+  line-height:1.45;
+  white-space:pre-wrap;
+  word-break:break-word;
+  box-shadow:0 2px 6px rgba(0,0,0,.04);
+}
+
+.messageBubble.deleted{
+  color:rgba(17,17,17,.48);
+  font-style:italic;
+}
+
+.deletedMessageText{
+  color:rgba(17,17,17,.48);
+}
+
+.deleteMessageBtn{
+  position:absolute;
+  top:-8px;
+  right:-8px;
+  width:24px;
+  height:24px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  background:#ffffff;
+  color:rgba(17,17,17,.56);
+  border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 6px 14px rgba(0,0,0,.10);
+  opacity:0;
+  transform:translateY(2px);
+  transition:opacity .16s ease, transform .16s ease, color .16s ease;
+}
+
+.messageGroup.mine .messageBubble:hover .deleteMessageBtn{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.deleteMessageBtn:hover{
+  color:${CRIMSON};
+}
+
+.messageGroup.theirs .messageBubble{
+  background:#f0f3f4;
+  border-radius:10px 10px 10px 3px;
+}
+
+.messageGroup.mine .messageBubble{
+  background:#dbe9ff;
+  border-radius:10px 10px 3px 10px;
+}
+
+.attachmentMessage{
+  display:grid;
+  gap:8px;
+}
+
+.attachmentMessage p{
+  margin:0;
+}
+
+.attachmentMessage audio{
+  width:min(320px, 64vw);
+  height:36px;
+}
+
+.composer{
+  padding:10px 34px 16px;
+  flex-shrink:0;
+  border-top:1px solid rgba(0,0,0,.08);
+  background:#fbfbfa;
+}
+
+.composerBox{
+  position:relative;
+  min-height:62px;
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  padding:8px;
+  border-radius:7px;
+  border:1px solid ${LASER_BLUE};
+  box-shadow:0 0 0 2px rgba(43,89,195,.08);
+  background:#ffffff;
+}
+
+.composerBox textarea{
+  flex:1;
+  min-height:42px;
+  max-height:92px;
+  resize:none;
+  border:0;
+  outline:0;
+  padding:3px 4px;
+  background:transparent;
+  color:#111111;
+  font:inherit;
+  font-size:14px;
+  line-height:1.45;
+}
+
+.pendingAttachments{
+  position:absolute;
+  left:10px;
+  bottom:48px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  max-width:calc(100% - 20px);
+}
+
+.attachmentChip{
+  max-width:210px;
+  min-width:0;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:0 7px 0 6px;
+  border-radius:7px;
+  background:#ffffff;
+  border:1px solid rgba(0,0,0,.10);
+  color:#111111;
+  text-decoration:none;
+  font-family:"Google Sans";
+  font-size:12px;
+  line-height:1;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+  transition:background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.attachmentChip:hover{
+  background:#f7f8f9;
+  box-shadow:0 4px 10px rgba(0,0,0,.07);
+  transform:translateY(-1px);
+}
+
+.attachmentIcon{
+  width:16px;
+  height:16px;
+  display:grid;
+  place-items:center;
+  border-radius:4px;
+  flex:0 0 auto;
+}
+
+.attachmentIcon img{
+  width:16px;
+  height:16px;
+  object-fit:contain;
+  display:block;
+}
+
+.attachmentName{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.attachmentRemove{
+  width:14px;
+  height:14px;
+  display:grid;
+  place-items:center;
+  color:rgba(17,17,17,.60);
+  flex:0 0 auto;
+}
+
+.emojiPicker{
+  position:absolute;
+  right:122px;
+  bottom:48px;
+  width:178px;
+  padding:8px;
+  display:grid;
+  grid-template-columns:repeat(6, 1fr);
+  gap:4px;
+  border-radius:10px;
+  background:#ffffff;
+  border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 14px 34px rgba(0,0,0,.12);
+}
+
+.emojiPicker button{
+  width:24px;
+  height:24px;
+  display:grid;
+  place-items:center;
+  border-radius:6px;
+  font-size:16px;
+  transition:background .18s ease, transform .18s ease;
+}
+
+.emojiPicker button:hover{
+  background:#eef1f4;
+  transform:translateY(-1px);
+}
+
+.composerTools{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:0 2px 2px 0;
+}
+
+.composerTools button{
+  width:24px;
+  height:24px;
+  display:grid;
+  place-items:center;
+  border-radius:6px;
+  color:rgba(17,17,17,.58);
+  transition:background .18s ease, color .18s ease, transform .18s ease;
+}
+
+.composerTools button:first-child{
+  background:#dbe9ff;
+  color:${LASER_BLUE};
+}
+
+.composerTools button:hover{
+  background:rgba(0,0,0,.05);
+  color:#111111;
+  transform:translateY(-1px);
+}
+
+.composerTools button.recording{
+  background:${CRIMSON};
+  color:#ffffff;
+}
+
+.fileInput{
+  display:none;
+}
+
+.sendButton{
+  height:38px;
+  padding:0 15px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border-radius:7px;
+  background:${LASER_BLUE};
+  color:#ffffff;
+  font-family:"Google Sans";
+  font-size:13px;
+  font-weight:500;
+  box-shadow:0 8px 18px rgba(43,89,195,.24);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+
+.sendButton:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(43,89,195,.30);
+}
+
+.sendButton:disabled{
+  opacity:.72;
+  cursor:not-allowed;
+  transform:none;
+}
+
+.sendError{
+  margin-top:8px;
+  color:${CRIMSON};
+  font-size:12px;
+}
+
+@keyframes chatDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media (max-width:900px){
+  .chatPage{
+    padding:18px 16px 24px;
+  }
+
+  .inboxShell{
+    grid-template-columns:260px minmax(0, 1fr);
+  }
+}
+
+@media (max-width:720px){
+  .inboxShell{
+    grid-template-columns:1fr;
+    height:auto;
+    min-height:0;
+  }
+
+  .inboxSidebar{
+    max-height:320px;
+    border-right:0;
+    border-bottom:1px solid rgba(0,0,0,.08);
+  }
+
+  .chatWindow{
+    min-height:520px;
+  }
+
+  .messageThread{
+    padding:16px;
+  }
+
+  .composer{
+    padding:10px 14px 14px;
+  }
+}
+`;

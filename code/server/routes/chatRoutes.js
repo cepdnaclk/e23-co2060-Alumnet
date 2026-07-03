@@ -9,6 +9,7 @@ const {
   getChatContacts,
   getConversationMessages,
   sendMessage,
+  deleteMessage,
 } = require("../controllers/chatController");
 
 // NEW: Get all connected mentors/mentees
@@ -35,6 +36,12 @@ router.post(
   "/conversations/:id/messages",
   protect,
   sendMessage
+);
+
+router.delete(
+  "/messages/:id",
+  protect,
+  deleteMessage
 );
 
 module.exports = router;

@@ -1,5 +1,5 @@
 export const theme = {
-  bg: "#e8e7e3",
+  bg: "#eef7fb",
   surface: "rgba(250,249,246,0.78)",
   surfaceStrong: "rgba(255,255,255,0.88)",
   text: "#111111",
@@ -8,8 +8,8 @@ export const theme = {
   borderSoft: "rgba(0,0,0,0.06)",
   black: "#111111",
   white: "#ffffff",
-  teal: "#7ea7ae",
-  tealSoft: "rgba(126,167,174,0.16)",
+  teal: "#5f9dad",
+  tealSoft: "rgba(95,157,173,0.16)",
 };
 
 export const pageWrapStyle = () => ({
@@ -18,7 +18,7 @@ export const pageWrapStyle = () => ({
   display: "grid",
   placeItems: "center",
   padding: "32px 18px",
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
 });
 
 export const cardStyle = {
@@ -76,7 +76,7 @@ export const inputStyle = {
   background: "rgba(255,255,255,0.76)",
   color: theme.text,
   marginBottom: 10,
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
   fontSize: 15,
   transition: "border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease",
 };
@@ -101,7 +101,7 @@ export const btnPrimaryStyle = {
   color: theme.white,
   fontSize: 15,
   fontWeight: 400,
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
 };
 
 export const btnSecondaryStyle = {
@@ -113,7 +113,7 @@ export const btnSecondaryStyle = {
   background: "rgba(255,255,255,0.72)",
   color: theme.text,
   fontWeight: 400,
-  fontFamily: '"Google Sans", Arial, sans-serif',
+  fontFamily: '"Google Sans"',
 };
 
 export const footerRowStyle = {
