@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
+import LoadingScreen from "../components/LoadingScreen";
 import { getStudentRequests } from "../api";
 
 export default function StudentRequests() {
@@ -31,7 +32,7 @@ export default function StudentRequests() {
       {err && <div style={errorBox}>{err}</div>}
 
       {loading ? (
-        <div>Loading...</div>
+        <LoadingScreen text="Loading requests..." />
       ) : requests.length === 0 ? (
         <div>No requests sent yet.</div>
       ) : (

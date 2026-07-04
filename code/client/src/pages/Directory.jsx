@@ -1,34 +1,49 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import PageShell from "../components/PageShell";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { getDirectory } from "../api";
+import LoadingScreen from "../components/LoadingScreen";
 
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
+import chemicalIcon from "../assets/chemical.png";
+import civilIcon from "../assets/civil.png";
+import computerIcon from "../assets/computer.png";
+import electricalIcon from "../assets/elec.png";
+import manufacturingIcon from "../assets/manu.png";
+import mechanicalIcon from "../assets/mechanical.png";
+import classIcon from "../assets/class.png";
 
 export default function Directory() {
   const [alumni, setAlumni] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("");
+  const [appliedDepartment, setAppliedDepartment] = useState("");
 
-  const loadDirectory = async () => {
+  const loadDirectory = async (searchValue = search, departmentValue = appliedDepartment) => {
     setLoading(true);
 
     try {
-      const data = await getDirectory(search, department);
+      const data = await getDirectory(searchValue, departmentValue);
       setAlumni(data);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   };
 
   useEffect(() => {
-    loadDirectory();
-  }, []);
+    const timeout = window.setTimeout(() => {
+      loadDirectory(search, appliedDepartment);
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [search, appliedDepartment]);
 
   const getStatusIcon = (status) => {
     if (status === "verified") return verifiedIcon;
@@ -36,234 +51,501 @@ export default function Directory() {
     return pendingIcon;
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setAppliedDepartment(department);
+    loadDirectory(search, department);
+  };
+
   return (
-    <PageShell title="Directory" subtitle="Connect with alumni mentors">
-      <div style={filterBar}>
-        <input
-          placeholder="Search alumni..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={searchInput}
-        />
+    <main className="directoryPage">
+      <style>{css}</style>
 
-        <select
-          value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-          style={deptSelect}
-        >
-          <option value="">All Departments</option>
-          <option>Chemical & Process Engineering</option>
-          <option>Civil Engineering</option>
-          <option>Computer Engineering</option>
-          <option>Electrical and Electronic Engineering</option>
-          <option>Mechanical Engineering</option>
-          <option>Manufacturing and Industrial Engineering</option>
-        </select>
+      <section className="directoryShell">
+        <form className="directoryFilters" onSubmit={handleSearchSubmit}>
+          <label className="directorySearch">
+            <Search size={15} strokeWidth={2} />
+            <input
+              placeholder="Search alumni"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
 
-        <button style={searchBtn} onClick={loadDirectory}>
-          Search
-        </button>
-      </div>
+          <label className="departmentSelectWrap">
+            <SlidersHorizontal size={15} strokeWidth={2} />
+            <select
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+            >
+              <option value="">All Departments</option>
+              <option>Chemical & Process Engineering</option>
+              <option>Civil Engineering</option>
+              <option>Computer Engineering</option>
+              <option>Electrical and Electronic Engineering</option>
+              <option>Mechanical Engineering</option>
+              <option>Manufacturing and Industrial Engineering</option>
+            </select>
+          </label>
 
-      {loading ? (
-        <div>Loading...</div>
-      ) : alumni.length === 0 ? (
-        <div>No alumni found.</div>
-      ) : (
-        <div style={grid}>
-          {alumni.map((a) => {
-            const capacity = Number(a.preferred_mentee_capacity || 0);
-            const accepted = Number(a.accepted_mentees_count || 0);
-            const remaining = capacity - accepted;
+          <button className="searchButton" type="submit">
+            Search
+          </button>
+        </form>
 
-            return (
-              <div key={a.id} style={card}>
-                <div style={topRow}>
-                  {a.avatar_url ? (
-                    <img
-                      src={a.avatar_url}
-                      alt={a.full_name}
-                      style={avatar}
-                    />
-                  ) : (
-                    <div style={avatarFallback}>
-                      {a.full_name?.slice(0, 1)?.toUpperCase() || "A"}
+        {loading && !hasLoaded ? (
+          <LoadingScreen text="Loading alumni..." />
+        ) : alumni.length === 0 ? (
+          <div className="directoryState">No alumni found.</div>
+        ) : (
+          <div className={`alumniList ${loading ? "refreshing" : ""}`}>
+            {alumni.map((a) => {
+              const capacity = Number(a.preferred_mentee_capacity || 0);
+              const accepted = Number(a.accepted_mentees_count || 0);
+              const remaining = Math.max(capacity - accepted, 0);
+              const interests = getInterestTags(a.primary_interests);
+              const departmentIcon = getDepartmentIcon(a.department);
+
+              return (
+                <article key={a.id} className="alumniItem">
+                  <div className="avatarColumn">
+                    {a.avatar_url ? (
+                      <img src={a.avatar_url} alt={a.full_name} className="avatar" />
+                    ) : (
+                      <div className="avatar fallback">
+                        {a.full_name?.slice(0, 1)?.toUpperCase() || "A"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="alumniBody">
+                    <div className="alumniTopLine">
+                      <div className="identity">
+                        <span className="nameRow">
+                          <h2>{a.full_name}</h2>
+                          <img
+                            src={getStatusIcon(a.verification_status)}
+                            alt={a.verification_status}
+                            className="statusIcon"
+                          />
+                        </span>
+                        <p>{formatRole(a.job_title, a.organization)}</p>
+                      </div>
+
                     </div>
-                  )}
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={nameRow}>
-                      <div style={name}>{a.full_name}</div>
-                      <img
-                        src={getStatusIcon(a.verification_status)}
-                        alt={a.verification_status}
-                        style={statusIcon}
-                      />
+                    <div className="metaLine">
+                      <span className="departmentMeta">
+                        {departmentIcon && <img src={departmentIcon} alt="" />}
+                        {a.department || "Department not set"}
+                      </span>
+                      <span className="classMeta">
+                        <img src={classIcon} alt="" />
+                        {a.graduation_year ? `Class of ${a.graduation_year}` : "Graduation year not set"}
+                      </span>
                     </div>
-                    <div style={meta}>{a.job_title || "-"}</div>
-                    <div style={meta}>{a.organization || "-"}</div>
+
+                    <p className="bioText">{a.bio || "No bio has been added yet."}</p>
+
+                    {interests.length > 0 && (
+                      <div className="interestTags">
+                        {interests.map((interest) => (
+                          <span key={interest}>{interest}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                <div style={row}>
-                  <div style={label}>Department</div>
-                  <div style={value}>{a.department || "-"}</div>
-                </div>
-
-                <div style={row}>
-                  <div style={label}>Mentor Capacity</div>
-                  <div style={value}>
-                    {accepted} / {capacity}
+                  <div className="actionColumn">
+                    <span className={`availability ${remaining > 0 ? "open" : "full"}`}>
+                      {remaining > 0 ? `${remaining} available` : "Mentor full"}
+                    </span>
+                    <Link
+                      to={`/directory/${a.id}`}
+                      state={{ alumniName: a.full_name }}
+                      className="viewLink"
+                    >
+                      View Profile
+                    </Link>
                   </div>
-                </div>
-
-                <div style={row}>
-                  <div style={label}>Availability</div>
-                  <div
-                    style={{
-                      ...value,
-                      color: remaining > 0 ? "#17a84f" : "#b91c1c",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {remaining > 0 ? `${remaining} slots available` : "Mentor full"}
-                  </div>
-                </div>
-
-                <Link to={`/directory/${a.id}`} style={viewBtn}>
-                  View Profile
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </PageShell>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
 
-const filterBar = {
-  display: "flex",
-  gap: 10,
-  marginBottom: 26,
-  flexWrap: "wrap",
-  fontSize: 14,
-};
+function getInterestTags(value = "") {
+  return value
+    .split(/[,|]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+}
 
-const searchInput = {
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.7)",
-  minWidth: 220,
-};
+function formatRole(title, organization) {
+  if (title && organization) return `${title} at ${organization}`;
+  return title || organization || "Alumni mentor";
+}
 
-const deptSelect = {
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.7)",
-};
+function getDepartmentIcon(department = "") {
+  const normalized = department.toLowerCase();
 
-const searchBtn = {
-  padding: "10px 16px",
-  borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.7)",
-  cursor: "pointer",
-};
+  if (normalized.includes("chemical")) return chemicalIcon;
+  if (normalized.includes("civil")) return civilIcon;
+  if (normalized.includes("computer")) return computerIcon;
+  if (normalized.includes("electrical") || normalized.includes("electronic")) {
+    return electricalIcon;
+  }
+  if (normalized.includes("manufacturing") || normalized.includes("industrial")) {
+    return manufacturingIcon;
+  }
+  if (normalized.includes("mechanical")) return mechanicalIcon;
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-  gap: 20,
-};
+  return null;
+}
 
-const card = {
-  padding: 18,
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.65)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  backdropFilter: "blur(6px)",
-};
+const css = `
+.directoryPage{
+  min-height:calc(100vh - 72px);
+  background:#fbfbfa;
+  color:#111111;
+  font-family:"Google Sans";
+  padding:26px 28px 34px;
+  animation:directoryDissolve .22s ease both;
+}
 
-const topRow = {
-  display: "flex",
-  gap: 12,
-  alignItems: "center",
-  marginBottom: 14,
-};
+.directoryShell{
+  width:min(960px, 100%);
+  margin:0 auto;
+}
 
-const avatar = {
-  width: 52,
-  height: 52,
-  borderRadius: "50%",
-  objectFit: "cover",
-  flexShrink: 0,
-};
+.directoryFilters{
+  display:grid;
+  grid-template-columns:minmax(220px, 1fr) minmax(260px, 340px) auto;
+  gap:10px;
+  align-items:center;
+  margin-bottom:20px;
+}
 
-const avatarFallback = {
-  width: 52,
-  height: 52,
-  borderRadius: "50%",
-  display: "grid",
-  placeItems: "center",
-  background: "#ecebe7",
-  fontWeight: 600,
-  flexShrink: 0,
-};
+.directorySearch,
+.departmentSelectWrap{
+  height:36px;
+  min-width:0;
+  padding:0 10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-radius:7px;
+  background:#eef1f4;
+  color:rgba(17,17,17,.48);
+}
 
-const nameRow = {
-  display: "flex",
-  alignItems: "center",
-  gap: 6,
-  minWidth: 0,
-};
+.directorySearch input,
+.departmentSelectWrap select{
+  width:100%;
+  min-width:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#111111;
+  font:inherit;
+  font-size:14px;
+}
 
-const name = {
-  fontSize: 16,
-  fontWeight: 500,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
+.departmentSelectWrap select{
+  cursor:pointer;
+}
 
-const statusIcon = {
-  width: 18,
-  height: 18,
-  flexShrink: 0,
-};
+.directorySearch input::placeholder{
+  color:rgba(17,17,17,.44);
+}
 
-const meta = {
-  fontSize: 13,
-  color: "rgba(0,0,0,0.6)",
-};
+.searchButton{
+  height:36px;
+  padding:0 16px;
+  border-radius:7px;
+  background:#2b59c3;
+  color:#ffffff;
+  font-size:13px;
+  font-weight:500;
+  box-shadow:0 8px 18px rgba(43,89,195,.20);
+  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
 
-const row = {
-  display: "grid",
-  gridTemplateColumns: "110px 1fr",
-  gap: 12,
-  marginTop: 8,
-  fontSize: 14,
-  alignItems: "start",
-};
+.searchButton:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(43,89,195,.28);
+}
 
-const label = {
-  color: "rgba(0,0,0,0.6)",
-};
+.directoryState{
+  padding:28px 4px;
+  border-top:1px solid rgba(0,0,0,.08);
+  color:rgba(17,17,17,.52);
+  font-size:14px;
+  text-align:center;
+}
 
-const value = {
-  wordBreak: "break-word",
-  textAlign: "left",
-};
+.alumniList{
+  border-top:1px solid rgba(0,0,0,.08);
+  transition:opacity .18s ease;
+}
 
-const viewBtn = {
-  display: "inline-block",
-  marginTop: 16,
-  padding: "8px 14px",
-  borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.08)",
-  textDecoration: "none",
-  fontSize: 13,
-  color: "#111111",
-};
+.alumniList.refreshing{
+  opacity:.62;
+}
+
+.alumniItem{
+  display:grid;
+  grid-template-columns:58px minmax(0, 1fr) 136px;
+  gap:14px;
+  padding:18px 0;
+  border-bottom:1px solid rgba(0,0,0,.08);
+}
+
+.avatarColumn{
+  padding-top:2px;
+}
+
+.avatar{
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  object-fit:cover;
+  display:grid;
+  place-items:center;
+  background:#ecebe7;
+  color:#111111;
+  font-size:18px;
+  font-weight:500;
+}
+
+.alumniBody{
+  min-width:0;
+}
+
+.alumniTopLine{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  min-width:0;
+}
+
+.identity{
+  min-width:0;
+}
+
+.nameRow{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  min-width:0;
+}
+
+.nameRow h2{
+  min-width:0;
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#111111;
+  font-size:15px;
+  line-height:1.2;
+  font-weight:540;
+  letter-spacing:0;
+}
+
+.statusIcon{
+  width:16px;
+  height:16px;
+  object-fit:contain;
+  flex:0 0 auto;
+}
+
+.identity p{
+  margin:4px 0 0;
+  color:rgba(17,17,17,.52);
+  font-size:13px;
+  line-height:1.35;
+}
+
+.metaLine{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px 16px;
+  margin-top:7px;
+  color:#2b59c3;
+  font-size:12px;
+  line-height:1.4;
+}
+
+.departmentMeta,
+.classMeta{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-width:0;
+}
+
+.departmentMeta img,
+.classMeta img{
+  width:14px;
+  height:14px;
+  object-fit:contain;
+  display:block;
+  flex:0 0 auto;
+}
+
+.bioText{
+  max-width:680px;
+  margin:10px 0 0;
+  color:#111111;
+  font-size:13px;
+  line-height:1.55;
+}
+
+.interestTags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:10px;
+}
+
+.interestTags span{
+  max-width:150px;
+  min-width:0;
+  padding:4px 9px;
+  border-radius:7px;
+  border:1px solid rgba(0,0,0,.08);
+  background:#eef1f4;
+  color:rgba(17,17,17,.64);
+  font-size:12px;
+  line-height:1.1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.actionColumn{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:10px;
+}
+
+.availability{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:22px;
+  padding:0 9px;
+  border-radius:999px;
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.availability.open{
+  background:rgba(34,197,94,.16);
+  color:#15803d;
+  animation:availabilityPulse 1.8s ease-in-out infinite;
+}
+
+.availability.full{
+  background:rgba(215,38,61,.10);
+  color:#b91c1c;
+  animation:availabilityFullPulse 1.8s ease-in-out infinite;
+}
+
+.viewLink{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  background:#050505;
+  color:#ffffff;
+  font-size:13px;
+  line-height:1;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+  transition:transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+}
+
+.viewLink:hover{
+  background:#eef1f4;
+  color:#111111;
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+
+@keyframes directoryDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@keyframes availabilityPulse{
+  0%, 100%{ box-shadow:0 6px 16px rgba(21,128,61,.10); }
+  50%{ box-shadow:0 7px 22px rgba(21,128,61,.28); }
+}
+
+@keyframes availabilityFullPulse{
+  0%, 100%{ box-shadow:0 6px 16px rgba(185,28,28,.10); }
+  50%{ box-shadow:0 7px 22px rgba(185,28,28,.26); }
+}
+
+@media (max-width:820px){
+  .directoryFilters{
+    grid-template-columns:1fr;
+  }
+
+  .searchButton{
+    width:100%;
+  }
+
+  .alumniItem{
+    grid-template-columns:48px minmax(0, 1fr);
+  }
+
+  .actionColumn{
+    grid-column:2;
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+}
+
+@media (max-width:560px){
+  .directoryPage{
+    padding:18px 16px 28px;
+  }
+
+  .alumniItem{
+    grid-template-columns:42px minmax(0, 1fr);
+    gap:11px;
+    padding:16px 0;
+  }
+
+  .avatar{
+    width:40px;
+    height:40px;
+    font-size:16px;
+  }
+
+  .alumniTopLine{
+    display:block;
+  }
+
+  .actionColumn{
+    gap:8px;
+  }
+
+  .viewLink{
+    padding:0 10px;
+  }
+}
+`;

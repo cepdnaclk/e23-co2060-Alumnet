@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
 import Directory from "./pages/Directory";
 import AlumniPublicProfile from "./pages/AlumniPublicProfile";
 import RequestMentorship from "./pages/RequestMentorship";
@@ -26,11 +27,13 @@ import MyCreatedEvents from "./pages/MyCreatedEvents";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
+import Breadcrumbs from "./components/Breadcrumbs";
 
 function AppLayout({ children }) {
   return (
     <div className="appRouteFrame">
       <Navbar />
+      <Breadcrumbs />
       {children}
     </div>
   );
@@ -218,6 +221,17 @@ export default function App() {
             <AdminRoute>
               <AppLayout>
                 <AdminEvents />
+              </AppLayout>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin-users"
+          element={
+            <AdminRoute>
+              <AppLayout>
+                <AdminUsers />
               </AppLayout>
             </AdminRoute>
           }

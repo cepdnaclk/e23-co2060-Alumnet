@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import PageShell from "../components/PageShell";
+import LoadingScreen from "../components/LoadingScreen";
 import { getEventById, registerForEvent } from "../api";
+import dateIcon from "../assets/date.png";
+import timeIcon from "../assets/time.png";
+import locationIcon from "../assets/location.png";
+import speakerIcon from "../assets/speaker.png";
+import registerIcon from "../assets/register.png";
 
 export default function EventDetails() {
   const { id } = useParams();
@@ -57,26 +62,24 @@ export default function EventDetails() {
   };
 
   if (loading) {
-    return (
-      <PageShell title="Event Details">
-        <div>Loading...</div>
-      </PageShell>
-    );
+    return <LoadingScreen text="Loading event details..." />;
   }
 
   if (err) {
     return (
-      <PageShell title="Event Details">
-        <div style={errorBox}>{err}</div>
-      </PageShell>
+      <main className="eventDetailsPage">
+        <div className="eventMessage error">{err}</div>
+        <EventDetailsStyles />
+      </main>
     );
   }
 
   if (!event) {
     return (
-      <PageShell title="Event Details">
-        <div>Event not found.</div>
-      </PageShell>
+      <main className="eventDetailsPage">
+        <div className="eventMessage">Event not found.</div>
+        <EventDetailsStyles />
+      </main>
     );
   }
 
@@ -85,188 +88,334 @@ export default function EventDetails() {
   const remaining = Math.max(slots - registered, 0);
 
   return (
-    <PageShell title="Event Details" subtitle="View full event information">
-      <div style={card}>
-        <div style={heroTitleBlock}>
-          <h1 style={eventTitle}>{event.title}</h1>
-          <p style={eventCreator}>Hosted by {event.created_by_name || "-"}</p>
-        </div>
-
-        {event.image_url && (
-          <img src={event.image_url} alt={event.title} style={eventPoster} />
-        )}
-
-        <div style={detailsGrid}>
-          <div style={detailBox}>
-            <span style={detailLabel}>Date</span>
-            <strong>{formatDate(event.event_date)}</strong>
-          </div>
-
-          <div style={detailBox}>
-            <span style={detailLabel}>Time</span>
-            <strong>{formatTime(event.event_time)}</strong>
-          </div>
-
-          <div style={detailBox}>
-            <span style={detailLabel}>Venue</span>
-            <strong>{event.venue || "-"}</strong>
-          </div>
-
-          <div style={detailBox}>
-            <span style={detailLabel}>Speaker</span>
-            <strong>{event.speaker || "-"}</strong>
-          </div>
-
-          <div style={detailBox}>
-            <span style={detailLabel}>Registered</span>
-            <strong>
-              {registered} / {slots}
-            </strong>
-          </div>
-
-          <div style={detailBox}>
-            <span style={detailLabel}>Availability</span>
-            <strong>
-              {remaining > 0 ? `${remaining} slots available` : "Event full"}
-            </strong>
-          </div>
-        </div>
-
-        <div style={actionRow}>
-          {event.zoom_link && (
-            <a
-              href={event.zoom_link}
-              target="_blank"
-              rel="noreferrer"
-              style={zoomBtn}
-            >
-              Join Zoom Session
-            </a>
-          )}
-
-          {event.is_registered ? (
-            <button
-              style={{ ...joinBtn, opacity: 0.6, cursor: "not-allowed" }}
-              disabled
-            >
-              Already Joined
-            </button>
+    <main className="eventDetailsPage">
+      <section className="eventDetailsGrid">
+        <aside className="eventPosterPanel">
+          {event.image_url ? (
+            <img className="eventPosterImage" src={event.image_url} alt={event.title} />
           ) : (
-            <button
-              style={{
-                ...joinBtn,
-                opacity: remaining > 0 ? 1 : 0.6,
-                cursor: remaining > 0 ? "pointer" : "not-allowed",
-              }}
-              onClick={handleJoin}
-              disabled={remaining <= 0}
-            >
-              {remaining <= 0 ? "Event Full" : "Join Event"}
-            </button>
+            <div className="eventPosterFallback">{event.title?.charAt(0) || "E"}</div>
           )}
-        </div>
+        </aside>
 
-        {event.description && <p style={desc}>{event.description}</p>}
-      </div>
-    </PageShell>
+        <section className="eventInfoPanel" aria-label="Event details">
+          <div className="eventHeadingRow">
+            <div>
+              <h1>{event.title}</h1>
+              <p>By {event.created_by_name || "Alumnet"}</p>
+            </div>
+
+            {event.is_registered ? (
+              <button className="joinEventBtn disabled" disabled>
+                Already Joined
+              </button>
+            ) : (
+              <button
+                className="joinEventBtn"
+                onClick={handleJoin}
+                disabled={remaining <= 0}
+              >
+                {remaining <= 0 ? "Event Full" : "Join Event"}
+              </button>
+            )}
+          </div>
+
+          <div className="eventMetaList">
+            <EventMeta icon={dateIcon} label="Date" value={formatDate(event.event_date)} />
+            <EventMeta icon={timeIcon} label="Time" value={formatTime(event.event_time)} />
+            <EventMeta icon={locationIcon} label="Location" value={event.venue || "-"} />
+            <EventMeta icon={speakerIcon} label="Speaker" value={event.speaker || "-"} />
+            <EventMeta
+              icon={registerIcon}
+              label="Registered"
+              value={`${registered} / ${slots}`}
+              status={remaining > 0 ? "available" : "full"}
+            />
+          </div>
+
+          <div className="eventTextBlock">
+            <h2>Details</h2>
+            <p>{event.description || "No event details have been added yet."}</p>
+          </div>
+
+          <div className="eventTextBlock">
+            <h2>Links</h2>
+            {event.zoom_link ? (
+              <a className="eventLink" href={event.zoom_link} target="_blank" rel="noreferrer">
+                Join Zoom Session
+              </a>
+            ) : (
+              <p>No links provided.</p>
+            )}
+          </div>
+
+        </section>
+      </section>
+
+      <EventDetailsStyles />
+    </main>
   );
 }
 
-const card = {
-  padding: 28,
-  borderRadius: 22,
-  background: "rgba(255,255,255,0.78)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  boxShadow: "0 14px 40px rgba(0,0,0,0.06)",
-};
+function EventMeta({ icon, label, value, status = "" }) {
+  return (
+    <div className={`eventMetaRow ${status}`}>
+      <span className="eventMetaIcon">{icon && <img src={icon} alt="" />}</span>
+      <span className="eventMetaLabel">{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
 
-const heroTitleBlock = {
-  marginBottom: 22,
-  paddingBottom: 16,
-  borderBottom: "1px solid rgba(0,0,0,0.08)",
-};
+function EventDetailsStyles() {
+  return (
+    <style>{`
+      .eventDetailsPage {
+        width: 100%;
+        min-height: calc(100vh - 116px);
+        margin: 0 auto;
+        padding: 34px 0 70px;
+        background: #fbfbfa;
+        color: #050505;
+        font-family: "Google Sans", Arial, sans-serif;
+      }
 
-const eventTitle = {
-  margin: 0,
-  fontSize: 36,
-  lineHeight: 1.15,
-  fontWeight: 800,
-  color: "#111111",
-  letterSpacing: "-0.04em",
-};
+      .eventDetailsGrid {
+        width: min(1124px, calc(100% - 48px));
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(280px, 410px) minmax(0, 1fr);
+        gap: 34px;
+        align-items: start;
+      }
 
-const eventCreator = {
-  marginTop: 8,
-  marginBottom: 0,
-  fontSize: 15,
-  color: "rgba(17,17,17,0.58)",
-};
+      .eventPosterPanel {
+        min-height: 430px;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fbfbfa;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+      }
 
-const eventPoster = {
-  width: "100%",
-  maxHeight: 520,
-  objectFit: "contain",
-  borderRadius: 18,
-  marginBottom: 24,
-  background: "#f5f5f5",
-};
+      .eventPosterImage,
+      .eventPosterFallback {
+        width: 100%;
+        height: 100%;
+        min-height: 430px;
+        display: grid;
+        place-items: center;
+      }
 
-const detailsGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-  gap: 14,
-  marginBottom: 22,
-};
+      .eventPosterImage {
+        object-fit: contain;
+      }
 
-const detailBox = {
-  padding: 14,
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.82)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  display: "grid",
-  gap: 5,
-};
+      .eventPosterFallback {
+        background: #eef1f4;
+        color: #111;
+        font-size: 84px;
+        font-weight: 700;
+      }
 
-const detailLabel = {
-  fontSize: 13,
-  color: "rgba(17,17,17,0.52)",
-};
+      .eventInfoPanel {
+        padding-top: 2px;
+      }
 
-const actionRow = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 12,
-  marginTop: 6,
-};
+      .eventHeadingRow {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      }
 
-const joinBtn = {
-  padding: "10px 18px",
-  borderRadius: 999,
-  border: "none",
-  background: "#111",
-  color: "white",
-  fontSize: 14,
-};
+      .eventHeadingRow h1 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.2;
+        font-weight: 500;
+        letter-spacing: 0;
+      }
 
-const zoomBtn = {
-  display: "inline-block",
-  padding: "10px 18px",
-  borderRadius: 999,
-  background: "#2563eb",
-  color: "white",
-  textDecoration: "none",
-  fontSize: 14,
-};
+      .eventHeadingRow p {
+        margin: 5px 0 0;
+        color: rgba(17, 17, 17, 0.48);
+        font-size: 13px;
+        line-height: 1.2;
+      }
 
-const desc = {
-  marginTop: 24,
-  fontSize: 16,
-  lineHeight: 1.7,
-  color: "rgba(17,17,17,0.8)",
-};
+      .eventMetaList {
+        margin-top: 12px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+      }
 
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 12,
-};
+      .eventMetaRow {
+        display: grid;
+        grid-template-columns: 24px 132px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        min-height: 0;
+        padding: 7px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        font-size: 13px;
+      }
+
+      .eventMetaIcon {
+        width: 22px;
+        height: 22px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .eventMetaIcon img {
+        width: 16px;
+        height: 16px;
+        object-fit: contain;
+      }
+
+      .eventMetaLabel {
+        color: rgba(17, 17, 17, 0.5);
+      }
+
+      .eventMetaRow strong {
+        min-width: 0;
+        color: #050505;
+        font-size: 13px;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+
+      .eventMetaRow.available strong {
+        color: #047a31;
+      }
+
+      .eventMetaRow.full strong {
+        color: #b42318;
+      }
+
+      .eventTextBlock {
+        margin-top: 20px;
+      }
+
+      .eventTextBlock h2 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+
+      .eventTextBlock p {
+        margin: 0;
+        color: #111;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .eventLink {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        border-radius: 999px;
+        padding: 0 12px;
+        background: #eef1f4;
+        color: #050505;
+        text-decoration: none;
+        font-size: 13px;
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.1);
+        transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+      }
+
+      .eventLink:hover {
+        background: #111;
+        color: #fff;
+        transform: translateY(-1px);
+      }
+
+      .joinEventBtn {
+        flex: 0 0 auto;
+        min-width: 104px;
+        height: 30px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 12px;
+        background: #111;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: "Google Sans", Arial, sans-serif;
+        cursor: pointer;
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+        transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .joinEventBtn:hover:not(:disabled) {
+        background: #eef1f4;
+        color: #111;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
+      }
+
+      .joinEventBtn:disabled,
+      .joinEventBtn.disabled {
+        opacity: 0.58;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .joinEventBtn.disabled {
+        background: #2563eb;
+        color: #fff;
+        opacity: 1;
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+      }
+
+      .eventMessage {
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #f2f3f4;
+        color: #111;
+        font-size: 14px;
+      }
+
+      .eventMessage.error {
+        background: #fee8e8;
+        color: #9f1d1d;
+      }
+
+      @media (max-width: 860px) {
+        .eventDetailsPage {
+          padding-top: 18px;
+        }
+
+        .eventDetailsGrid {
+          width: min(100% - 28px, 620px);
+        }
+
+        .eventDetailsGrid {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+
+        .eventPosterPanel,
+        .eventPosterImage,
+        .eventPosterFallback {
+          min-height: 340px;
+        }
+
+        .eventHeadingRow {
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .eventMetaRow {
+          grid-template-columns: 24px 98px minmax(0, 1fr);
+        }
+
+        .joinEventBtn {
+          align-self: flex-start;
+        }
+      }
+    `}</style>
+  );
+}

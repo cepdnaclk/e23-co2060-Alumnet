@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import PageShell from "../components/PageShell";
+import LoadingScreen from "../components/LoadingScreen";
 import { getProfile } from "../api";
 
 import verifiedIcon from "../assets/verified.png";
@@ -66,7 +67,7 @@ export default function Dashboard() {
       {err && <div style={errorBox}>{err}</div>}
 
       {loading ? (
-        <div>Loading...</div>
+        <LoadingScreen text="Loading dashboard..." />
       ) : (
         <>
           <div style={hero}>

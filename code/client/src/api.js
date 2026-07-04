@@ -222,6 +222,15 @@ export async function getPendingEvents(token) {
   return handle(res);
 }
 
+export async function getAdminEventStats(token) {
+  const res = await fetch(`${API_URL}/api/events/admin/stats`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
 export async function approveEvent(token, id) {
   const res = await fetch(`${API_URL}/api/events/approve/${id}`, {
     method: "PATCH",

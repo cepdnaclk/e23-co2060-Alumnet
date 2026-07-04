@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
+import LoadingScreen from "../components/LoadingScreen";
 import { getMyMentors } from "../api";
 
 import verifiedIcon from "../assets/verified.png";
@@ -41,7 +42,7 @@ export default function MyMentors() {
       {err && <div style={errorBox}>{err}</div>}
 
       {loading ? (
-        <div>Loading...</div>
+        <LoadingScreen text="Loading mentors..." />
       ) : mentors.length === 0 ? (
         <div>No mentors yet.</div>
       ) : (

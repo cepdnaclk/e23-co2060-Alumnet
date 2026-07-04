@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import PageShell from "../components/PageShell";
 import { getAlumniProfile } from "../api";
+import LoadingScreen from "../components/LoadingScreen";
 
+import bannerImage from "../assets/banner.png";
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
@@ -16,7 +17,7 @@ export default function AlumniPublicProfile() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const token = localStorage.getItem("token");
+  const token = useMemo(() => localStorage.getItem("token"), []);
 
   const currentUser = useMemo(() => {
     try {
@@ -47,42 +48,17 @@ export default function AlumniPublicProfile() {
     run();
   }, [id]);
 
-  if (loading) {
-    return (
-      <PageShell title="Alumni Profile" subtitle="Public mentor profile">
-        <div>Loading...</div>
-      </PageShell>
-    );
-  }
-
-  if (err) {
-    return (
-      <PageShell title="Alumni Profile" subtitle="Public mentor profile">
-        <div style={errorBox}>{err}</div>
-      </PageShell>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <PageShell title="Alumni Profile" subtitle="Public mentor profile">
-        <div>No alumni profile found.</div>
-      </PageShell>
-    );
-  }
-
   const statusIcon =
-    profile.verification_status === "verified"
+    profile?.verification_status === "verified"
       ? verifiedIcon
-      : profile.verification_status === "rejected"
-      ? rejectedIcon
-      : pendingIcon;
+      : profile?.verification_status === "rejected"
+        ? rejectedIcon
+        : pendingIcon;
 
-  const acceptedCount = Number(profile.accepted_mentees_count || 0);
-  const capacity = Number(profile.preferred_mentee_capacity || 0);
+  const acceptedCount = Number(profile?.accepted_mentees_count || 0);
+  const capacity = Number(profile?.preferred_mentee_capacity || 0);
   const remainingSlots = Math.max(capacity - acceptedCount, 0);
-
-  const isVerified = profile.verification_status === "verified";
+  const isVerified = profile?.verification_status === "verified";
   const canRequest =
     token &&
     isStudent &&
@@ -90,129 +66,144 @@ export default function AlumniPublicProfile() {
     isVerified &&
     remainingSlots > 0;
 
+  if (loading) {
+    return <LoadingScreen text="Loading alumni profile..." />;
+  }
+
+  if (err || !profile) {
+    return (
+      <div className="profilePage">
+        <style>{css}</style>
+        <div className="stateBox error">{err || "No alumni profile found."}</div>
+      </div>
+    );
+  }
+
   return (
-    <PageShell
-      title="Alumni Profile"
-      subtitle="Public mentor profile"
-      right={
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {canRequest && (
-            <button
-              style={requestBtn}
-              onClick={() => navigate(`/request-mentorship/${id}`)}
-            >
-              Request Mentorship
-            </button>
-          )}
-        </div>
-      }
-    >
-      <div style={pageWrap}>
-        <div style={topArea}>
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt="avatar"
-              style={avatar}
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
-          ) : (
-            <div style={avatarFallback}>
-              {profile.full_name?.slice(0, 1)?.toUpperCase() || "U"}
-            </div>
-          )}
+    <div className="profilePage">
+      <style>{css}</style>
+      <main className="profileMain">
+        <section className="profileHero">
+          <img src={bannerImage} alt="" className="profileBanner" />
 
-          <div style={nameWrap}>
-            <div style={nameRow}>
-              <h2 style={nameStyle}>{profile.full_name}</h2>
+          <div className="identityBlock">
+            {profile.avatar_url ? (
               <img
-                src={statusIcon}
-                alt={profile.verification_status}
-                style={statusIconStyle}
+                src={profile.avatar_url}
+                alt="avatar"
+                className="profileAvatar"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
               />
-            </div>
+            ) : (
+              <div className="profileAvatar fallback">
+                {profile.full_name?.slice(0, 1)?.toUpperCase() || "U"}
+              </div>
+            )}
 
-            <div style={emailStyle}>{profile.email}</div>
+            <div className="identityLine">
+              <div className="identityCopy">
+                <div className="nameRow">
+                  <h1>{profile.full_name || "Alumni"}</h1>
+                  <img
+                    src={statusIcon}
+                    alt={profile.verification_status || "pending"}
+                    className="verifiedBadge"
+                  />
+                </div>
+                <a href={`mailto:${profile.email}`} className="emailText">
+                  {profile.email}
+                </a>
+              </div>
+
+              <div className="identityActions">
+                {isVerified && (
+                  <div
+                    className={`menteeCount ${remainingSlots > 0 ? "available" : "full"}`}
+                    title={remainingSlots > 0 ? "Available" : "Mentor full"}
+                  >
+                    {acceptedCount} / {capacity} left
+                  </div>
+                )}
+
+                {canRequest && (
+                  <button
+                    className="requestButton"
+                    type="button"
+                    onClick={() =>
+                      navigate(`/request-mentorship/${id}`, {
+                        state: { alumniName: profile.full_name },
+                      })
+                    }
+                  >
+                    Request Mentorship
+                  </button>
+                )}
+
+                {!token && (
+                  <Link to="/login" className="secondaryLink">
+                    Login to request mentorship
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
         {!isVerified && (
-          <div style={warningBox}>This mentor is not verified yet.</div>
+          <div className="noticeBox">This mentor is not verified yet.</div>
         )}
 
         {isVerified && remainingSlots <= 0 && (
-          <div style={warningBox}>
-            This mentor has reached their mentee capacity.
-          </div>
+          <div className="noticeBox">This mentor has reached their mentee capacity.</div>
         )}
 
-        <div style={detailsGrid}>
-          <section>
-            <h3 style={sectionTitle}>Personal Details</h3>
-            <div style={rowsWrap}>
-              <InfoRow label="Department" value={profile.department} />
-              <InfoRow label="Graduation Year" value={profile.graduation_year} />
-              <InfoRow label="Bio" value={profile.bio} multiline />
-              <InfoRow
-                label="Mentee Capacity"
-                value={profile.preferred_mentee_capacity}
-              />
-            </div>
-          </section>
+        <section className="detailsGrid">
+          <DetailPanel title="Personal Details">
+            <InfoRow label="Role:" value="Alumni" />
+            <InfoRow label="Department:" value={profile.department} />
+            <InfoRow label="Graduation Year:" value={profile.graduation_year} />
+            <InfoRow label="Bio:" value={profile.bio} multiline />
+            <InfoRow
+              label="Mentee Capacity:"
+              value={profile.preferred_mentee_capacity}
+            />
+          </DetailPanel>
 
-          <section>
-            <h3 style={sectionTitle}>Professional Details</h3>
-            <div style={rowsWrap}>
-              <InfoRow label="Job Title" value={profile.job_title} />
-              <InfoRow label="Company" value={profile.organization} />
-              <InfoRow
-                label="Expertise / Interests"
-                value={profile.primary_interests}
-                multiline
-              />
-              <InfoRow label="LinkedIn URL" value={profile.linkedin_url} isLink />
-            </div>
-          </section>
-        </div>
+          <DetailPanel title="Professional Details">
+            <InfoRow label="Job Title:" value={profile.job_title} />
+            <InfoRow label="Company:" value={profile.organization} />
+            <InfoRow
+              label="Expertise/Interests:"
+              value={profile.primary_interests}
+              multiline
+            />
+          </DetailPanel>
+        </section>
 
-        {!token && (
-          <div style={{ marginTop: 22 }}>
-            <Link to="/login" style={directoryLink}>
-              Login to request mentorship
-            </Link>
-          </div>
-        )}
+      </main>
+    </div>
+  );
+}
 
-        <div style={{ marginTop: 16 }}>
-          <Link to="/directory" style={directoryLink}>
-            ← Back to Directory
-          </Link>
-        </div>
-      </div>
-    </PageShell>
+function DetailPanel({ title, children }) {
+  return (
+    <section className="detailPanel">
+      <h2>{title}</h2>
+      <div>{children}</div>
+    </section>
   );
 }
 
 function InfoRow({ label, value, isLink = false, multiline = false }) {
   return (
-    <div style={row}>
-      <div style={rowLabel}>{label}</div>
-      <div
-        style={{
-          ...rowValue,
-          whiteSpace: multiline ? "pre-wrap" : "normal",
-        }}
-      >
+    <div className="infoRow">
+      <div className="infoLabel">{label}</div>
+      <div className={`infoValue ${multiline ? "multiline" : ""}`}>
         {value ? (
           isLink ? (
-            <a
-              href={value}
-              target="_blank"
-              rel="noreferrer"
-              style={linkValue}
-            >
+            <a href={value} target="_blank" rel="noreferrer">
               {value}
             </a>
           ) : (
@@ -226,144 +217,302 @@ function InfoRow({ label, value, isLink = false, multiline = false }) {
   );
 }
 
-const pageWrap = {
-  paddingTop: 10,
-};
+const css = `
+.profilePage{
+  min-height:100vh;
+  background:#fbfbfa;
+  color:#111111;
+  font-family:"Google Sans";
+  animation:pageDissolve .22s ease both;
+}
 
-const topArea = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  marginBottom: 34,
-};
+.profileMain{
+  max-width:1180px;
+  margin:0 auto;
+  padding:34px 28px 34px;
+}
 
-const avatar = {
-  width: 100,
-  height: 100,
-  borderRadius: "50%",
-  objectFit: "cover",
-  border: "1px solid rgba(0,0,0,0.06)",
-  marginBottom: 14,
-};
+.profileHero{
+  position:relative;
+  margin-bottom:20px;
+}
 
-const avatarFallback = {
-  width: 74,
-  height: 74,
-  borderRadius: "50%",
-  display: "grid",
-  placeItems: "center",
-  background: "#ecebe7",
-  color: "#111111",
-  fontSize: 26,
-  fontWeight: 400,
-  marginBottom: 14,
-};
+.profileBanner{
+  width:100%;
+  height:170px;
+  object-fit:cover;
+  border-radius:18px;
+  display:block;
+}
 
-const nameWrap = {
-  textAlign: "center",
-};
+.identityBlock{
+  position:relative;
+  width:calc(100% - 48px);
+  margin:-52px 0 0 24px;
+  text-align:left;
+}
 
-const nameRow = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-};
+.profileAvatar{
+  width:78px;
+  height:78px;
+  border-radius:50%;
+  object-fit:cover;
+  display:grid;
+  place-items:center;
+  margin:0 0 12px;
+  border:3px solid #fbfbfa;
+  background:#ecebe7;
+  box-shadow:0 10px 24px rgba(0,0,0,.10);
+}
 
-const nameStyle = {
-  margin: 0,
-  fontSize: 22,
-  lineHeight: 1.1,
-  letterSpacing: "-0.03em",
-  fontWeight: 400,
-  color: "#111111",
-};
+.profileAvatar.fallback{
+  color:#111111;
+  font-size:30px;
+}
 
-const statusIconStyle = {
-  width: 16,
-  height: 16,
-  objectFit: "contain",
-};
+.identityLine{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+}
 
-const emailStyle = {
-  marginTop: 6,
-  color: "rgba(17,17,17,0.56)",
-  fontSize: 13,
-};
+.identityCopy{
+  min-width:0;
+}
 
-const detailsGrid = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: 26,
-};
+.nameRow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:4px;
+}
 
-const sectionTitle = {
-  margin: "0 0 14px",
-  fontSize: 15,
-  fontWeight: 400,
-  color: "#111111",
-};
+.nameRow h1{
+  margin:0;
+  font-size:16px;
+  line-height:1.15;
+  font-weight:500;
+  letter-spacing:0;
+}
 
-const rowsWrap = {
-  display: "grid",
-};
+.verifiedBadge{
+  width:17px;
+  height:17px;
+  object-fit:contain;
+}
 
-const row = {
-  display: "grid",
-  gridTemplateColumns: "180px 1fr",
-  gap: 16,
-  padding: "10px 0",
-  borderBottom: "1px solid rgba(0,0,0,0.05)",
-};
+.emailText{
+  display:inline-block;
+  margin:5px 0 0;
+  color:rgba(17,17,17,.42);
+  font-size:14px;
+  line-height:1;
+  text-decoration:none;
+  transition:color .18s ease;
+}
 
-const rowLabel = {
-  fontSize: 13,
-  color: "rgba(17,17,17,0.54)",
-};
+.emailText:hover{
+  color:rgba(17,17,17,.62);
+}
 
-const rowValue = {
-  fontSize: 14,
-  color: "#111111",
-  lineHeight: 1.7,
-  wordBreak: "break-word",
-};
+.noticeBox{
+  display:inline-flex;
+  margin:0 0 18px;
+  padding:9px 12px;
+  border-radius:7px;
+  background:#fee6c7;
+  color:#ca240e;
+  font-size:13px;
+}
 
-const linkValue = {
-  color: "#2527be",
-  textDecoration: "none",
-  borderBottom: "1px solid rgba(17,17,17,0.14)",
-};
+.detailsGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:26px;
+}
 
-const requestBtn = {
-  background: "rgba(255, 255, 255, 0.7)",
-  color: "#111111",
-  padding: "10px 16px",
-  borderRadius: 999,
-  border: "1px solid rgba(51, 207, 64, 0.06)",
-  cursor: "pointer",
-  fontSize: 14,
-  fontWeight: 400,
-  fontFamily: '"Google Sans"',
-};
+.detailPanel{
+  min-width:0;
+}
 
-const directoryLink = {
-  color: "#111111",
-  textDecoration: "none",
-  fontSize: 15,
-  borderBottom: "1px solid rgba(17,17,17,0.14)",
-};
+.detailPanel h2{
+  margin:0 0 8px;
+  font-size:13px;
+  font-weight:600;
+  color:#111111;
+}
 
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 14,
-};
+.infoRow{
+  display:grid;
+  grid-template-columns:180px minmax(0, 1fr);
+  gap:16px;
+  padding:7px 0;
+  border-bottom:1px solid rgba(0,0,0,.06);
+}
 
-const warningBox = {
-  background: "#fee6c7",
-  padding: 10,
-  borderRadius: 12,
-  marginBottom: 14,
-  color: "#ca240e",
-};
+.infoLabel{
+  color:rgba(17,17,17,.50);
+  font-size:13px;
+}
+
+.infoValue{
+  color:#111111;
+  font-size:13px;
+  line-height:1.55;
+  word-break:break-word;
+}
+
+.infoValue.multiline{
+  white-space:pre-wrap;
+}
+
+.infoValue a{
+  color:#111111;
+  text-decoration:none;
+  border-bottom:1px solid rgba(17,17,17,.18);
+}
+
+.identityActions{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+  justify-content:flex-end;
+  padding-top:1px;
+  flex:0 0 auto;
+}
+
+.menteeCount{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:25px;
+  padding:0 11px;
+  border-radius:999px;
+  font-size:13px;
+  line-height:1;
+  white-space:nowrap;
+  box-shadow:0 8px 18px rgba(0,0,0,.08);
+}
+
+.menteeCount.available{
+  background:#d8f8e4;
+  color:#047a31;
+  animation:availablePulse 1.8s ease-in-out infinite;
+}
+
+.menteeCount.full{
+  background:#fee8e8;
+  color:#b42318;
+}
+
+.requestButton{
+  display:inline-flex;
+  align-items:center;
+  height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  background:#050505;
+  color:#ffffff;
+  font-family:"Google Sans";
+  font-size:13px;
+  line-height:1;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+}
+
+.requestButton:hover{
+  background:#eef1f4;
+  color:#111111;
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+
+.secondaryLink{
+  display:inline-flex;
+  align-items:center;
+  min-height:34px;
+  color:#111111;
+  text-decoration:none;
+  font-size:14px;
+  border-bottom:1px solid rgba(17,17,17,.14);
+}
+
+.stateBox{
+  max-width:520px;
+  margin:120px auto;
+  padding:18px 20px;
+  border-radius:16px;
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(0,0,0,.06);
+  text-align:center;
+}
+
+.stateBox.error{
+  color:#b91c1c;
+  background:rgba(254,226,226,.86);
+}
+
+@keyframes pageDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@keyframes availablePulse{
+  0%, 100%{ box-shadow:0 8px 18px rgba(4,122,49,.12); }
+  50%{ box-shadow:0 8px 24px rgba(4,122,49,.28); }
+}
+
+@media (max-width:900px){
+  .detailsGrid{
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+
+  .identityBlock{
+    margin-left:20px;
+  }
+}
+
+@media (max-width:640px){
+  .profileMain{
+    padding:18px 16px 36px;
+  }
+
+  .profileBanner{
+    height:132px;
+    border-radius:14px;
+  }
+
+  .identityBlock{
+    width:calc(100% - 16px);
+    margin:-46px 0 0 16px;
+  }
+
+  .profileAvatar{
+    width:68px;
+    height:68px;
+    margin-bottom:10px;
+  }
+
+  .infoRow{
+    grid-template-columns:1fr;
+    gap:5px;
+  }
+
+  .identityLine{
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .identityActions{
+    align-items:flex-start;
+  }
+
+  .requestButton,
+  .secondaryLink{
+    font-size:13px;
+  }
+}
+`;

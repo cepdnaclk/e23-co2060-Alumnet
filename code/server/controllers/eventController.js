@@ -134,6 +134,36 @@ const getPendingEvents = async (req, res) => {
   }
 };
 
+const getEventStats = async (req, res) => {
+  try {
+    const role = req.user.role;
+
+    if (!["university_admin", "system_admin"].includes(role)) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const result = await pool.query(`
+      SELECT approval_status, COUNT(*)::int AS count
+      FROM events
+      GROUP BY approval_status
+    `);
+
+    const counts = result.rows.reduce(
+      (acc, row) => {
+        acc[row.approval_status] = row.count;
+        acc.total += row.count;
+        return acc;
+      },
+      { total: 0, approved: 0, pending: 0, rejected: 0 }
+    );
+
+    return res.status(200).json(counts);
+  } catch (error) {
+    console.error("Get event stats error:", error);
+    return res.status(500).json({ message: "Failed to fetch event statistics" });
+  }
+};
+
 const approveEvent = async (req, res) => {
   try {
     const role = req.user.role;
@@ -407,6 +437,7 @@ module.exports = {
   createEvent,
   getApprovedEvents,
   getPendingEvents,
+  getEventStats,
   approveEvent,
   rejectEvent,
   registerForEvent,

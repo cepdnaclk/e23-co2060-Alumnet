@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
+import LoadingScreen from "../components/LoadingScreen";
 import { getMentorRequests, updateMentorshipRequest } from "../api";
 
 export default function MentorRequests() {
@@ -40,7 +41,7 @@ export default function MentorRequests() {
       {err && <div style={errorBox}>{err}</div>}
 
       {loading ? (
-        <div>Loading...</div>
+        <LoadingScreen text="Loading requests..." />
       ) : requests.length === 0 ? (
         <div>No requests received yet.</div>
       ) : (
