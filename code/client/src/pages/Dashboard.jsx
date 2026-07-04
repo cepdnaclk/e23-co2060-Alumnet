@@ -127,12 +127,6 @@ export default function Dashboard() {
               </>
             )}
 
-            <QuickCard
-              title="Events"
-              text="See upcoming approved events and register."
-              to="/events"
-            />
-
             {role === "student" && (
               <>
                 <QuickCard
@@ -163,16 +157,6 @@ export default function Dashboard() {
               </>
             )}
 
-            {(role === "alumni" ||
-              role === "university_admin" ||
-              role === "system_admin") && (
-              <QuickCard
-                title="Create Event"
-                text="Create a new event for approval."
-                to="/create-event"
-              />
-            )}
-
             {(role === "university_admin" || role === "system_admin") && (
               <>
                 <QuickCard
@@ -181,9 +165,34 @@ export default function Dashboard() {
                   to="/admin"
                 />
                 <QuickCard
-                  title="Event Approvals"
-                  text="Approve or reject submitted events."
-                  to="/admin-events"
+                  title="User Verifications"
+                  text="Review and verify pending account requests."
+                  to="/admin-users"
+                />
+              </>
+            )}
+
+            <QuickCard
+              title="Events"
+              text="See upcoming approved events and register."
+              to="/events"
+            />
+
+            {(role === "alumni" ||
+              role === "university_admin" ||
+              role === "system_admin") && (
+              <>
+                {(role === "university_admin" || role === "system_admin") && (
+                  <QuickCard
+                    title="Event Approvals"
+                    text="Approve or reject submitted events."
+                    to="/admin-events"
+                  />
+                )}
+                <QuickCard
+                  title="Create Event"
+                  text="Create a new event for approval."
+                  to="/create-event"
                 />
               </>
             )}

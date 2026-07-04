@@ -137,6 +137,19 @@ export async function createMentorshipRequest(token, payload) {
   return handle(res);
 }
 
+export async function requestEndMentorship(token, payload) {
+  const res = await fetch(`${API_URL}/api/mentorship-requests/end-request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return handle(res);
+}
+
 export async function getStudentRequests(token) {
   const res = await fetch(`${API_URL}/api/mentorship-requests/student`, {
     method: "GET",
@@ -163,6 +176,17 @@ export async function updateMentorshipRequest(token, id, status) {
       ...authHeaders(token),
     },
     body: JSON.stringify({ status }),
+  });
+
+  return handle(res);
+}
+
+export async function acceptEndMentorship(token, id) {
+  const res = await fetch(`${API_URL}/api/mentorship-requests/${id}/end`, {
+    method: "PATCH",
+    headers: {
+      ...authHeaders(token),
+    },
   });
 
   return handle(res);

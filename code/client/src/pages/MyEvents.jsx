@@ -1,124 +1,172 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import PageShell from "../components/PageShell";
+import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
 import { getMyRegisteredEvents } from "../api";
+import dateIcon from "../assets/date.png";
+import timeIcon from "../assets/time.png";
+import locationIcon from "../assets/location.png";
+import viewIcon from "../assets/view.png";
 
-export default function MyEvents(){
+export default function MyEvents() {
+  const token = localStorage.getItem("token");
 
-const token = localStorage.getItem("token");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
-const [events,setEvents] = useState([]);
-const [loading,setLoading] = useState(true);
-const [err,setErr] = useState("");
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setErr("");
+        const data = await getMyRegisteredEvents(token);
+        setEvents(data);
+      } catch (e) {
+        setErr(e.message || "Failed to load registered events");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-useEffect(()=>{
+    load();
+  }, [token]);
 
-const load = async()=>{
+  return (
+    <AccountListShell>
+      {err && <div className="accountListError">{err}</div>}
 
- try{
-  setLoading(true);
-  setErr("");
+      {loading ? (
+        <LoadingScreen text="Loading events..." />
+      ) : events.length === 0 ? (
+        <div className="accountListState">You have not joined any events yet.</div>
+      ) : (
+        <div className="accountTableWrap">
+          <table className="accountTable myEventsTable">
+            <thead>
+              <tr>
+                <th style={{ width: "32%" }}>Event</th>
+                <th style={{ width: "12%" }}>
+                  <span className="tableHeaderIcon">
+                    <img src={dateIcon} alt="" />
+                    Date
+                  </span>
+                </th>
+                <th style={{ width: "11%" }}>
+                  <span className="tableHeaderIcon">
+                    <img src={timeIcon} alt="" />
+                    Time
+                  </span>
+                </th>
+                <th style={{ width: "18%" }}>
+                  <span className="tableHeaderIcon">
+                    <img src={locationIcon} alt="" />
+                    Venue
+                  </span>
+                </th>
+                <th style={{ width: "15%" }}>Joined</th>
+                <th className="tableActionHeader" style={{ width: "12%" }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event) => (
+                <tr key={event.id}>
+                  <td>
+                    <div className="tableEvent">
+                      {event.image_url ? (
+                        <img src={event.image_url} alt={event.title} className="tableThumb" />
+                      ) : (
+                        <div className="tableThumb">
+                          {event.title?.slice(0, 1)?.toUpperCase() || "E"}
+                        </div>
+                      )}
+                      <div>
+                        <div className="tableName">
+                          <span>{event.title}</span>
+                        </div>
+                        <div className="tableMeta">
+                          Hosted by {event.created_by_name || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="eventTableValue">
+                      {formatDate(event.event_date)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="eventTableValue">
+                      {formatTime(event.event_time)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="eventTableValue">
+                      {event.venue || "-"}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="eventTableValue">
+                      {formatDateTime(event.registered_at)}
+                    </span>
+                  </td>
+                  <td className="tableActionCell">
+                    <div className="tableActions">
+                      <Link
+                        to={`/events/${event.id}`}
+                        state={{ eventTitle: event.title, fromMyEvents: true }}
+                        className="accountIconButton view"
+                        title="View event"
+                        aria-label={`View ${event.title}`}
+                      >
+                        <img src={viewIcon} alt="" />
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-  const data = await getMyRegisteredEvents(token);
-  setEvents(data);
-
- }catch(e){
-  setErr(e.message || "Failed to load registered events");
- }
- finally{
-  setLoading(false);
- }
-
-};
-
-load();
-
-},[token]);
-
-return(
-
-<PageShell
-title="My Events"
-subtitle="Events you have joined"
->
-
-{err && <div style={errorBox}>{err}</div>}
-
-{loading ? (
-<LoadingScreen text="Loading events..." />
-) : events.length === 0 ? (
-<div>You have not joined any events yet.</div>
-) : (
-
-<div style={grid}>
-
-{events.map(event=>(
-
-<div key={event.id} style={card}>
-
-<h3 style={title}>{event.title}</h3>
-<br></br>
-
-<div style={meta}>Date: {event.event_date}</div>
-<div style={meta}>Time: {event.event_time}</div>
-<div style={meta}>Venue: {event.venue}</div>
-<div style={meta}>Created By: {event.created_by_name}</div>
-
-<div style={meta}>
-Registered At: {new Date(event.registered_at).toLocaleString()}
-</div>
-<br></br>
-{event.description && <p style={desc}>{event.description}</p>}
-<br></br>
-</div>
-
-))}
-
-</div>
-
-)}
-
-</PageShell>
-
-);
-
+      <style>{css}</style>
+    </AccountListShell>
+  );
 }
 
-const grid={
-display:"grid",
-gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",
-gap:20
-};
+function formatDate(date) {
+  if (!date) return "-";
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-const card={
-padding:20,
-borderRadius:16,
-background:"rgba(255,255,255,0.7)",
-border:"1px solid rgba(0,0,0,0.06)",
-backdropFilter:"blur(6px)"
-};
+function formatTime(time) {
+  if (!time) return "-";
+  return new Date(`1970-01-01T${time}`).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-const title={
-margin:0,
-fontSize:18,
-fontWeight: 500
-};
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}
 
-const meta={
-marginTop:6,
-fontSize:14,
-color:"rgba(17,17,17,0.72)"
-};
+const css = `
+.myEventsTable{
+  min-width:1040px;
+}
 
-const desc={
-marginTop:10,
-fontSize:14,
-color:"rgba(12, 11, 11, 0.86)"
-};
-
-const errorBox={
-background:"#fee2e2",
-padding:12,
-borderRadius:12,
-marginBottom:14
-};
+.eventTableValue{
+  display:inline-flex;
+  align-items:center;
+  min-width:0;
+  color:#111111;
+  overflow-wrap:anywhere;
+}
+`;

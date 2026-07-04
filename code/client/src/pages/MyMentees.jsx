@@ -1,207 +1,304 @@
 import { useEffect, useState } from "react";
-import PageShell from "../components/PageShell";
+import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
-import { getMyMentees } from "../api";
+import SegmentedFilter from "../components/SegmentedFilter";
+import { acceptEndMentorship, getMyMentees } from "../api";
 
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
+import linkedinIcon from "../assets/linkedin.png";
+import githubIcon from "../assets/github.png";
+import chemicalIcon from "../assets/chemical.png";
+import civilIcon from "../assets/civil.png";
+import computerIcon from "../assets/computer.png";
+import electricalIcon from "../assets/elec.png";
+import manufacturingIcon from "../assets/manu.png";
+import mechanicalIcon from "../assets/mechanical.png";
 
 export default function MyMentees() {
   const token = localStorage.getItem("token");
 
   const [mentees, setMentees] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("accepted");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [actionMessage, setActionMessage] = useState("");
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setErr("");
-        const data = await getMyMentees(token);
-        setMentees(data);
-      } catch (e) {
-        setErr(e.message || "Failed to load mentees");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [token]);
-
-  const getStatusIcon = (status) => {
-    if (status === "verified") return verifiedIcon;
-    if (status === "rejected") return rejectedIcon;
-    return pendingIcon;
+  const loadMentees = async () => {
+    try {
+      setLoading(true);
+      setErr("");
+      const data = await getMyMentees(token);
+      setMentees(data);
+    } catch (e) {
+      setErr(e.message || "Failed to load mentees");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    loadMentees();
+  }, [token]);
+
+  const handleAcceptEnd = async (mentee) => {
+    try {
+      setActionLoadingId(mentee.mentorship_request_id);
+      setErr("");
+      setActionMessage("");
+      const res = await acceptEndMentorship(token, mentee.mentorship_request_id);
+      setActionMessage(res.message || "Mentorship ended");
+      setMentees((current) =>
+        current.map((item) =>
+          item.mentorship_request_id === mentee.mentorship_request_id
+            ? {
+                ...item,
+                mentorship_status: "ended",
+                ended_at: new Date().toISOString(),
+              }
+            : item
+        )
+      );
+    } catch (e) {
+      setErr(e.message || "Failed to end mentorship");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const filteredMentees = mentees.filter(
+    (mentee) => mentee.mentorship_status === statusFilter
+  );
+  const filterOptions = [
+    {
+      label: "Active",
+      value: "accepted",
+      count: countByStatus(mentees, "accepted"),
+    },
+    {
+      label: "End request received",
+      value: "ending_requested",
+      count: countByStatus(mentees, "ending_requested"),
+    },
+    {
+      label: "Ended",
+      value: "ended",
+      count: countByStatus(mentees, "ended"),
+    },
+  ];
+
   return (
-    <PageShell title="My Mentees" subtitle="Students connected with you">
-      {err && <div style={errorBox}>{err}</div>}
+    <AccountListShell>
+      <style>{css}</style>
+      {err && <div className="accountListError">{err}</div>}
+      {actionMessage && <div className="accountListState successState">{actionMessage}</div>}
 
       {loading ? (
         <LoadingScreen text="Loading mentees..." />
       ) : mentees.length === 0 ? (
-        <div>No mentees yet.</div>
+        <div className="accountListState">No mentees yet.</div>
       ) : (
-        <div style={grid}>
-          {mentees.map((mentee) => (
-            <div key={mentee.id} style={card}>
-              <div style={topRow}>
-                {mentee.avatar_url ? (
-                  <img src={mentee.avatar_url} alt={mentee.full_name} style={avatar} />
-                ) : (
-                  <div style={avatarFallback}>
-                    {mentee.full_name?.slice(0, 1)?.toUpperCase() || "S"}
-                  </div>
-                )}
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={nameRow}>
-                    <div style={name}>{mentee.full_name}</div>
-                    <img
-                      src={getStatusIcon(mentee.verification_status)}
-                      alt={mentee.verification_status}
-                      style={statusIcon}
-                    />
-                  </div>
-
-                  <div style={meta}>{mentee.department || "-"}</div>
-                  <div style={meta}>Batch: {mentee.batch || "-"}</div>
-                </div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>Interests</div>
-                <div style={value}>{mentee.areas_of_interest || "-"}</div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>LinkedIn</div>
-                <div style={value}>
-                  {mentee.linkedin_url ? (
-                    <a href={mentee.linkedin_url} target="_blank" rel="noreferrer" style={linkStyle}>
-                      Open Profile
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>GitHub</div>
-                <div style={value}>
-                  {mentee.github_url ? (
-                    <a href={mentee.github_url} target="_blank" rel="noreferrer" style={linkStyle}>
-                      Open GitHub
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </div>
-              </div>
+        <>
+          <div className="accountListToolbar">
+            <SegmentedFilter
+              label="Filter mentees"
+              value={statusFilter}
+              options={filterOptions}
+              onChange={setStatusFilter}
+            />
+          </div>
+          {filteredMentees.length === 0 ? (
+            <div className="accountListState">No mentees match this filter.</div>
+          ) : (
+            <div className="accountTableWrap">
+              <table className="accountTable">
+                <thead>
+                  <tr>
+                    <th style={{ width: "30%" }}>Mentee</th>
+                    <th style={{ width: "18%" }}>Department</th>
+                    <th style={{ width: "28%" }}>Interests</th>
+                    <th style={{ width: "10%" }}>Socials</th>
+                    <th className="tableActionHeader" style={{ width: "14%" }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMentees.map((mentee) => (
+                    <tr key={mentee.id}>
+                      <td>
+                        <div className="tablePerson">
+                          {mentee.avatar_url ? (
+                            <img
+                              src={mentee.avatar_url}
+                              alt={mentee.full_name}
+                              className="tableAvatar"
+                            />
+                          ) : (
+                            <div className="tableAvatar">
+                              {mentee.full_name?.slice(0, 1)?.toUpperCase() || "S"}
+                            </div>
+                          )}
+                          <div>
+                            <div className="tableName">
+                              <span>{mentee.full_name}</span>
+                              <img
+                                src={getStatusIcon(mentee.verification_status)}
+                                alt={mentee.verification_status}
+                                className="tableStatusIcon"
+                              />
+                            </div>
+                            <div className="tableMeta">Batch {mentee.batch || "-"}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="departmentCell">
+                          {getDepartmentIcon(mentee.department) && (
+                            <img src={getDepartmentIcon(mentee.department)} alt="" />
+                          )}
+                          {mentee.department || "-"}
+                        </span>
+                      </td>
+                      <td>
+                        <InterestTags value={mentee.areas_of_interest} />
+                        {mentee.mentorship_status === "ending_requested" && (
+                          <div className="endReasonText">
+                            <span className="accountPill pending">Ending requested</span>
+                            <p>{mentee.end_reason || "No reason provided."}</p>
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <span className="socialLinks">
+                          {mentee.linkedin_url && (
+                            <a href={mentee.linkedin_url} target="_blank" rel="noreferrer">
+                              <img src={linkedinIcon} alt="LinkedIn" />
+                            </a>
+                          )}
+                          {mentee.github_url && (
+                            <a href={mentee.github_url} target="_blank" rel="noreferrer">
+                              <img src={githubIcon} alt="GitHub" />
+                            </a>
+                          )}
+                          {!mentee.linkedin_url && !mentee.github_url && "-"}
+                        </span>
+                      </td>
+                      <td className="tableActionCell">
+                        <div className="tableActions">
+                          {mentee.mentorship_status === "ending_requested" ? (
+                            <button
+                              type="button"
+                              className="accountButton"
+                              onClick={() => handleAcceptEnd(mentee)}
+                              disabled={actionLoadingId === mentee.mentorship_request_id}
+                            >
+                              {actionLoadingId === mentee.mentorship_request_id
+                                ? "Ending..."
+                                : "Accept End"}
+                            </button>
+                          ) : mentee.mentorship_status === "ended" ? (
+                            <span className="accountPill ended">ended</span>
+                          ) : (
+                            <span className="accountPill accepted">Active</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
-    </PageShell>
+    </AccountListShell>
   );
 }
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-  gap: 20,
-};
+function countByStatus(items, status) {
+  return items.filter((item) => item.mentorship_status === status).length;
+}
 
-const card = {
-  padding: 18,
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.65)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  backdropFilter: "blur(6px)",
-};
+function InterestTags({ value = "" }) {
+  const interests = value
+    .split(/[,|]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 4);
 
-const topRow = {
-  display: "flex",
-  gap: 12,
-  alignItems: "center",
-  marginBottom: 14,
-};
+  if (interests.length === 0) return "-";
 
-const avatar = {
-  width: 54,
-  height: 54,
-  borderRadius: "50%",
-  objectFit: "cover",
-  flexShrink: 0,
-};
+  return (
+    <span className="tableTags">
+      {interests.map((interest) => (
+        <span key={interest}>{interest}</span>
+      ))}
+    </span>
+  );
+}
 
-const avatarFallback = {
-  width: 54,
-  height: 54,
-  borderRadius: "50%",
-  display: "grid",
-  placeItems: "center",
-  background: "#ecebe7",
-  fontWeight: 600,
-  flexShrink: 0,
-};
+function getStatusIcon(status) {
+  if (status === "verified") return verifiedIcon;
+  if (status === "rejected") return rejectedIcon;
+  return pendingIcon;
+}
 
-const nameRow = {
-  display: "flex",
-  alignItems: "center",
-  gap: 6,
-  minWidth: 0,
-};
+function getDepartmentIcon(department = "") {
+  const normalized = department.toLowerCase();
 
-const name = {
-  fontSize: 16,
-  fontWeight: 600,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
+  if (normalized.includes("chemical")) return chemicalIcon;
+  if (normalized.includes("civil")) return civilIcon;
+  if (normalized.includes("computer")) return computerIcon;
+  if (normalized.includes("electrical") || normalized.includes("electronic")) {
+    return electricalIcon;
+  }
+  if (normalized.includes("manufacturing") || normalized.includes("industrial")) {
+    return manufacturingIcon;
+  }
+  if (normalized.includes("mechanical")) return mechanicalIcon;
 
-const statusIcon = {
-  width: 18,
-  height: 18,
-  flexShrink: 0,
-};
+  return null;
+}
 
-const meta = {
-  fontSize: 13,
-  color: "rgba(0,0,0,0.6)",
-};
+const css = `
+.socialLinks{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+}
 
-const row = {
-  display: "grid",
-  gridTemplateColumns: "90px 1fr",
-  gap: 12,
-  marginTop: 8,
-  fontSize: 14,
-};
+.socialLinks a{
+  width:18px;
+  height:18px;
+  display:inline-grid;
+  place-items:center;
+  transition:transform .18s ease, opacity .18s ease;
+}
 
-const label = {
-  color: "rgba(0,0,0,0.6)",
-};
+.socialLinks a:hover{
+  transform:translateY(-1px);
+  opacity:.74;
+}
 
-const value = {
-  wordBreak: "break-word",
-};
+.socialLinks img{
+  width:16px;
+  height:16px;
+  object-fit:contain;
+}
 
-const linkStyle = {
-  color: "#4970dd",
-  textDecoration: "none",
-  borderBottom: "1px solid rgba(57, 78, 197, 0.65)",
-};
+.endReasonText{
+  display:grid;
+  justify-items:start;
+  gap:7px;
+  margin-top:9px;
+}
 
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 12,
-  marginBottom: 14,
-};
+.endReasonText p{
+  margin:0;
+  color:#111111;
+  font-size:13px;
+  line-height:1.45;
+  white-space:pre-wrap;
+}
+`;

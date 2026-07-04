@@ -1,16 +1,27 @@
 import { useEffect, useState } from "react";
-import PageShell from "../components/PageShell";
+import { Link } from "react-router-dom";
+import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
+import SegmentedFilter from "../components/SegmentedFilter";
 import { getMyMentors } from "../api";
 
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
+import linkedinIcon from "../assets/linkedin.png";
+import emailIcon from "../assets/email.png";
+import chemicalIcon from "../assets/chemical.png";
+import civilIcon from "../assets/civil.png";
+import computerIcon from "../assets/computer.png";
+import electricalIcon from "../assets/elec.png";
+import manufacturingIcon from "../assets/manu.png";
+import mechanicalIcon from "../assets/mechanical.png";
 
 export default function MyMentors() {
   const token = localStorage.getItem("token");
 
   const [mentors, setMentors] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("accepted");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -31,169 +42,222 @@ export default function MyMentors() {
     load();
   }, [token]);
 
-  const getStatusIcon = (status) => {
-    if (status === "verified") return verifiedIcon;
-    if (status === "rejected") return rejectedIcon;
-    return pendingIcon;
-  };
+  const filteredMentors = mentors.filter(
+    (mentor) => mentor.mentorship_status === statusFilter
+  );
+  const filterOptions = [
+    {
+      label: "Active",
+      value: "accepted",
+      count: countByStatus(mentors, "accepted"),
+    },
+    {
+      label: "End requested",
+      value: "ending_requested",
+      count: countByStatus(mentors, "ending_requested"),
+    },
+    {
+      label: "Ended",
+      value: "ended",
+      count: countByStatus(mentors, "ended"),
+    },
+  ];
 
   return (
-    <PageShell title="My Mentors" subtitle="Mentors connected with you">
-      {err && <div style={errorBox}>{err}</div>}
+    <AccountListShell>
+      <style>{css}</style>
+      {err && <div className="accountListError">{err}</div>}
 
       {loading ? (
         <LoadingScreen text="Loading mentors..." />
       ) : mentors.length === 0 ? (
-        <div>No mentors yet.</div>
+        <div className="accountListState">No mentors yet.</div>
       ) : (
-        <div style={grid}>
-          {mentors.map((mentor) => (
-            <div key={mentor.id} style={card}>
-              <div style={topRow}>
-                {mentor.avatar_url ? (
-                  <img src={mentor.avatar_url} alt={mentor.full_name} style={avatar} />
-                ) : (
-                  <div style={avatarFallback}>
-                    {mentor.full_name?.slice(0, 1)?.toUpperCase() || "M"}
-                  </div>
-                )}
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={nameRow}>
-                    <div style={name}>{mentor.full_name}</div>
-                    <img
-                      src={getStatusIcon(mentor.verification_status)}
-                      alt={mentor.verification_status}
-                      style={statusIcon}
-                    />
-                  </div>
-
-                  <div style={meta}>{mentor.job_title || "-"}</div>
-                  <div style={meta}>{mentor.organization || "-"}</div>
-                </div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>Department</div>
-                <div style={value}>{mentor.department || "-"}</div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>LinkedIn</div>
-                <div style={value}>
-                  {mentor.linkedin_url ? (
-                    <a href={mentor.linkedin_url} target="_blank" rel="noreferrer" style={linkStyle}>
-                      Open Profile
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>Expertise</div>
-                <div style={value}>{mentor.primary_interests || "-"}</div>
-              </div>
+        <>
+          <div className="accountListToolbar">
+            <SegmentedFilter
+              label="Filter mentors"
+              value={statusFilter}
+              options={filterOptions}
+              onChange={setStatusFilter}
+            />
+          </div>
+          {filteredMentors.length === 0 ? (
+            <div className="accountListState">No mentors match this filter.</div>
+          ) : (
+            <div className="accountTableWrap">
+              <table className="accountTable">
+                <thead>
+                  <tr>
+                    <th style={{ width: "32%" }}>Mentor</th>
+                    <th style={{ width: "26%" }}>Department</th>
+                    <th style={{ width: "16%" }}>Socials</th>
+                    <th className="tableActionHeader" style={{ width: "26%" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMentors.map((mentor) => (
+                    <tr key={mentor.id}>
+                      <td>
+                        <div className="tablePerson">
+                          <Avatar person={mentor} fallback="M" />
+                          <div>
+                            <div className="tableName">
+                              <span>{mentor.full_name}</span>
+                              <img
+                                src={getStatusIcon(mentor.verification_status)}
+                                alt={mentor.verification_status}
+                                className="tableStatusIcon"
+                              />
+                            </div>
+                            <div className="tableMeta">
+                              {formatRole(mentor.job_title, mentor.organization)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="departmentCell">
+                          {getDepartmentIcon(mentor.department) && (
+                            <img src={getDepartmentIcon(mentor.department)} alt="" />
+                          )}
+                          {mentor.department || "-"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="socialLinks">
+                          {mentor.email && (
+                            <a href={`mailto:${mentor.email}`} title={mentor.email}>
+                              <img src={emailIcon} alt="Email" />
+                            </a>
+                          )}
+                          {mentor.linkedin_url && (
+                            <a
+                              href={mentor.linkedin_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={mentor.linkedin_url}
+                            >
+                              <img src={linkedinIcon} alt="LinkedIn" />
+                            </a>
+                          )}
+                          {!mentor.email && !mentor.linkedin_url && "-"}
+                        </span>
+                      </td>
+                      <td className="tableActionCell">
+                        <div className="tableActions">
+                          <Link
+                            to={`/directory/${mentor.id}`}
+                            state={{ alumniName: mentor.full_name, fromMyMentors: true }}
+                            className="accountButton"
+                          >
+                            View Profile
+                          </Link>
+                          {mentor.mentorship_status === "ending_requested" ? (
+                            <span className="accountPill pending">End requested</span>
+                          ) : mentor.mentorship_status === "ended" ? (
+                            <span className="accountPill ended">Ended</span>
+                          ) : (
+                            <Link
+                              to={`/end-mentorship/${mentor.id}`}
+                              state={{
+                                alumniName: mentor.full_name,
+                                alumniAvatar: mentor.avatar_url,
+                              }}
+                              className="accountButton endMentorshipButton"
+                            >
+                              End Mentorship
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
-    </PageShell>
+    </AccountListShell>
   );
 }
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-  gap: 20,
-};
+const css = `
+.socialLinks{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+}
 
-const card = {
-  padding: 18,
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.65)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  backdropFilter: "blur(6px)",
-};
+.socialLinks a{
+  width:18px;
+  height:18px;
+  display:inline-grid;
+  place-items:center;
+  transition:transform .18s ease, opacity .18s ease;
+}
 
-const topRow = {
-  display: "flex",
-  gap: 12,
-  alignItems: "center",
-  marginBottom: 14,
-};
+.socialLinks a:hover{
+  transform:translateY(-1px);
+  opacity:.74;
+}
 
-const avatar = {
-  width: 54,
-  height: 54,
-  borderRadius: "50%",
-  objectFit: "cover",
-  flexShrink: 0,
-};
+.socialLinks img{
+  width:16px;
+  height:16px;
+  object-fit:contain;
+}
 
-const avatarFallback = {
-  width: 54,
-  height: 54,
-  borderRadius: "50%",
-  display: "grid",
-  placeItems: "center",
-  background: "#ecebe7",
-  fontWeight: 600,
-  flexShrink: 0,
-};
+.endMentorshipButton{
+  background:#eef1f4;
+  color:#111111;
+  box-shadow:0 8px 18px rgba(0,0,0,.08);
+}
 
-const nameRow = {
-  display: "flex",
-  alignItems: "center",
-  gap: 6,
-  minWidth: 0,
-};
+.endMentorshipButton:hover{
+  background:#fee8e8;
+  color:#b42318;
+  box-shadow:0 12px 26px rgba(185,35,24,.14);
+}
+`;
 
-const name = {
-  fontSize: 16,
-  fontWeight: 500,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
+function Avatar({ person, fallback }) {
+  return person.avatar_url ? (
+    <img src={person.avatar_url} alt={person.full_name} className="tableAvatar" />
+  ) : (
+    <div className="tableAvatar">{person.full_name?.slice(0, 1)?.toUpperCase() || fallback}</div>
+  );
+}
 
-const statusIcon = {
-  width: 18,
-  height: 18,
-  flexShrink: 0,
-};
+function formatRole(title, organization) {
+  if (title && organization) return `${title} at ${organization}`;
+  return title || organization || "Mentor";
+}
 
-const meta = {
-  fontSize: 13,
-  color: "rgba(0,0,0,0.6)",
-};
+function countByStatus(items, status) {
+  return items.filter((item) => item.mentorship_status === status).length;
+}
 
-const row = {
-  display: "grid",
-  gridTemplateColumns: "90px 1fr",
-  gap: 12,
-  marginTop: 8,
-  fontSize: 14,
-};
+function getStatusIcon(status) {
+  if (status === "verified") return verifiedIcon;
+  if (status === "rejected") return rejectedIcon;
+  return pendingIcon;
+}
 
-const label = {
-  color: "rgba(0,0,0,0.6)",
-};
+function getDepartmentIcon(department = "") {
+  const normalized = department.toLowerCase();
 
-const value = {
-  wordBreak: "break-word",
-};
+  if (normalized.includes("chemical")) return chemicalIcon;
+  if (normalized.includes("civil")) return civilIcon;
+  if (normalized.includes("computer")) return computerIcon;
+  if (normalized.includes("electrical") || normalized.includes("electronic")) {
+    return electricalIcon;
+  }
+  if (normalized.includes("manufacturing") || normalized.includes("industrial")) {
+    return manufacturingIcon;
+  }
+  if (normalized.includes("mechanical")) return mechanicalIcon;
 
-const linkStyle = {
-  color: "#295bb8",
-  textDecoration: "none",
-  borderBottom: "1px solid rgba(92, 116, 170, 0.71)",
-};
-
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 12,
-  marginBottom: 14,
-};
+  return null;
+}

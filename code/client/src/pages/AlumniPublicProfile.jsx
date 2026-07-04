@@ -1,18 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { getAlumniProfile } from "../api";
+import { getAlumniProfile, getMyMentors } from "../api";
 import LoadingScreen from "../components/LoadingScreen";
 
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
+import chemicalIcon from "../assets/chemical.png";
+import civilIcon from "../assets/civil.png";
+import computerIcon from "../assets/computer.png";
+import electricalIcon from "../assets/elec.png";
+import manufacturingIcon from "../assets/manu.png";
+import mechanicalIcon from "../assets/mechanical.png";
+import linkedinIcon from "../assets/linkedin.png";
 
 export default function AlumniPublicProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
+  const [mentorConnection, setMentorConnection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -37,6 +45,15 @@ export default function AlumniPublicProfile() {
         setErr("");
         const data = await getAlumniProfile(id);
         setProfile(data);
+
+        if (token && currentUser?.role === "student") {
+          const mentors = await getMyMentors(token);
+          setMentorConnection(
+            mentors.find((mentor) => Number(mentor.id) === Number(id)) || null
+          );
+        } else {
+          setMentorConnection(null);
+        }
       } catch (e) {
         setErr(e.message || "Failed to load alumni profile");
       } finally {
@@ -45,7 +62,7 @@ export default function AlumniPublicProfile() {
     };
 
     run();
-  }, [id]);
+  }, [id, token, currentUser?.role]);
 
   const statusIcon =
     profile?.verification_status === "verified"
@@ -58,12 +75,16 @@ export default function AlumniPublicProfile() {
   const capacity = Number(profile?.preferred_mentee_capacity || 0);
   const remainingSlots = Math.max(capacity - acceptedCount, 0);
   const isVerified = profile?.verification_status === "verified";
+  const hasEndedMentorship = mentorConnection?.mentorship_status === "ended";
   const canRequest =
     token &&
     isStudent &&
     !isOwnProfile &&
     isVerified &&
-    remainingSlots > 0;
+    remainingSlots > 0 &&
+    (!mentorConnection || hasEndedMentorship);
+  const hasMentorConnection = Boolean(mentorConnection) && !hasEndedMentorship;
+  const hasPendingEndRequest = mentorConnection?.mentorship_status === "ending_requested";
 
   if (loading) {
     return <LoadingScreen text="Loading alumni profile..." />;
@@ -123,7 +144,7 @@ export default function AlumniPublicProfile() {
                   className={`menteeCount ${remainingSlots > 0 ? "available" : "full"}`}
                   title={remainingSlots > 0 ? "Available" : "Mentor full"}
                 >
-                  {acceptedCount} / {capacity} left
+                  {acceptedCount} / {capacity} slots left
                 </div>
               )}
 
@@ -140,8 +161,16 @@ export default function AlumniPublicProfile() {
                     })
                   }
                 >
-                  Request Mentorship
+                  {hasEndedMentorship ? "Request Mentorship Again" : "Request Mentorship"}
                 </button>
+              )}
+
+              {hasMentorConnection && !hasPendingEndRequest && (
+                <div className="alreadyMentorPill">Already your mentor</div>
+              )}
+
+              {hasPendingEndRequest && (
+                <div className="endPendingPill">End requested</div>
               )}
 
               {!token && (
@@ -163,7 +192,10 @@ export default function AlumniPublicProfile() {
           <section className="detailsGrid">
             <DetailPanel title="Personal Details">
               <InfoRow label="Role:" value="Alumni" />
-              <InfoRow label="Department:" value={profile.department} />
+              <InfoRow
+                label="Department:"
+                value={<DepartmentValue department={profile.department} />}
+              />
               <InfoRow label="Graduation Year:" value={profile.graduation_year} />
               <InfoRow label="Bio:" value={profile.bio} multiline />
               <InfoRow
@@ -177,8 +209,13 @@ export default function AlumniPublicProfile() {
               <InfoRow label="Company:" value={profile.organization} />
               <InfoRow
                 label="Expertise/Interests:"
-                value={profile.primary_interests}
-                multiline
+                value={<InterestTags value={profile.primary_interests} />}
+              />
+              <InfoRow
+                label="LinkedIn:"
+                value={profile.linkedin_url}
+                isLink
+                icon={linkedinIcon}
               />
             </DetailPanel>
           </section>
@@ -197,14 +234,15 @@ function DetailPanel({ title, children }) {
   );
 }
 
-function InfoRow({ label, value, isLink = false, multiline = false }) {
+function InfoRow({ label, value, isLink = false, multiline = false, icon }) {
   return (
     <div className="infoRow">
       <div className="infoLabel">{label}</div>
       <div className={`infoValue ${multiline ? "multiline" : ""}`}>
         {value ? (
           isLink ? (
-            <a href={value} target="_blank" rel="noreferrer">
+            <a href={value} target="_blank" rel="noreferrer" className={icon ? "iconLink" : ""}>
+              {icon && <img src={icon} alt="" />}
               {value}
             </a>
           ) : (
@@ -216,6 +254,55 @@ function InfoRow({ label, value, isLink = false, multiline = false }) {
       </div>
     </div>
   );
+}
+
+function DepartmentValue({ department }) {
+  const icon = getDepartmentIcon(department);
+
+  return (
+    <span className="departmentValue">
+      {icon && <img src={icon} alt="" />}
+      <span>{department || "-"}</span>
+    </span>
+  );
+}
+
+function InterestTags({ value = "" }) {
+  const interests = getInterestTags(value);
+  if (interests.length === 0) return "-";
+
+  return (
+    <span className="profileInterestTags">
+      {interests.map((interest) => (
+        <span key={interest}>{interest}</span>
+      ))}
+    </span>
+  );
+}
+
+function getInterestTags(value = "") {
+  return value
+    .split(/[,|]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+function getDepartmentIcon(department = "") {
+  const normalized = department.toLowerCase();
+
+  if (normalized.includes("chemical")) return chemicalIcon;
+  if (normalized.includes("civil")) return civilIcon;
+  if (normalized.includes("computer")) return computerIcon;
+  if (normalized.includes("electrical") || normalized.includes("electronic")) {
+    return electricalIcon;
+  }
+  if (normalized.includes("manufacturing") || normalized.includes("industrial")) {
+    return manufacturingIcon;
+  }
+  if (normalized.includes("mechanical")) return mechanicalIcon;
+
+  return null;
 }
 
 const css = `
@@ -242,15 +329,19 @@ const css = `
   width:100%;
   margin:0 auto;
   border-radius:22px;
-  padding:34px 18px 28px;
+  padding:0 18px 28px;
   background:#ffffff;
   border:1px solid rgba(255,255,255,.84);
   box-shadow:0 28px 72px rgba(0,0,0,.22);
+  overflow:hidden;
 }
 
 .profileHero{
   position:relative;
-  margin-bottom:30px;
+  margin:0 -18px 30px;
+  padding:34px 18px 28px;
+  background:#fafbfc;
+  border-bottom:1px solid rgba(0,0,0,.06);
 }
 
 .identityBlock{
@@ -377,28 +468,84 @@ const css = `
 }
 
 .infoValue a{
-  color:#111111;
+  color:#244ee4;
   text-decoration:none;
-  border-bottom:1px solid rgba(17,17,17,.18);
+  border-bottom:1px solid rgba(47,95,245,.24);
+}
+
+.infoValue a:hover{
+  color:#1f45cc;
+  border-bottom-color:rgba(47,95,245,.42);
+}
+
+.infoValue a.iconLink{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+}
+
+.infoValue a.iconLink img{
+  width:14px;
+  height:14px;
+  object-fit:contain;
+  flex:0 0 auto;
+}
+
+.departmentValue{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+
+.departmentValue img{
+  width:14px;
+  height:14px;
+  object-fit:contain;
+  flex:0 0 auto;
+}
+
+.profileInterestTags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.profileInterestTags span{
+  max-width:170px;
+  min-width:0;
+  padding:4px 9px;
+  border-radius:7px;
+  border:1px solid rgba(0,0,0,.08);
+  background:#eef1f4;
+  color:rgba(17,17,17,.64);
+  font-size:12px;
+  line-height:1.1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 .identityActions{
   display:flex;
-  align-items:center;
+  flex-direction:column;
+  align-items:flex-end;
   gap:8px;
-  justify-content:flex-end;
-  flex-wrap:wrap;
+  justify-content:center;
+  flex-wrap:nowrap;
   position:absolute;
-  top:0;
-  right:16px;
+  top:50%;
+  right:34px;
   max-width:360px;
-  transform:none;
+  transform:translateY(-50%);
 }
 
 .menteeCount{
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  gap:6px;
   min-height:25px;
   padding:0 11px;
   border-radius:999px;
@@ -408,15 +555,31 @@ const css = `
   box-shadow:0 8px 18px rgba(0,0,0,.08);
 }
 
+.menteeCount::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  flex:0 0 auto;
+}
+
 .menteeCount.available{
   background:#d8f8e4;
   color:#047a31;
   animation:availablePulse 1.8s ease-in-out infinite;
 }
 
+.menteeCount.available::before{
+  background:#22c55e;
+}
+
 .menteeCount.full{
   background:#fee8e8;
   color:#b42318;
+}
+
+.menteeCount.full::before{
+  background:#d7263d;
 }
 
 .requestButton{
@@ -493,6 +656,43 @@ const css = `
   }
 }
 
+.endPendingPill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:25px;
+  padding:0 11px;
+  border-radius:999px;
+  background:rgba(245,158,11,.14);
+  color:#92400e;
+  font-size:13px;
+  white-space:nowrap;
+}
+
+.alreadyMentorPill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  background:#2f5ff5;
+  color:#ffffff;
+  font-size:13px;
+  line-height:1;
+  white-space:nowrap;
+  box-shadow:0 10px 22px rgba(47,95,245,.18);
+}
+
+.endPendingPill::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#f59e0b;
+}
+
 @media (max-width:640px){
   .profileMain{
     padding:10px 14px 36px;
@@ -500,7 +700,12 @@ const css = `
 
   .profileCard{
     border-radius:18px;
-    padding:26px 14px 22px;
+    padding:0 14px 22px;
+  }
+
+  .profileHero{
+    margin:0 -14px 28px;
+    padding:26px 14px 24px;
   }
 
   .identityBlock{

@@ -6,10 +6,30 @@ export default function Breadcrumbs() {
   const location = useLocation();
   const [alumniName, setAlumniName] = useState(location.state?.alumniName || "");
   const [eventTitle, setEventTitle] = useState(location.state?.eventTitle || "");
+  const [chatName, setChatName] = useState("");
 
   const path = location.pathname;
   const alumniId = getAlumniId(path);
   const eventId = getEventId(path);
+  const fromMyCreatedEvents = Boolean(location.state?.fromMyCreatedEvents);
+  const fromMyEvents = Boolean(location.state?.fromMyEvents);
+  const fromMyMentors = Boolean(location.state?.fromMyMentors);
+
+  useEffect(() => {
+    if (path !== "/chat") {
+      setChatName("");
+      return undefined;
+    }
+
+    const handleChatSelection = (event) => {
+      setChatName(event.detail?.name || "");
+    };
+
+    window.addEventListener("alumnet:chat-selection-changed", handleChatSelection);
+    return () => {
+      window.removeEventListener("alumnet:chat-selection-changed", handleChatSelection);
+    };
+  }, [path]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,8 +91,27 @@ export default function Breadcrumbs() {
   }, [eventId, location.state]);
 
   const crumbs = useMemo(
-    () => buildCrumbs(path, alumniName, alumniId, eventTitle),
-    [path, alumniName, alumniId, eventTitle]
+    () =>
+      buildCrumbs(
+        path,
+        alumniName,
+        alumniId,
+        eventTitle,
+        chatName,
+        fromMyCreatedEvents,
+        fromMyEvents,
+        fromMyMentors
+      ),
+    [
+      path,
+      alumniName,
+      alumniId,
+      eventTitle,
+      chatName,
+      fromMyCreatedEvents,
+      fromMyEvents,
+      fromMyMentors,
+    ]
   );
 
   if (crumbs.length === 0) return null;
@@ -109,6 +148,9 @@ function getAlumniId(path) {
   const requestMatch = path.match(/^\/request-mentorship\/([^/]+)$/);
   if (requestMatch) return requestMatch[1];
 
+  const endMatch = path.match(/^\/end-mentorship\/([^/]+)$/);
+  if (endMatch) return endMatch[1];
+
   return "";
 }
 
@@ -119,7 +161,16 @@ function getEventId(path) {
   return "";
 }
 
-function buildCrumbs(path, alumniName, alumniId, eventTitle) {
+function buildCrumbs(
+  path,
+  alumniName,
+  alumniId,
+  eventTitle,
+  chatName,
+  fromMyCreatedEvents,
+  fromMyEvents,
+  fromMyMentors
+) {
   if (path === "/home") return [{ label: "Home" }];
   if (path === "/profile") return [{ label: "Profile" }];
   if (path === "/edit-profile") {
@@ -130,6 +181,13 @@ function buildCrumbs(path, alumniName, alumniId, eventTitle) {
   }
   if (path === "/directory") return [{ label: "Directory" }];
   if (path.startsWith("/directory/")) {
+    if (fromMyMentors) {
+      return [
+        { label: "My Mentors", to: "/my-mentors" },
+        { label: alumniName || "Alumni Profile" },
+      ];
+    }
+
     return [
       { label: "Directory", to: "/directory" },
       { label: alumniName || "Alumni Profile" },
@@ -145,9 +203,49 @@ function buildCrumbs(path, alumniName, alumniId, eventTitle) {
       { label: "Request Mentorship" },
     ];
   }
-  if (path === "/chat") return [{ label: "Chat" }];
+  if (path.startsWith("/end-mentorship/")) {
+    return [
+      { label: "My Mentors", to: "/my-mentors" },
+      {
+        label: alumniName || "Alumni Profile",
+        to: alumniId ? `/directory/${alumniId}` : "/my-mentors",
+      },
+      { label: "End Mentorship" },
+    ];
+  }
+  if (path === "/chat") {
+    return chatName
+      ? [{ label: "Chat", to: "/chat" }, { label: chatName }]
+      : [{ label: "Chat" }];
+  }
   if (path === "/events") return [{ label: "Events" }];
   if (path.startsWith("/events/")) {
+    if (fromMyEvents) {
+      return [
+        { label: "Events", to: "/events" },
+        { label: "My Events", to: "/my-events" },
+        ...(path.endsWith("/edit")
+          ? [
+              { label: eventTitle || "Event Details", to: path.replace(/\/edit$/, "") },
+              { label: "Edit Event" },
+            ]
+          : [{ label: eventTitle || "Event Details" }]),
+      ];
+    }
+
+    if (fromMyCreatedEvents) {
+      return [
+        { label: "Events", to: "/events" },
+        { label: "My Events", to: "/my-created-events" },
+        ...(path.endsWith("/edit")
+          ? [
+              { label: eventTitle || "Event Details", to: path.replace(/\/edit$/, "") },
+              { label: "Edit Event" },
+            ]
+          : [{ label: eventTitle || "Event Details" }]),
+      ];
+    }
+
     return [
       { label: "Events", to: "/events" },
       ...(path.endsWith("/edit")
@@ -173,11 +271,11 @@ function buildCrumbs(path, alumniName, alumniId, eventTitle) {
   if (path === "/my-created-events") {
     return [
       { label: "Events", to: "/events" },
-      { label: "My Created Events" },
+      { label: "My Events" },
     ];
   }
   if (path === "/my-requests") return [{ label: "My Requests" }];
-  if (path === "/mentor-requests") return [{ label: "Mentor Requests" }];
+  if (path === "/mentor-requests") return [{ label: "Received Requests" }];
   if (path === "/my-mentors") return [{ label: "My Mentors" }];
   if (path === "/my-mentees") return [{ label: "My Mentees" }];
   if (path === "/admin") return [{ label: "Admin Dashboard" }];

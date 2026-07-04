@@ -1,5 +1,4 @@
 import { useState } from "react";
-import PageShell from "../components/PageShell";
 import { createEvent } from "../api";
 import { supabase } from "../supabase";
 
@@ -98,7 +97,9 @@ export default function CreateEvent() {
   };
 
   return (
-    <PageShell title="Create Event" subtitle="Alumni and admins can add events">
+    <main className="createEventPage">
+      <style>{css}</style>
+      <section className="createEventShell">
       <form onSubmit={handleSubmit} style={card}>
         <div style={posterUploadRow}>
           <div style={posterPreviewBox}>
@@ -203,14 +204,15 @@ export default function CreateEvent() {
           />
         </Field>
 
-        <button type="submit" disabled={loading} style={btn}>
+        <button type="submit" disabled={loading} className="createEventButton">
           {loading ? "Creating..." : "Create Event"}
         </button>
 
         {success && <div style={successBox}>{success}</div>}
         {err && <div style={errorBox}>{err}</div>}
       </form>
-    </PageShell>
+      </section>
+    </main>
   );
 }
 
@@ -223,13 +225,73 @@ function Field({ label, children }) {
   );
 }
 
+const css = `
+.createEventPage{
+  position:relative;
+  min-height:100vh;
+  background:transparent;
+  color:#111111;
+  font-family:"Google Sans";
+  padding:24px 22px 34px;
+  animation:createEventDissolve .22s ease both;
+  overflow-x:hidden;
+}
+
+.createEventShell{
+  width:min(1340px, 100%);
+  margin:0 auto;
+  border-radius:22px;
+  padding:28px 34px 30px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 28px 72px rgba(0,0,0,.22);
+  overflow:hidden;
+}
+
+.createEventButton{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:30px;
+  margin-top:4px;
+  padding:0 12px;
+  border-radius:999px;
+  background:#050505;
+  color:#ffffff;
+  font-family:"Google Sans";
+  font-size:13px;
+  font-weight:500;
+  line-height:1;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease, opacity .18s ease;
+}
+
+.createEventButton:hover:not(:disabled){
+  background:#eef1f4;
+  color:#111111;
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+
+.createEventButton:disabled{
+  opacity:.68;
+  cursor:not-allowed;
+}
+
+@keyframes createEventDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media (max-width:720px){
+  .createEventPage{ padding:10px 14px 36px; }
+  .createEventShell{ border-radius:18px; padding:20px 14px 24px; }
+}
+`;
+
 const card = {
-  padding: 22,
-  borderRadius: 16,
-  background: "rgba(255,255,255,0.7)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  backdropFilter: "blur(6px)",
-  maxWidth: 760,
+  padding: 0,
+  maxWidth: 920,
 };
 
 const posterUploadRow = {
@@ -240,10 +302,10 @@ const posterUploadRow = {
 };
 
 const posterPreviewBox = {
-  width: 100,
-  height: 100,
-  borderRadius: "50%",
-  background: "rgba(0,0,0,0.05)",
+  width: 132,
+  aspectRatio: "1054 / 1492",
+  borderRadius: 10,
+  background: "#f3f5f8",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -254,7 +316,7 @@ const posterPreviewBox = {
 const posterImg = {
   width: "100%",
   height: "100%",
-  objectFit: "cover",
+  objectFit: "contain",
 };
 
 const posterPlaceholder = {
@@ -294,9 +356,9 @@ const labelStyle = {
 const input = {
   width: "100%",
   padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.76)",
+  borderRadius: 10,
+  border: "1px solid rgba(0,0,0,0.05)",
+  background: "#f3f5f8",
   color: "#111111",
   fontSize: 14,
   fontFamily: '"Google Sans"',
@@ -307,19 +369,6 @@ const textarea = {
   ...input,
   minHeight: 120,
   resize: "vertical",
-};
-
-const btn = {
-  marginTop: 4,
-  padding: "10px 16px",
-  borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.8)",
-  color: "#111111",
-  fontSize: 14,
-  fontFamily: '"Google Sans"',
-  fontWeight: 400,
-  cursor: "pointer",
 };
 
 const successBox = {

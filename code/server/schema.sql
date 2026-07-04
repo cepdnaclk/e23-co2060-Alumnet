@@ -186,8 +186,11 @@ CREATE TABLE public.mentorship_requests (
     alumni_user_id integer NOT NULL,
     message text,
     status character varying(20) DEFAULT 'pending'::character varying NOT NULL,
+    end_reason text,
+    end_requested_at timestamp without time zone,
+    ended_at timestamp without time zone,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT mentorship_requests_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying])::text[])))
+    CONSTRAINT mentorship_requests_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying, 'ending_requested'::character varying, 'ended'::character varying])::text[])))
 );
 
 
