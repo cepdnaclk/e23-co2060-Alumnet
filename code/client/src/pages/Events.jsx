@@ -103,13 +103,18 @@ export default function Events() {
                       <p>Hosted by {event.created_by_name || "-"}</p>
                     </div>
 
-                    <Link
-                      to={`/events/${event.id}`}
-                      state={{ eventTitle: event.title }}
-                      className="viewEventLink"
-                    >
-                      View Event
-                    </Link>
+                    <div className="eventHeaderActions">
+                      <Link
+                        to={`/events/${event.id}`}
+                        state={{ eventTitle: event.title }}
+                        className="viewEventLink"
+                      >
+                        View Event
+                      </Link>
+                      {event.is_registered && (
+                        <span className="alreadyJoined">Already joined</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="eventContent">
@@ -146,9 +151,6 @@ export default function Events() {
                       <span className={remaining > 0 ? "slotsOpen" : "slotsFull"}>
                         {remaining > 0 ? `${remaining} slots left` : "Event full"}
                       </span>
-                      {event.is_registered && (
-                        <span className="alreadyJoined">Already joined</span>
-                      )}
                     </div>
                   </div>
                   </div>
@@ -385,6 +387,13 @@ const css = `
   margin-bottom:14px;
 }
 
+.eventHeaderActions{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+}
+
 .eventContent{
   display:grid;
   grid-template-columns:minmax(120px, 32%) minmax(0, 1fr);
@@ -398,13 +407,13 @@ const css = `
 
 .eventPoster{
   width:100%;
-  aspect-ratio:4 / 5;
+  aspect-ratio:1054 / 1492;
   height:auto;
   border-radius:10px;
-  object-fit:cover;
+  object-fit:contain;
   display:grid;
   place-items:center;
-  background:#ecebe7;
+  background:#f3f5f8;
   color:#111111;
   font-size:30px;
   font-weight:500;
@@ -528,11 +537,33 @@ const css = `
   animation:eventSlotFullPulse 1.8s ease-in-out infinite;
 }
 
-.eventTags .alreadyJoined{
-  border-color:rgba(195, 61, 61, 0.14).14);
-  background:#fee2e2;
-  color:#b91c1c;
-  font-weight:600;
+.eventTags .slotsFull::before{
+  background:#d7263d;
+}
+
+.alreadyJoined{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:22px;
+  padding:0 9px;
+  border-radius:999px;
+  border:1px solid rgba(47,95,245,.14);
+  background:rgba(47,95,245,.10);
+  color:#244ee4;
+  font-size:12px;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.alreadyJoined::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#2f5ff5;
+  flex:0 0 auto;
 }
 
 .viewEventLink{
@@ -621,13 +652,17 @@ const css = `
     gap:10px;
   }
 
+  .eventHeaderActions{
+    align-items:flex-start;
+  }
+
   .eventContent{
     grid-template-columns:1fr;
     gap:12px;
   }
 
   .eventPoster{
-    aspect-ratio:4 / 5;
+    aspect-ratio:1054 / 1492;
     font-size:24px;
   }
 
