@@ -111,9 +111,6 @@ export default function EventDetails() {
             <div>
               <h1>{event.title}</h1>
               <p>By {event.created_by_name || "Alumnet"}</p>
-              <span className={`eventApprovalStatus ${event.approval_status}`}>
-                {event.approval_status}
-              </span>
             </div>
 
             {isStudent && (event.is_registered ? (
@@ -255,21 +252,6 @@ function EventDetailsStyles() {
         font-size: 13px;
         line-height: 1.2;
       }
-
-      .eventApprovalStatus {
-        display: inline-flex;
-        align-items: center;
-        min-height: 24px;
-        margin-top: 10px;
-        padding: 0 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        text-transform: capitalize;
-      }
-
-      .eventApprovalStatus.pending { background: #fef3c7; color: #a16207; }
-      .eventApprovalStatus.approved { background: #d8f8e4; color: #047a31; }
-      .eventApprovalStatus.rejected { background: #fee8e8; color: #b42318; }
 
       .eventMetaList {
         margin-top: 12px;
