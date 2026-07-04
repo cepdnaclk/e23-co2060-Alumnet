@@ -361,20 +361,17 @@ export default function Navbar() {
 
 const css = `
 .appTopNav{
-  height:72px;
+  height:64px;
   display:grid;
   grid-template-columns:1fr auto 1fr;
   align-items:center;
   gap:24px;
   padding:0 60px;
-  border-bottom:1px solid rgba(0,0,0,.08);
-  background:rgba(255,255,255,.86);
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
   position:sticky;
   top:0;
-  z-index:100;
+  z-index:2147483000;
   font-family:"Google Sans";
+  background:transparent;
 }
 
 .appBrandBtn{
@@ -419,7 +416,7 @@ const css = `
   justify-self:end;
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:12px;
 }
 
 .appToolBtn,
@@ -430,19 +427,19 @@ const css = `
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  border-radius:10px;
-  background:#050505;
-  border:1px solid rgba(0,0,0,.84);
-  color:#ffffff;
-  box-shadow:0 8px 18px rgba(0,0,0,.18);
+  border-radius:999px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.86);
+  color:#111111;
+  box-shadow:0 10px 24px rgba(0,0,0,.18), 0 2px 7px rgba(0,0,0,.08);
   transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
 
 .appToolBtn:hover,
 .profileTool:hover{
   transform:translateY(-1px);
-  background:#050505;
-  box-shadow:0 10px 22px rgba(0,0,0,.22);
+  background:#ffffff;
+  box-shadow:0 14px 30px rgba(0,0,0,.22), 0 3px 9px rgba(0,0,0,.10);
 }
 
 .profileTool{
@@ -465,17 +462,18 @@ const css = `
 
 .profileDropdown,
 .notifDropdown{
-  position:absolute;
-  top:48px;
-  right:0;
+  position:fixed;
+  top:68px;
+  z-index:2147483001;
   border-radius:14px;
-  background:rgba(255,255,255,.96);
+  background:#ffffff;
   border:1px solid rgba(0,0,0,.08);
-  box-shadow:0 18px 40px rgba(0,0,0,.12);
+  box-shadow:0 24px 58px rgba(0,0,0,.18);
   animation:dropdownFade .16s ease both;
 }
 
 .profileDropdown{
+  right:60px;
   width:202px;
   padding:8px;
   display:grid;
@@ -516,12 +514,13 @@ const css = `
   transform:translateY(-1px);
 }
 
-.notifBadge{
+.notifBadge,
+.chatBadge{
   position:absolute;
   top:-4px;
   right:-4px;
-  min-width:16px;
-  height:16px;
+  min-width:18px;
+  height:18px;
   padding:0 4px;
   display:flex;
   align-items:center;
@@ -530,30 +529,13 @@ const css = `
   background:#D7263D;
   color:#ffffff;
   font-size:10px;
-  border:2px solid #050505;
-  box-shadow:0 6px 14px rgba(215,38,61,.24);
-}
-
-.chatBadge{
-  position:absolute;
-  top:-4px;
-  right:-4px;
-  min-width:18px;
-  height:18px;
-  padding:0 5px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:999px;
-  background:#D7263D;
-  color:#ffffff;
-  font-size:10px;
   font-weight:500;
-  border:2px solid #050505;
+  border:0;
   box-shadow:0 6px 14px rgba(215,38,61,.24);
 }
 
 .notifDropdown{
+  right:104px;
   width:320px;
   overflow:hidden;
 }
@@ -622,7 +604,7 @@ const css = `
   .appTopNav{
     grid-template-columns:1fr auto;
     height:auto;
-    padding:18px 20px;
+    padding:14px 20px 8px;
   }
 
   .appCenterNav{
@@ -637,7 +619,7 @@ const css = `
 
 @media (max-width:640px){
   .appTopNav{
-    padding:14px 16px;
+    padding:12px 16px 8px;
   }
 
   .appBrandBtn{
@@ -652,6 +634,17 @@ const css = `
   .profileTool{
     min-width:35px;
     height:35px;
+  }
+
+  .profileDropdown{
+    right:16px;
+    top:62px;
+  }
+
+  .notifDropdown{
+    right:16px;
+    top:62px;
+    width:min(320px, calc(100vw - 32px));
   }
 }
 `;

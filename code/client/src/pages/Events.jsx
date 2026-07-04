@@ -13,6 +13,7 @@ export default function Events() {
   const [searching, setSearching] = useState(false);
   const [err, setErr] = useState("");
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
 
   const loadEvents = async () => {
     try {
@@ -38,10 +39,12 @@ export default function Events() {
     const timeout = window.setTimeout(() => setSearching(false), 180);
 
     return () => window.clearTimeout(timeout);
-  }, [search, loading]);
+  }, [search, dateFilter, loading]);
 
   const filteredEvents = events.filter((event) => {
     const query = search.trim().toLowerCase();
+    const matchesDate = matchesDateFilter(event.event_date, dateFilter);
+    if (!matchesDate) return false;
     if (!query) return true;
 
     return [event.title, event.venue, event.created_by_name, event.description]
@@ -54,14 +57,29 @@ export default function Events() {
       <style>{css}</style>
 
       <section className="eventsShell">
-        <label className="eventSearch">
-          <Search size={15} strokeWidth={2} />
-          <input
-            placeholder="Search events"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
+        <div className="eventFilters">
+          <label className="eventSearch">
+            <Search size={15} strokeWidth={2} />
+            <input
+              placeholder="Search events"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+
+          <div className="dateFilters" aria-label="Filter events by date">
+            {dateFilters.map((filter) => (
+              <button
+                key={filter.value}
+                className={dateFilter === filter.value ? "active" : ""}
+                type="button"
+                onClick={() => setDateFilter(filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {err && <div className="eventState error">{err}</div>}
 
@@ -78,6 +96,22 @@ export default function Events() {
 
               return (
                 <article key={event.id} className="eventItem">
+                  <div className="eventCardHeader">
+                    <div className="eventIdentity">
+                      <h2>{event.title}</h2>
+                      <p>Hosted by {event.created_by_name || "-"}</p>
+                    </div>
+
+                    <Link
+                      to={`/events/${event.id}`}
+                      state={{ eventTitle: event.title }}
+                      className="viewEventLink"
+                    >
+                      View Event
+                    </Link>
+                  </div>
+
+                  <div className="eventContent">
                   <div className="posterColumn">
                     {event.image_url ? (
                       <img src={event.image_url} alt={event.title} className="eventPoster" />
@@ -89,13 +123,6 @@ export default function Events() {
                   </div>
 
                   <div className="eventBody">
-                    <div className="eventTopLine">
-                      <div className="eventIdentity">
-                        <h2>{event.title}</h2>
-                        <p>Hosted by {event.created_by_name || "-"}</p>
-                      </div>
-                    </div>
-
                     <div className="eventMetaLine">
                       <span>
                         <img src={dateIcon} alt="" />
@@ -120,15 +147,6 @@ export default function Events() {
                       </span>
                     </div>
                   </div>
-
-                  <div className="eventActionColumn">
-                    <Link
-                      to={`/events/${event.id}`}
-                      state={{ eventTitle: event.title }}
-                      className="viewEventLink"
-                    >
-                      View Event
-                    </Link>
                   </div>
                 </article>
               );
@@ -157,31 +175,109 @@ function formatTime(time) {
   });
 }
 
+const dateFilters = [
+  { value: "all", label: "All" },
+  { value: "today", label: "Today" },
+  { value: "tomorrow", label: "Tomorrow" },
+  { value: "week", label: "This Week" },
+  { value: "month", label: "This Month" },
+];
+
+function matchesDateFilter(date, filter) {
+  if (filter === "all") return true;
+  if (!date) return false;
+
+  const eventDate = startOfDay(new Date(date));
+  if (Number.isNaN(eventDate.getTime())) return false;
+
+  const today = startOfDay(new Date());
+  const tomorrow = addDays(today, 1);
+
+  if (filter === "today") return isSameDay(eventDate, today);
+  if (filter === "tomorrow") return isSameDay(eventDate, tomorrow);
+
+  if (filter === "week") {
+    const weekStart = startOfWeek(today);
+    const weekEnd = addDays(weekStart, 7);
+    return eventDate >= weekStart && eventDate < weekEnd;
+  }
+
+  if (filter === "month") {
+    return (
+      eventDate.getFullYear() === today.getFullYear() &&
+      eventDate.getMonth() === today.getMonth()
+    );
+  }
+
+  return true;
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function isSameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function startOfWeek(date) {
+  const start = startOfDay(date);
+  const day = start.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diff);
+  return start;
+}
+
 const css = `
 .eventsPage{
-  min-height:calc(100vh - 72px);
-  background:#fbfbfa;
+  position:relative;
+  min-height:100vh;
+  background:transparent;
   color:#111111;
   font-family:"Google Sans";
-  padding:26px 28px 34px;
+  padding:24px 22px 34px;
   animation:eventsDissolve .22s ease both;
+  overflow-x:hidden;
 }
 
 .eventsShell{
-  width:min(960px, 100%);
+  width:min(1340px, 100%);
   margin:0 auto;
+  border-radius:22px;
+  padding:28px 34px 30px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 28px 72px rgba(0,0,0,.22);
+}
+
+.eventFilters{
+  display:grid;
+  grid-template-columns:minmax(260px, 1fr) auto;
+  align-items:center;
+  gap:12px;
+  margin-bottom:22px;
 }
 
 .eventSearch{
   height:36px;
-  width:min(528px, 100%);
-  margin-bottom:20px;
-  padding:0 10px;
+  width:100%;
+  padding:0 12px;
   display:flex;
   align-items:center;
   gap:8px;
-  border-radius:7px;
-  background:#eef1f4;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.05);
+  background:#f3f5f8;
   color:rgba(17,17,17,.48);
 }
 
@@ -198,6 +294,38 @@ const css = `
 
 .eventSearch input::placeholder{
   color:rgba(17,17,17,.44);
+}
+
+.dateFilters{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.dateFilters button{
+  height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  background:#ffffff;
+  color:#111111;
+  font-family:"Google Sans";
+  font-size:13px;
+  line-height:1;
+  box-shadow:0 10px 24px rgba(0,0,0,.14), 0 2px 7px rgba(0,0,0,.06);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+}
+
+.dateFilters button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+
+.dateFilters button.active{
+  background:#2f5ff5;
+  color:#ffffff;
+  box-shadow:0 10px 24px rgba(47,95,245,.22), 0 2px 7px rgba(0,0,0,.08);
 }
 
 .eventState{
@@ -217,8 +345,12 @@ const css = `
 }
 
 .eventList{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
   border-top:1px solid rgba(0,0,0,.08);
   transition:opacity .18s ease;
+  margin:0 -34px -30px;
+  overflow:hidden;
 }
 
 .eventList.refreshing{
@@ -226,38 +358,56 @@ const css = `
 }
 
 .eventItem{
-  display:grid;
-  grid-template-columns:58px minmax(0, 1fr) 136px;
-  gap:14px;
-  padding:18px 0;
+  min-width:0;
+  padding:18px 20px 20px;
   border-bottom:1px solid rgba(0,0,0,.08);
 }
 
+.eventItem:nth-child(odd){
+  border-right:1px solid rgba(0,0,0,.10);
+}
+
+.eventItem:nth-child(4n + 2),
+.eventItem:nth-child(4n + 3){
+  background:#fafbfc;
+}
+
+.eventCardHeader{
+  min-height:42px;
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto;
+  align-items:start;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.eventContent{
+  display:grid;
+  grid-template-columns:minmax(120px, 32%) minmax(0, 1fr);
+  gap:12px;
+  min-width:0;
+}
+
 .posterColumn{
-  padding-top:2px;
+  min-width:0;
 }
 
 .eventPoster{
-  width:48px;
-  height:48px;
-  border-radius:50%;
+  width:100%;
+  aspect-ratio:4 / 5;
+  height:auto;
+  border-radius:10px;
   object-fit:cover;
   display:grid;
   place-items:center;
   background:#ecebe7;
   color:#111111;
-  font-size:18px;
+  font-size:30px;
   font-weight:500;
+  border:1px solid rgba(0,0,0,.06);
 }
 
 .eventBody{
-  min-width:0;
-}
-
-.eventTopLine{
-  display:flex;
-  justify-content:space-between;
-  gap:14px;
   min-width:0;
 }
 
@@ -272,9 +422,9 @@ const css = `
   text-overflow:ellipsis;
   white-space:nowrap;
   color:#111111;
-  font-size:15px;
+  font-size:16px;
   line-height:1.2;
-  font-weight:520;
+  font-weight:500;
   letter-spacing:0;
 }
 
@@ -286,11 +436,9 @@ const css = `
 }
 
 .eventMetaLine{
-  display:flex;
-  align-items:center;
-  flex-wrap:wrap;
-  gap:8px 16px;
-  margin-top:7px;
+  display:grid;
+  gap:8px;
+  margin-top:0;
   color:#2b59c3;
   font-size:12px;
   line-height:1.4;
@@ -312,11 +460,14 @@ const css = `
 }
 
 .eventDescription{
-  max-width:680px;
-  margin:10px 0 0;
+  margin:12px 0 0;
   color:#111111;
   font-size:13px;
-  line-height:1.55;
+  line-height:1.5;
+  display:-webkit-box;
+  -webkit-line-clamp:4;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
 }
 
 .eventTags{
@@ -341,23 +492,40 @@ const css = `
   white-space:nowrap;
 }
 
-.eventActionColumn{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:10px;
-}
-
 .eventTags .slotsOpen{
   background:rgba(34,197,94,.16);
   color:#15803d;
   animation:eventSlotPulse 1.8s ease-in-out infinite;
 }
 
+.eventTags .slotsOpen,
+.eventTags .slotsFull{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+.eventTags .slotsOpen::before,
+.eventTags .slotsFull::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  flex:0 0 auto;
+}
+
+.eventTags .slotsOpen::before{
+  background:#22c55e;
+}
+
 .eventTags .slotsFull{
   background:rgba(215,38,61,.10);
   color:#b91c1c;
   animation:eventSlotFullPulse 1.8s ease-in-out infinite;
+}
+
+.eventTags .slotsFull::before{
+  background:#d7263d;
 }
 
 .viewEventLink{
@@ -398,44 +566,66 @@ const css = `
 }
 
 @media (max-width:820px){
-  .eventItem{
-    grid-template-columns:48px minmax(0, 1fr);
+  .eventFilters{
+    grid-template-columns:1fr;
   }
 
-  .eventActionColumn{
-    grid-column:2;
-    flex-direction:row;
-    align-items:center;
-    justify-content:space-between;
+  .dateFilters{
+    justify-content:flex-start;
+  }
+
+  .eventList{
+    grid-template-columns:1fr;
+  }
+
+  .eventItem:nth-child(odd){
+    border-right:0;
+  }
+
+  .eventItem:nth-child(even){
+    background:#fafbfc;
+  }
+
+  .eventItem:nth-child(odd){
+    background:#ffffff;
   }
 }
 
 @media (max-width:560px){
   .eventsPage{
-    padding:18px 16px 28px;
+    padding:10px 14px 36px;
+  }
+
+  .eventsShell{
+    border-radius:18px;
+    padding:20px 14px 24px;
+  }
+
+  .eventList{
+    margin:0 -14px -24px;
   }
 
   .eventItem{
-    grid-template-columns:42px minmax(0, 1fr);
-    gap:11px;
-    padding:16px 0;
+    padding:16px 24px;
+  }
+
+  .eventCardHeader{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .eventContent{
+    grid-template-columns:1fr;
+    gap:12px;
   }
 
   .eventPoster{
-    width:40px;
-    height:40px;
-    font-size:16px;
-  }
-
-  .eventTopLine{
-    display:block;
-  }
-
-  .eventActionColumn{
-    gap:8px;
+    aspect-ratio:4 / 5;
+    font-size:24px;
   }
 
   .viewEventLink{
+    width:max-content;
     padding:0 10px;
   }
 }

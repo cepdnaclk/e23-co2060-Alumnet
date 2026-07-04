@@ -210,37 +210,45 @@ function getDepartmentIcon(department = "") {
 
 const css = `
 .directoryPage{
-  min-height:calc(100vh - 72px);
-  background:#fbfbfa;
+  position:relative;
+  min-height:100vh;
+  background:transparent;
   color:#111111;
   font-family:"Google Sans";
-  padding:26px 28px 34px;
+  padding:24px 22px 34px;
   animation:directoryDissolve .22s ease both;
+  overflow-x:hidden;
 }
 
 .directoryShell{
-  width:min(960px, 100%);
+  width:min(1340px, 100%);
   margin:0 auto;
+  border-radius:22px;
+  padding:28px 34px 30px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 28px 72px rgba(0,0,0,.22);
 }
 
 .directoryFilters{
   display:grid;
-  grid-template-columns:minmax(220px, 1fr) minmax(260px, 340px) auto;
-  gap:10px;
+  grid-template-columns:minmax(260px, 1fr) minmax(260px, 360px) auto;
+  gap:12px;
   align-items:center;
-  margin-bottom:20px;
+  margin-bottom:22px;
 }
 
 .directorySearch,
 .departmentSelectWrap{
   height:36px;
   min-width:0;
-  padding:0 10px;
+  padding:0 12px;
   display:flex;
   align-items:center;
   gap:8px;
-  border-radius:7px;
-  background:#eef1f4;
+  border-radius:999px;
+  background:#f3f5f8;
+  border:1px solid rgba(0,0,0,.05);
   color:rgba(17,17,17,.48);
 }
 
@@ -267,18 +275,19 @@ const css = `
 .searchButton{
   height:36px;
   padding:0 16px;
-  border-radius:7px;
-  background:#2b59c3;
+  border-radius:999px;
+  background:#2f5ff5;
   color:#ffffff;
   font-size:13px;
   font-weight:500;
-  box-shadow:0 8px 18px rgba(43,89,195,.20);
-  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  box-shadow:0 10px 24px rgba(47,95,245,.22), 0 2px 7px rgba(0,0,0,.08);
+  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease, background .18s ease;
 }
 
 .searchButton:hover{
   transform:translateY(-1px);
-  box-shadow:0 10px 22px rgba(43,89,195,.28);
+  background:#244ee4;
+  box-shadow:0 14px 30px rgba(47,95,245,.30), 0 3px 9px rgba(0,0,0,.10);
 }
 
 .directoryState{
@@ -292,6 +301,8 @@ const css = `
 .alumniList{
   border-top:1px solid rgba(0,0,0,.08);
   transition:opacity .18s ease;
+  overflow:hidden;
+  margin:0 -34px -30px;
 }
 
 .alumniList.refreshing{
@@ -300,10 +311,18 @@ const css = `
 
 .alumniItem{
   display:grid;
-  grid-template-columns:58px minmax(0, 1fr) 136px;
-  gap:14px;
-  padding:18px 0;
+  grid-template-columns:72px minmax(0, 1fr) 136px;
+  gap:16px;
+  padding:20px 48px;
   border-bottom:1px solid rgba(0,0,0,.08);
+}
+
+.alumniItem:nth-child(even){
+  background:#fafbfc;
+}
+
+.alumniItem:nth-child(odd){
+  background:#ffffff;
 }
 
 .avatarColumn{
@@ -311,8 +330,8 @@ const css = `
 }
 
 .avatar{
-  width:48px;
-  height:48px;
+  width:62px;
+  height:62px;
   border-radius:50%;
   object-fit:cover;
   display:grid;
@@ -352,9 +371,9 @@ const css = `
   text-overflow:ellipsis;
   white-space:nowrap;
   color:#111111;
-  font-size:15px;
+  font-size:16px;
   line-height:1.2;
-  font-weight:540;
+  font-weight:500;
   letter-spacing:0;
 }
 
@@ -405,7 +424,7 @@ const css = `
   margin:10px 0 0;
   color:#111111;
   font-size:13px;
-  line-height:1.55;
+  line-height:1.5;
 }
 
 .interestTags{
@@ -441,11 +460,20 @@ const css = `
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  gap:6px;
   min-height:22px;
   padding:0 9px;
   border-radius:999px;
   font-size:12px;
   white-space:nowrap;
+}
+
+.availability::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  flex:0 0 auto;
 }
 
 .availability.open{
@@ -454,10 +482,18 @@ const css = `
   animation:availabilityPulse 1.8s ease-in-out infinite;
 }
 
+.availability.open::before{
+  background:#22c55e;
+}
+
 .availability.full{
   background:rgba(215,38,61,.10);
   color:#b91c1c;
   animation:availabilityFullPulse 1.8s ease-in-out infinite;
+}
+
+.availability.full::before{
+  background:#d7263d;
 }
 
 .viewLink{
@@ -507,7 +543,7 @@ const css = `
   }
 
   .alumniItem{
-    grid-template-columns:48px minmax(0, 1fr);
+    grid-template-columns:60px minmax(0, 1fr);
   }
 
   .actionColumn{
@@ -521,18 +557,27 @@ const css = `
 
 @media (max-width:560px){
   .directoryPage{
-    padding:18px 16px 28px;
+    padding:10px 14px 36px;
+  }
+
+  .directoryShell{
+    border-radius:18px;
+    padding:20px 14px 24px;
+  }
+
+  .alumniList{
+    margin:0 -14px -24px;
   }
 
   .alumniItem{
-    grid-template-columns:42px minmax(0, 1fr);
+    grid-template-columns:54px minmax(0, 1fr);
     gap:11px;
-    padding:16px 0;
+    padding:16px 24px;
   }
 
   .avatar{
-    width:40px;
-    height:40px;
+    width:50px;
+    height:50px;
     font-size:16px;
   }
 

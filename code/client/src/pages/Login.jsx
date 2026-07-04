@@ -137,11 +137,9 @@ const css = `
   border-radius:18px;
   padding:28px 28px 24px;
   text-align:center;
-  background:linear-gradient(180deg, rgba(231,250,255,.72), rgba(255,255,255,.82) 58%, rgba(255,255,255,.76));
-  border:1px solid rgba(255,255,255,.58);
-  box-shadow:0 18px 44px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.52);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 28px 68px rgba(0,0,0,.24);
   opacity:0;
   transform:translateY(14px) scale(.985);
   transition:opacity .55s ease, transform .55s ease;
@@ -159,9 +157,9 @@ const css = `
   place-items:center;
   border-radius:14px;
   color:#111111;
-  background:rgba(255,255,255,.60);
+  background:#ffffff;
   border:1px solid rgba(0,0,0,.08);
-  box-shadow:0 10px 24px rgba(0,0,0,.18);
+  box-shadow:0 14px 30px rgba(0,0,0,.18);
   margin-bottom:17px;
   transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
@@ -199,14 +197,14 @@ const css = `
   gap:7px;
   padding:0 10px;
   border-radius:8px;
-  background:rgba(229,234,241,.72);
-  border:1px solid rgba(255,255,255,.34);
+  background:#eef1f5;
+  border:1px solid rgba(0,0,0,.05);
   color:rgba(17,17,17,.70);
   transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 
 .inputWrap:focus-within{
-  background:rgba(255,255,255,.80);
+  background:#ffffff;
   border-color:rgba(0,0,0,.12);
   box-shadow:0 0 0 4px rgba(255,255,255,.28);
 }
