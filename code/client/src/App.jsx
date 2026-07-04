@@ -23,6 +23,7 @@ import MyEvents from "./pages/MyEvents";
 import EventDetails from "./pages/EventDetails";
 import Chat from "./pages/Chat";
 import MyCreatedEvents from "./pages/MyCreatedEvents";
+import EditEvent from "./pages/EditEvent";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -83,7 +84,16 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
-        <Route path="/my-created-events" element={<MyCreatedEvents />} />
+        <Route
+          path="/my-created-events"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MyCreatedEvents />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/home"
@@ -269,6 +279,17 @@ export default function App() {
                 <AdminUsers />
               </AppLayout>
             </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/events/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EditEvent />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
 

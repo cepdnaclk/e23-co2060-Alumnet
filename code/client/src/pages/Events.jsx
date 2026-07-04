@@ -8,6 +8,7 @@ import timeIcon from "../assets/time.png";
 import locationIcon from "../assets/location.png";
 
 export default function Events() {
+  const token = localStorage.getItem("token");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -19,7 +20,7 @@ export default function Events() {
     try {
       setLoading(true);
       setErr("");
-      const data = await getEvents();
+      const data = await getEvents(token);
       setEvents(data);
     } catch (e) {
       setErr(e.message || "Failed to load events");
@@ -145,6 +146,9 @@ export default function Events() {
                       <span className={remaining > 0 ? "slotsOpen" : "slotsFull"}>
                         {remaining > 0 ? `${remaining} slots left` : "Event full"}
                       </span>
+                      {event.is_registered && (
+                        <span className="alreadyJoined">Already joined</span>
+                      )}
                     </div>
                   </div>
                   </div>
@@ -524,8 +528,11 @@ const css = `
   animation:eventSlotFullPulse 1.8s ease-in-out infinite;
 }
 
-.eventTags .slotsFull::before{
-  background:#d7263d;
+.eventTags .alreadyJoined{
+  border-color:rgba(195, 61, 61, 0.14).14);
+  background:#fee2e2;
+  color:#b91c1c;
+  font-weight:600;
 }
 
 .viewEventLink{

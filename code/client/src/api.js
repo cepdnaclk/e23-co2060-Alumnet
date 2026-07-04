@@ -186,8 +186,10 @@ export async function getMyMentees(token) {
   return handle(res);
 }
 
-export async function getEvents() {
-  const res = await fetch(`${API_URL}/api/events`);
+export async function getEvents(token) {
+  const res = await fetch(`${API_URL}/api/events`, {
+    headers: { ...authHeaders(token) },
+  });
   return handle(res);
 }
 
@@ -213,8 +215,30 @@ export async function createEvent(token, payload) {
   return handle(res);
 }
 
+export async function updateEvent(token, id, payload) {
+  const res = await fetch(`${API_URL}/api/events/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return handle(res);
+}
+
 export async function getPendingEvents(token) {
   const res = await fetch(`${API_URL}/api/events/pending`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
+export async function getAdminEvents(token) {
+  const res = await fetch(`${API_URL}/api/events/admin/all`, {
     method: "GET",
     headers: { ...authHeaders(token) },
   });

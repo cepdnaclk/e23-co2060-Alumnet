@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import LoadingScreen from "../components/LoadingScreen";
 import { getEventById, registerForEvent } from "../api";
 import dateIcon from "../assets/date.png";
@@ -11,6 +12,13 @@ import registerIcon from "../assets/register.png";
 export default function EventDetails() {
   const { id } = useParams();
   const token = localStorage.getItem("token");
+  let role = "";
+  try {
+    role = token ? jwtDecode(token).role : "";
+  } catch {
+    role = "";
+  }
+  const isStudent = role === "student";
 
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -103,9 +111,12 @@ export default function EventDetails() {
             <div>
               <h1>{event.title}</h1>
               <p>By {event.created_by_name || "Alumnet"}</p>
+              <span className={`eventApprovalStatus ${event.approval_status}`}>
+                {event.approval_status}
+              </span>
             </div>
 
-            {event.is_registered ? (
+            {isStudent && (event.is_registered ? (
               <button className="joinEventBtn disabled" disabled>
                 Already Joined
               </button>
@@ -117,7 +128,7 @@ export default function EventDetails() {
               >
                 {remaining <= 0 ? "Event Full" : "Join Event"}
               </button>
-            )}
+            ))}
           </div>
 
           <div className="eventMetaList">
@@ -244,6 +255,21 @@ function EventDetailsStyles() {
         font-size: 13px;
         line-height: 1.2;
       }
+
+      .eventApprovalStatus {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        margin-top: 10px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        text-transform: capitalize;
+      }
+
+      .eventApprovalStatus.pending { background: #fef3c7; color: #a16207; }
+      .eventApprovalStatus.approved { background: #d8f8e4; color: #047a31; }
+      .eventApprovalStatus.rejected { background: #fee8e8; color: #b42318; }
 
       .eventMetaList {
         margin-top: 12px;
