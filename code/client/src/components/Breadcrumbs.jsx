@@ -113,7 +113,7 @@ function getAlumniId(path) {
 }
 
 function getEventId(path) {
-  const eventMatch = path.match(/^\/events\/([^/]+)$/);
+  const eventMatch = path.match(/^\/events\/([^/]+)(?:\/edit)?$/);
   if (eventMatch) return eventMatch[1];
 
   return "";
@@ -150,7 +150,12 @@ function buildCrumbs(path, alumniName, alumniId, eventTitle) {
   if (path.startsWith("/events/")) {
     return [
       { label: "Events", to: "/events" },
-      { label: eventTitle || "Event Details" },
+      ...(path.endsWith("/edit")
+        ? [
+            { label: eventTitle || "Event Details", to: path.replace(/\/edit$/, "") },
+            { label: "Edit Event" },
+          ]
+        : [{ label: eventTitle || "Event Details" }]),
     ];
   }
   if (path === "/create-event") {
