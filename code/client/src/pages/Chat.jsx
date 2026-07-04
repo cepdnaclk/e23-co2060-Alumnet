@@ -13,6 +13,7 @@ import fileIcon from "../assets/file.png";
 import imageIcon from "../assets/image.png";
 import pdfIcon from "../assets/pdf.png";
 import recIcon from "../assets/rec.png";
+import chatIcon from "../assets/chat.png";
 
 const CRIMSON = "#D7263D";
 const LASER_BLUE = "#2B59C3";
@@ -48,6 +49,14 @@ export default function Chat() {
   useEffect(() => {
     loadConversations();
     loadCurrentUser();
+
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("alumnet:chat-selection-changed", {
+          detail: { name: "" },
+        })
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -133,6 +142,11 @@ export default function Chat() {
       const token = localStorage.getItem("token");
       pendingScrollToBottomRef.current = true;
       setSelectedConversation(conversation);
+      window.dispatchEvent(
+        new CustomEvent("alumnet:chat-selection-changed", {
+          detail: { name: conversation.other_user_name || "" },
+        })
+      );
 
       setConversations((prevList) =>
         prevList.map((c) =>
@@ -370,19 +384,6 @@ export default function Chat() {
 
       <section className="inboxShell">
         <aside className="inboxSidebar">
-          <div className="inboxTitleRow">
-            <h1>Your Inbox</h1>
-            <select
-              className="sortSelect"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
-              aria-label="Sort conversations"
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-            </select>
-          </div>
-
           <label className="conversationSearch">
             <Search size={15} strokeWidth={2} />
             <input
@@ -446,6 +447,7 @@ export default function Chat() {
         <section className="chatWindow">
           {!selectedConversation ? (
             <div className="emptyChat">
+              <img src={chatIcon} alt="" className="emptyChatIcon" />
               <h2>Select a conversation</h2>
               <p>Start chatting with your mentor or mentee.</p>
             </div>
@@ -669,28 +671,28 @@ function getAttachmentIcon(name = "", mimeType = "", variant) {
 
 const css = `
 .chatPage{
-  height:calc(100dvh - 72px);
+  height:calc(100dvh - 92px);
   min-height:0;
-  background:#fbfbfa;
+  background:transparent;
   color:#111111;
   font-family:"Google Sans";
-  padding:26px 28px 28px;
+  padding:14px 22px 22px;
   overflow:hidden;
   animation:chatDissolve .22s ease both;
 }
 
 .inboxShell{
-  width:min(1180px, 100%);
+  width:min(1340px, 100%);
   height:100%;
   min-height:0;
   margin:0 auto;
   display:grid;
-  grid-template-columns:300px minmax(0, 1fr);
-  background:transparent;
-  border:0;
-  border-radius:0;
+  grid-template-columns:330px minmax(0, 1fr);
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  border-radius:22px;
   overflow:hidden;
-  box-shadow:none;
+  box-shadow:0 28px 72px rgba(0,0,0,.22);
 }
 
 .inboxSidebar{
@@ -699,48 +701,19 @@ const css = `
   display:flex;
   flex-direction:column;
   border-right:1px solid rgba(0,0,0,.08);
-  background:#fbfbfa;
-}
-
-.inboxTitleRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:22px 16px 14px;
-}
-
-.inboxTitleRow h1{
-  margin:0;
-  font-size:18px;
-  font-weight:600;
-  letter-spacing:-.01em;
-}
-
-.sortSelect{
-  border:0;
-  outline:0;
-  background:transparent;
-  color:rgba(17,17,17,.58);
-  font-size:12px;
-  font-family:"Google Sans";
-  cursor:pointer;
-  transition:color .18s ease;
-}
-
-.sortSelect:hover,
-.sortSelect:focus{
-  color:#111111;
+  background:#fafbfc;
 }
 
 .conversationSearch{
-  height:34px;
-  margin:0 12px 12px;
-  padding:0 10px;
+  height:36px;
+  margin:18px 14px 14px;
+  padding:0 12px;
   display:flex;
   align-items:center;
   gap:8px;
-  border-radius:7px;
-  background:#eef1f4;
+  border-radius:999px;
+  background:#f3f5f8;
+  border:1px solid rgba(0,0,0,.05);
   color:rgba(17,17,17,.48);
 }
 
@@ -780,15 +753,40 @@ const css = `
   grid-template-columns:42px minmax(0, 1fr) 42px;
   gap:10px;
   padding:10px 9px;
-  border-radius:7px;
+  border-radius:12px;
   text-align:left;
   font-family:"Google Sans";
-  transition:background .16s ease;
+  transition:background .16s ease, transform .16s ease;
+}
+
+.conversationItem + .conversationItem{
+  margin-top:1px;
+}
+
+.conversationItem::before{
+  content:"";
+  position:absolute;
+  left:9px;
+  right:9px;
+  top:-1px;
+  height:1px;
+  background:rgba(0,0,0,.07);
+}
+
+.conversationItem:first-child::before,
+.conversationItem.selected::before,
+.conversationItem.selected + .conversationItem::before{
+  display:none;
+}
+
+.conversationItem:nth-child(even){
+  background:#fafbfc;
 }
 
 .conversationItem:hover,
 .conversationItem.selected{
   background:#e8f0ff;
+  transform:translateY(-1px);
 }
 
 .chatAvatar{
@@ -845,7 +843,7 @@ const css = `
 
 .conversationPreview.unread{
   color:#111111;
-  font-weight:500;
+  font-weight:600;
 }
 
 .conversationMeta{
@@ -883,15 +881,24 @@ const css = `
   min-height:0;
   display:flex;
   flex-direction:column;
-  background:#fbfbfa;
+  background:#ffffff;
 }
 
 .emptyChat{
   flex:1;
   display:grid;
   place-content:center;
+  justify-items:center;
   text-align:center;
-  background:#fbfbfa;
+  background:#ffffff;
+}
+
+.emptyChatIcon{
+  width:58px;
+  height:58px;
+  object-fit:contain;
+  margin-bottom:14px;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.12));
 }
 
 .emptyChat h2{
@@ -913,7 +920,7 @@ const css = `
   align-items:center;
   padding:0 18px;
   border-bottom:1px solid rgba(0,0,0,.08);
-  background:#fbfbfa;
+  background:#ffffff;
 }
 
 .chatHeaderIdentity{
@@ -934,7 +941,7 @@ const css = `
   min-height:0;
   overflow-y:auto;
   padding:18px 28px 26px;
-  background:#fbfbfa;
+  background:#ffffff;
 }
 
 .emptyHistory{
@@ -985,7 +992,7 @@ const css = `
   line-height:1.45;
   white-space:pre-wrap;
   word-break:break-word;
-  box-shadow:0 2px 6px rgba(0,0,0,.04);
+  box-shadow:0 10px 24px rgba(0,0,0,.10), 0 2px 7px rgba(0,0,0,.05);
 }
 
 .messageBubble.deleted{
@@ -1025,12 +1032,14 @@ const css = `
 }
 
 .messageGroup.theirs .messageBubble{
-  background:#f0f3f4;
+  background:#eef6f5;
+  border:1px solid rgba(17,17,17,.04);
   border-radius:10px 10px 10px 3px;
 }
 
 .messageGroup.mine .messageBubble{
-  background:#dbe9ff;
+  background:#dcecff;
+  border:1px solid rgba(47,95,245,.05);
   border-radius:10px 10px 3px 10px;
 }
 
@@ -1052,7 +1061,7 @@ const css = `
   padding:10px 34px 16px;
   flex-shrink:0;
   border-top:1px solid rgba(0,0,0,.08);
-  background:#fbfbfa;
+  background:#ffffff;
 }
 
 .composerBox{
@@ -1062,9 +1071,9 @@ const css = `
   align-items:flex-end;
   gap:10px;
   padding:8px;
-  border-radius:7px;
-  border:1px solid ${LASER_BLUE};
-  box-shadow:0 0 0 2px rgba(43,89,195,.08);
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.06);
+  box-shadow:0 10px 24px rgba(0,0,0,.08);
   background:#ffffff;
 }
 
@@ -1225,7 +1234,7 @@ const css = `
   align-items:center;
   justify-content:center;
   gap:7px;
-  border-radius:7px;
+  border-radius:999px;
   background:${LASER_BLUE};
   color:#ffffff;
   font-family:"Google Sans";
@@ -1259,11 +1268,11 @@ const css = `
 
 @media (max-width:900px){
   .chatPage{
-    padding:18px 16px 24px;
+    padding:12px 16px 18px;
   }
 
   .inboxShell{
-    grid-template-columns:260px minmax(0, 1fr);
+    grid-template-columns:280px minmax(0, 1fr);
   }
 }
 
@@ -1272,6 +1281,7 @@ const css = `
     grid-template-columns:1fr;
     height:auto;
     min-height:0;
+    border-radius:18px;
   }
 
   .inboxSidebar{

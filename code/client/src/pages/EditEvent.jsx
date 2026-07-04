@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import PageShell from "../components/PageShell";
 import LoadingScreen from "../components/LoadingScreen";
 import { getEventById, updateEvent } from "../api";
 import { supabase } from "../supabase";
@@ -118,14 +117,19 @@ export default function EditEvent() {
 
   if (err && !form.title) {
     return (
-      <PageShell title="Edit Event" subtitle="Unable to open this event">
-        <div style={errorBox}>{err}</div>
-      </PageShell>
+      <main className="editEventPage">
+        <style>{css}</style>
+        <section className="editEventShell">
+          <div style={errorBox}>{err}</div>
+        </section>
+      </main>
     );
   }
 
   return (
-    <PageShell title="Edit Event" subtitle="Update event details">
+    <main className="editEventPage">
+      <style>{css}</style>
+      <section className="editEventShell">
       <form onSubmit={handleSubmit} style={card}>
         <div style={posterRow}>
           <div style={posterBox}>
@@ -171,15 +175,16 @@ export default function EditEvent() {
         </Field>
 
         <div style={actions}>
-          <button type="submit" disabled={saving} style={button}>
+          <button type="submit" disabled={saving} className="editEventButton">
             {saving ? "Saving..." : "Save Changes"}
           </button>
-          <Link to={cancelPath} style={cancelLink}>Cancel</Link>
+          <Link to={cancelPath} className="editEventCancel">Cancel</Link>
         </div>
         {success && <div style={successBox}>{success}</div>}
         {err && <div style={errorBox}>{err}</div>}
       </form>
-    </PageShell>
+      </section>
+    </main>
   );
 }
 
@@ -187,20 +192,97 @@ function Field({ label, children }) {
   return <div style={field}><label style={labelStyle}>{label}</label>{children}</div>;
 }
 
-const card = { padding: 22, borderRadius: 16, background: "rgba(255,255,255,0.75)", border: "1px solid rgba(0,0,0,0.06)", maxWidth: 760 };
+const css = `
+.editEventPage{
+  position:relative;
+  min-height:100vh;
+  background:transparent;
+  color:#111111;
+  font-family:"Google Sans";
+  padding:24px 22px 34px;
+  animation:editEventDissolve .22s ease both;
+  overflow-x:hidden;
+}
+
+.editEventShell{
+  width:min(1340px, 100%);
+  margin:0 auto;
+  border-radius:22px;
+  padding:28px 34px 30px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 28px 72px rgba(0,0,0,.22);
+  overflow:hidden;
+}
+
+.editEventButton,
+.editEventCancel{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  font-family:"Google Sans";
+  font-size:13px;
+  font-weight:500;
+  line-height:1;
+  text-decoration:none;
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease, opacity .18s ease;
+}
+
+.editEventButton{
+  background:#050505;
+  color:#ffffff;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+}
+
+.editEventButton:hover:not(:disabled){
+  background:#eef1f4;
+  color:#111111;
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+
+.editEventButton:disabled{
+  opacity:.68;
+  cursor:not-allowed;
+}
+
+.editEventCancel{
+  background:#ffffff;
+  color:#111111;
+  box-shadow:0 10px 24px rgba(0,0,0,.14), 0 2px 7px rgba(0,0,0,.06);
+}
+
+.editEventCancel:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+
+@keyframes editEventDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media (max-width:720px){
+  .editEventPage{ padding:10px 14px 36px; }
+  .editEventShell{ border-radius:18px; padding:20px 14px 24px; }
+}
+`;
+
+const card = { padding: 0, maxWidth: 920 };
 const posterRow = { display: "flex", alignItems: "center", gap: 24, marginBottom: 28 };
-const posterBox = { width: 100, height: 100, borderRadius: "50%", background: "#f3f3f3", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 };
-const posterImg = { width: "100%", height: "100%", objectFit: "cover" };
+const posterBox = { width: 132, aspectRatio: "1054 / 1492", borderRadius: 10, background: "#f3f5f8", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 };
+const posterImg = { width: "100%", height: "100%", objectFit: "contain" };
 const posterPlaceholder = { fontSize: 34 };
 const posterTitle = { margin: 0, fontSize: 16 };
 const posterText = { margin: "6px 0 10px", fontSize: 14, color: "rgba(17,17,17,0.56)" };
 const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 };
 const field = { display: "grid", gap: 6, marginBottom: 14 };
 const labelStyle = { fontSize: 13, color: "rgba(17,17,17,0.62)" };
-const input = { width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", background: "rgba(255,255,255,0.8)", color: "#111", fontSize: 14, fontFamily: '"Google Sans"', outline: "none", boxSizing: "border-box" };
+const input = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.05)", background: "#f3f5f8", color: "#111", fontSize: 14, fontFamily: '"Google Sans"', outline: "none", boxSizing: "border-box" };
 const textarea = { ...input, minHeight: 120, resize: "vertical" };
 const actions = { display: "flex", alignItems: "center", gap: 12, marginTop: 4 };
-const button = { padding: "10px 16px", borderRadius: 999, border: "1px solid rgba(0,0,0,0.08)", background: "#111", color: "#fff", fontSize: 14, cursor: "pointer" };
-const cancelLink = { padding: "10px 16px", color: "#111", fontSize: 14, textDecoration: "none" };
 const successBox = { background: "#dcfce7", padding: 12, borderRadius: 12, marginTop: 14 };
 const errorBox = { background: "#fee2e2", padding: 12, borderRadius: 12, marginTop: 14 };

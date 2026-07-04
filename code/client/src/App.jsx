@@ -12,6 +12,7 @@ import AdminUsers from "./pages/AdminUsers";
 import Directory from "./pages/Directory";
 import AlumniPublicProfile from "./pages/AlumniPublicProfile";
 import RequestMentorship from "./pages/RequestMentorship";
+import EndMentorship from "./pages/EndMentorship";
 import StudentRequests from "./pages/StudentRequests";
 import MentorRequests from "./pages/MentorRequests";
 import MyMentors from "./pages/MyMentors";
@@ -156,6 +157,17 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <RequestMentorship />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/end-mentorship/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EndMentorship />
               </AppLayout>
             </ProtectedRoute>
           }

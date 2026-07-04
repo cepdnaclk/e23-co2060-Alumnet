@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
-import PageShell from "../components/PageShell";
 import LoadingScreen from "../components/LoadingScreen";
 import { getProfile, updateProfile } from "../api";
 import { supabase } from "../supabase";
@@ -193,31 +192,50 @@ export default function EditProfile() {
   const isAlumni = role === "alumni";
 
   return (
-    <PageShell title="My Account" subtitle="Edit Profile">
-      <form onSubmit={handleSubmit} style={pageWrap}>
-        <div style={topArea}>
-          {form.avatar_url ? (
-            <img src={form.avatar_url} alt="avatar" style={avatar} />
-          ) : (
-            <div style={avatarFallback}>
-              {form.full_name?.slice(0, 1)?.toUpperCase() || "U"}
-            </div>
-          )}
+    <main className="editProfilePage">
+      <style>{css}</style>
+      <section className="editProfileCard">
+      <form onSubmit={handleSubmit} className="editProfileForm">
+        <div className="editProfileHero">
+          <div className="editProfileIdentity">
+            {form.avatar_url ? (
+              <img src={form.avatar_url} alt="avatar" style={avatar} />
+            ) : (
+              <div style={avatarFallback}>
+                {form.full_name?.slice(0, 1)?.toUpperCase() || "U"}
+              </div>
+            )}
 
-          <div style={uploadArea}>
-            <div style={uploadTitle}>Profile Picture</div>
-            <div style={uploadSub}>Upload a profile image for your account.</div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              style={fileInput}
-            />
-            {uploading && <div style={smallText}>Uploading...</div>}
+            <div style={uploadArea}>
+              <div style={uploadTitle}>Profile Picture</div>
+              <div style={uploadSub}>Upload a profile image for your account.</div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={fileInput}
+              />
+              {uploading && <div style={smallText}>Uploading...</div>}
+            </div>
+          </div>
+
+          <div className="editProfileActions">
+            <div style={noteText}>*Email and password cannot be changed here.</div>
+
+            <button
+              className="saveProfileBtn"
+              type="submit"
+              disabled={saving || uploading}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+
+            {success && <div style={successBox}>{success}</div>}
+            {err && <div style={errorBox}>{err}</div>}
           </div>
         </div>
 
-        <div style={detailsGrid}>
+        <div className="editDetailsGrid">
           <section>
             <h3 style={sectionTitle}>Personal Details</h3>
             <div style={editRowsWrap}>
@@ -416,43 +434,178 @@ export default function EditProfile() {
             </div>
           </section>
         </div>
-
-        <div style={bottomBar}>
-          <div style={noteText}>*Email and password cannot be changed here.</div>
-
-          <button type="submit" disabled={saving || uploading} style={saveBtn}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
-
-        {success && <div style={successBox}>{success}</div>}
-        {err && <div style={errorBox}>{err}</div>}
       </form>
-    </PageShell>
+      </section>
+    </main>
   );
 }
 
 function EditRow({ label, children }) {
   return (
-    <div style={editRow}>
-      <div style={editRowLabel}>{label}</div>
+    <div className="editRow">
+      <div className="editRowLabel">{label}</div>
       <div>{children}</div>
     </div>
   );
 }
 
-const pageWrap = {
-  paddingTop: 10,
-};
+const css = `
+.editProfilePage{
+  position:relative;
+  min-height:100vh;
+  background:transparent;
+  color:#111111;
+  font-family:"Google Sans";
+  padding:12px 22px 34px;
+  animation:editProfileDissolve .22s ease both;
+  overflow-x:hidden;
+}
 
-const topArea = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 18,
-  flexWrap: "wrap",
-  marginBottom: 28,
-};
+.editProfileCard{
+  width:min(1340px, 100%);
+  margin:0 auto;
+  border-radius:22px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 28px 72px rgba(0,0,0,.22);
+  overflow:hidden;
+}
+
+.editProfileForm{
+  padding:0 34px 30px;
+}
+
+.editProfileHero{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto;
+  align-items:center;
+  gap:18px;
+  margin:0 -34px 28px;
+  padding:34px 34px 30px;
+  background:#fafbfc;
+  border-bottom:1px solid rgba(0,0,0,.06);
+}
+
+.editProfileIdentity{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+
+.editProfileActions{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:10px;
+  max-width:360px;
+}
+
+.saveProfileBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  background:#050505;
+  color:#ffffff;
+  font-family:"Google Sans";
+  font-size:13px;
+  font-weight:500;
+  line-height:1;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease, opacity .18s ease;
+}
+
+.saveProfileBtn:hover:not(:disabled){
+  background:#eef1f4;
+  color:#111111;
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+
+.saveProfileBtn:disabled{
+  opacity:.68;
+  cursor:not-allowed;
+}
+
+.editDetailsGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:26px;
+}
+
+.editRow{
+  display:grid;
+  grid-template-columns:180px minmax(0, 1fr);
+  gap:16px;
+  padding:7px 0;
+  border-bottom:1px solid rgba(0,0,0,.06);
+}
+
+.editRowLabel{
+  color:rgba(17,17,17,.50);
+  font-size:13px;
+}
+
+@keyframes editProfileDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media (max-width:900px){
+  .editDetailsGrid{
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+
+  .editProfileForm{
+    padding:0 20px 26px;
+  }
+
+  .editProfileHero{
+    grid-template-columns:1fr;
+    margin:0 -20px 26px;
+    padding:28px 20px 26px;
+  }
+
+  .editProfileActions{
+    align-items:center;
+    max-width:100%;
+  }
+}
+
+@media (max-width:640px){
+  .editProfilePage{
+    padding:10px 14px 36px;
+  }
+
+  .editProfileCard{
+    border-radius:18px;
+  }
+
+  .editProfileForm{
+    padding:0 14px 24px;
+  }
+
+  .editProfileHero{
+    margin:0 -14px 24px;
+    padding:24px 14px 22px;
+  }
+
+  .editDetailsGrid{
+    gap:24px;
+  }
+
+  .editRow{
+    grid-template-columns:1fr;
+    gap:5px;
+  }
+}
+`;
 
 const avatar = {
   width: 74,
@@ -493,9 +646,9 @@ const fileInput = {
   width: "100%",
   maxWidth: 300,
   padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.76)",
+  borderRadius: 999,
+  border: "1px solid rgba(0,0,0,0.05)",
+  background: "#f3f5f8",
   fontFamily: '"Google Sans"',
   fontSize: 14,
 };
@@ -505,16 +658,10 @@ const smallText = {
   color: "rgba(17,17,17,0.54)",
 };
 
-const detailsGrid = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: 26,
-};
-
 const sectionTitle = {
-  margin: "0 0 14px",
-  fontSize: 15,
-  fontWeight: 400,
+  margin: "0 0 8px",
+  fontSize: 13,
+  fontWeight: 600,
   color: "#111111",
 };
 
@@ -522,25 +669,12 @@ const editRowsWrap = {
   display: "grid",
 };
 
-const editRow = {
-  display: "grid",
-  gridTemplateColumns: "180px 1fr",
-  gap: 16,
-  padding: "10px 0",
-  borderBottom: "1px solid rgba(0,0,0,0.05)",
-};
-
-const editRowLabel = {
-  fontSize: 13,
-  color: "rgba(17,17,17,0.54)",
-};
-
 const input = {
   width: "100%",
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.76)",
+  padding: "9px 12px",
+  borderRadius: 10,
+  border: "1px solid rgba(0,0,0,0.05)",
+  background: "#f3f5f8",
   color: "#111111",
   fontFamily: '"Google Sans"',
   fontSize: 13,
@@ -553,46 +687,30 @@ const textarea = {
   resize: "vertical",
 };
 
-const bottomBar = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 16,
-  flexWrap: "wrap",
-  marginTop: 24,
-};
-
 const noteText = {
   fontSize: 14,
   color: "rgba(199, 52, 52, 0.99)",
-};
-
-const saveBtn = {
-  background: "rgba(255,255,255,0.76)",
-  color: "#111111",
-  padding: "10px 16px",
-  border: "1px solid rgba(0,0,0,0.06)",
-  borderRadius: 999,
-  fontWeight: 400,
-  fontFamily: '"Google Sans"',
-  fontSize: 14,
-  cursor: "pointer",
+  textAlign: "right",
 };
 
 const successBox = {
   background: "rgba(220,252,231,0.92)",
-  padding: 12,
-  borderRadius: 14,
-  marginTop: 14,
+  padding: "8px 11px",
+  borderRadius: 999,
+  marginTop: 0,
   color: "#166534",
   border: "1px solid rgba(34,197,94,0.14)",
+  fontSize: 13,
+  lineHeight: 1.2,
 };
 
 const errorBox = {
   background: "rgba(254,226,226,0.94)",
-  padding: 12,
-  borderRadius: 14,
-  marginTop: 14,
+  padding: "8px 11px",
+  borderRadius: 999,
+  marginTop: 0,
   color: "#b91c1c",
   border: "1px solid rgba(239,68,68,0.12)",
+  fontSize: 13,
+  lineHeight: 1.2,
 };

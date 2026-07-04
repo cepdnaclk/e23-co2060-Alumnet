@@ -1,14 +1,26 @@
 import { useEffect, useState } from "react";
-import PageShell from "../components/PageShell";
+import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
-import { getMentorRequests, updateMentorshipRequest } from "../api";
+import SegmentedFilter from "../components/SegmentedFilter";
+import {
+  acceptEndMentorship,
+  getMentorRequests,
+  updateMentorshipRequest,
+} from "../api";
+
+import verifiedIcon from "../assets/verified.png";
+import pendingIcon from "../assets/pending.png";
+import rejectedIcon from "../assets/rejected.png";
+import tickIcon from "../assets/tick.png";
 
 export default function MentorRequests() {
   const token = localStorage.getItem("token");
 
   const [requests, setRequests] = useState([]);
+  const [requestFilter, setRequestFilter] = useState("mentorship");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
   const loadRequests = async () => {
     try {
@@ -29,175 +41,207 @@ export default function MentorRequests() {
 
   const handleStatusUpdate = async (id, status) => {
     try {
+      setActionLoadingId(id);
       await updateMentorshipRequest(token, id, status);
       await loadRequests();
     } catch (e) {
       setErr(e.message || "Failed to update request");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
+  const handleAcceptEnd = async (id) => {
+    try {
+      setActionLoadingId(id);
+      await acceptEndMentorship(token, id);
+      await loadRequests();
+    } catch (e) {
+      setErr(e.message || "Failed to end mentorship");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const filteredRequests = requests.filter((request) =>
+    requestFilter === "end"
+      ? isEndRequest(request.status)
+      : !isEndRequest(request.status)
+  );
+  const filterOptions = [
+    {
+      label: "Mentorship requests",
+      value: "mentorship",
+      count: requests.filter((request) => !isEndRequest(request.status)).length,
+    },
+    {
+      label: "End requests",
+      value: "end",
+      count: requests.filter((request) => isEndRequest(request.status)).length,
+    },
+  ];
+
   return (
-    <PageShell title="My Requests" subtitle="Mentorship requests you have received">
-      {err && <div style={errorBox}>{err}</div>}
+    <AccountListShell>
+      {err && <div className="accountListError">{err}</div>}
 
       {loading ? (
         <LoadingScreen text="Loading requests..." />
       ) : requests.length === 0 ? (
-        <div>No requests received yet.</div>
+        <div className="accountListState">No requests received yet.</div>
       ) : (
-        <div style={grid}>
-          {requests.map((request) => (
-            <div key={request.id} style={card}>
-              <div style={title}>{request.student_full_name || "Student"}</div>
-              <div style={meta}>{request.student_department || "-"}</div>
-              <div style={meta}>{request.student_batch || "-"}</div>
-
-              <div style={row}>
-                <div style={label}>Status</div>
-                <div style={statusValue(request.status)}>{request.status}</div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>Sent</div>
-                <div style={value}>
-                  {request.created_at
-                    ? new Date(request.created_at).toLocaleString()
-                    : "-"}
-                </div>
-              </div>
-
-              <div style={messageWrap}>
-                <div style={messageLabel}>Message</div>
-                <div style={messageText}>{request.message || "-"}</div>
-              </div>
-
-              {request.status === "pending" && (
-                <div style={buttonRow}>
-                  <button
-                    style={confirmButton}
-                    onClick={() => handleStatusUpdate(request.id, "accepted")}
-                  >
-                    Confirm
-                  </button>
-
-                  <button
-                    style={rejectButton}
-                    onClick={() => handleStatusUpdate(request.id, "rejected")}
-                  >
-                    Reject
-                  </button>
-                </div>
-              )}
+        <>
+          <div className="accountListToolbar">
+            <SegmentedFilter
+              label="Filter received requests"
+              value={requestFilter}
+              options={filterOptions}
+              onChange={setRequestFilter}
+            />
+          </div>
+          {filteredRequests.length === 0 ? (
+            <div className="accountListState">No requests match this filter.</div>
+          ) : (
+            <div className="accountTableWrap">
+              <table className="accountTable">
+                <thead>
+                  <tr>
+                    <th style={{ width: "30%" }}>Student</th>
+                    <th style={{ width: "18%" }}>Sent</th>
+                    <th style={{ width: "28%" }}>Message</th>
+                    <th style={{ width: "12%" }}>Status</th>
+                    <th className="tableActionHeader" style={{ width: "12%" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>
+                        <div className="tablePerson">
+                          {request.student_avatar_url ? (
+                            <img
+                              src={request.student_avatar_url}
+                              alt={request.student_full_name || "Student"}
+                              className="tableAvatar"
+                            />
+                          ) : (
+                            <div className="tableAvatar">
+                              {request.student_full_name?.slice(0, 1)?.toUpperCase() || "S"}
+                            </div>
+                          )}
+                          <div>
+                            <div className="tableName">
+                              <span>{request.student_full_name || "Student"}</span>
+                              <img
+                                src={getStatusIcon(request.student_verification_status)}
+                                alt={request.student_verification_status || "pending"}
+                                className="tableStatusIcon"
+                              />
+                            </div>
+                            <div className="tableMeta">
+                              {request.student_department || "-"} / Batch {request.student_batch || "-"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{formatDateTime(getSentDate(request))}</td>
+                      <td>
+                        <div className="tableMessage">
+                          {request.status === "ending_requested"
+                            ? request.end_reason || "-"
+                            : request.message || "-"}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`accountPill ${normalizeStatus(request.status)}`}>
+                          {getStatusLabel(request.status)}
+                        </span>
+                      </td>
+                      <td className="tableActionCell">
+                        <div className="tableActions">
+                          {request.status === "pending" && (
+                            <>
+                              <button
+                                className="accountIconButton labeled accept"
+                                type="button"
+                                title="Confirm"
+                                aria-label={`Confirm ${request.student_full_name || "student"}`}
+                                onClick={() => handleStatusUpdate(request.id, "accepted")}
+                                disabled={actionLoadingId === request.id}
+                              >
+                                <img src={tickIcon} alt="" />
+                                <span>Confirm</span>
+                              </button>
+                              <button
+                                className="accountIconButton labeled reject"
+                                type="button"
+                                title="Reject"
+                                aria-label={`Reject ${request.student_full_name || "student"}`}
+                                onClick={() => handleStatusUpdate(request.id, "rejected")}
+                                disabled={actionLoadingId === request.id}
+                              >
+                                <img src={rejectedIcon} alt="" />
+                                <span>Reject</span>
+                              </button>
+                            </>
+                          )}
+                          {request.status === "ending_requested" && (
+                            <button
+                              className="accountButton"
+                              type="button"
+                              onClick={() => handleAcceptEnd(request.id)}
+                              disabled={actionLoadingId === request.id}
+                            >
+                              {actionLoadingId === request.id ? "Ending..." : "Accept End"}
+                            </button>
+                          )}
+                          {!["pending", "ending_requested"].includes(request.status) && (
+                            <span className="tableDash">-</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
-    </PageShell>
+    </AccountListShell>
   );
 }
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-  gap: 20,
-};
+function isEndRequest(status = "") {
+  return ["ending_requested", "ended"].includes(status);
+}
 
-const card = {
-  padding: 18,
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.65)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  backdropFilter: "blur(6px)",
-};
+function normalizeStatus(status = "") {
+  if (status === "accepted") return "accepted";
+  if (status === "rejected") return "rejected";
+  if (status === "ended") return "ended";
+  if (status === "ending_requested") return "pending";
+  return "pending";
+}
 
-const title = {
-  fontSize: 16,
-  fontWeight: 500,
-};
+function getStatusLabel(status = "") {
+  if (status === "ending_requested") return "end requested";
+  return status || "pending";
+}
 
-const meta = {
-  fontSize: 13,
-  color: "rgba(0,0,0,0.6)",
-  marginTop: 4,
-};
+function getSentDate(request) {
+  if (request.status === "ending_requested") return request.end_requested_at;
+  if (request.status === "ended") return request.ended_at || request.end_requested_at;
+  return request.created_at;
+}
 
-const row = {
-  display: "grid",
-  gridTemplateColumns: "70px 1fr",
-  gap: 12,
-  marginTop: 10,
-  fontSize: 14,
-};
+function getStatusIcon(status) {
+  if (status === "verified") return verifiedIcon;
+  if (status === "rejected") return rejectedIcon;
+  return pendingIcon;
+}
 
-const label = {
-  color: "rgba(0,0,0,0.6)",
-};
-
-const value = {
-  wordBreak: "break-word",
-};
-
-const statusValue = (status) => ({
-  textTransform: "capitalize",
-  color:
-    status === "accepted"
-      ? "#166534"
-      : status === "rejected"
-      ? "#b91c1c"
-      : "#92400e",
-  fontWeight: 500,
-});
-
-const messageWrap = {
-  marginTop: 14,
-  paddingTop: 12,
-  borderTop: "1px solid rgba(0,0,0,0.05)",
-};
-
-const messageLabel = {
-  fontSize: 13,
-  color: "rgba(0,0,0,0.6)",
-  marginBottom: 6,
-};
-
-const messageText = {
-  fontSize: 14,
-  lineHeight: 1.7,
-  color: "#111111",
-  whiteSpace: "pre-wrap",
-};
-
-const buttonRow = {
-  display: "flex",
-  gap: 10,
-  marginTop: 16,
-};
-
-const confirmButton = {
-  padding: "9px 18px",
-  borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.12)",
-  background: "#dcfce7",
-  color: "#16a34a",
-  cursor: "pointer",
-  fontSize: 14,
-  fontWeight: 500,
-};
-
-const rejectButton = {
-  padding: "9px 18px",
-  borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.12)",
-  background: "#fee2e2",
-  color: "#b91c1c",
-  cursor: "pointer",
-  fontSize: 14,
-  fontWeight: 500,
-};
-
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 12,
-  marginBottom: 14,
-};
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}

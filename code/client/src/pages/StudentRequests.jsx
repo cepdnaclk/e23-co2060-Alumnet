@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
-import PageShell from "../components/PageShell";
+import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
+import SegmentedFilter from "../components/SegmentedFilter";
 import { getStudentRequests } from "../api";
+import verifiedIcon from "../assets/verified.png";
+import pendingIcon from "../assets/pending.png";
+import rejectedIcon from "../assets/rejected.png";
 
 export default function StudentRequests() {
   const token = localStorage.getItem("token");
 
   const [requests, setRequests] = useState([]);
+  const [requestFilter, setRequestFilter] = useState("mentorship");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -27,123 +32,147 @@ export default function StudentRequests() {
     load();
   }, [token]);
 
+  const filteredRequests = requests.filter((request) =>
+    requestFilter === "end"
+      ? isEndRequest(request.status)
+      : !isEndRequest(request.status)
+  );
+  const filterOptions = [
+    {
+      label: "Mentorship requests",
+      value: "mentorship",
+      count: requests.filter((request) => !isEndRequest(request.status)).length,
+    },
+    {
+      label: "End requests",
+      value: "end",
+      count: requests.filter((request) => isEndRequest(request.status)).length,
+    },
+  ];
+
   return (
-    <PageShell title="My Requests" subtitle="Mentorship requests you have sent">
-      {err && <div style={errorBox}>{err}</div>}
+    <AccountListShell>
+      {err && <div className="accountListError">{err}</div>}
 
       {loading ? (
         <LoadingScreen text="Loading requests..." />
       ) : requests.length === 0 ? (
-        <div>No requests sent yet.</div>
+        <div className="accountListState">No requests sent yet.</div>
       ) : (
-        <div style={grid}>
-          {requests.map((request) => (
-            <div key={request.id} style={card}>
-              <div style={title}>{request.alumni_full_name || "Mentor"}</div>
-              <br></br>
-              <div style={meta}>{request.alumni_job_title || "-"}</div>
-              <div style={meta}>{request.alumni_organization || "-"}</div>
-
-              <div style={row}>
-                <div style={label}>Status</div>
-                <div style={statusValue(request.status)}>{request.status}</div>
-              </div>
-
-              <div style={row}>
-                <div style={label}>Sent</div>
-                <div style={value}>
-                  {request.created_at
-                    ? new Date(request.created_at).toLocaleString()
-                    : "-"}
-                </div>
-              </div>
-
-              <div style={messageWrap}>
-                <div style={messageLabel}>Message</div>
-                <div style={messageText}>{request.message || "-"}</div>
-              </div>
+        <>
+          <div className="accountListToolbar">
+            <SegmentedFilter
+              label="Filter sent requests"
+              value={requestFilter}
+              options={filterOptions}
+              onChange={setRequestFilter}
+            />
+          </div>
+          {filteredRequests.length === 0 ? (
+            <div className="accountListState">No requests match this filter.</div>
+          ) : (
+            <div className="accountTableWrap">
+              <table className="accountTable">
+                <thead>
+                  <tr>
+                    <th style={{ width: "30%" }}>Mentor</th>
+                    <th style={{ width: "18%" }}>Sent</th>
+                    <th style={{ width: "34%" }}>Message</th>
+                    <th className="tableActionHeader" style={{ width: "18%" }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>
+                        <div className="tablePerson">
+                          {request.alumni_avatar_url ? (
+                            <img
+                              src={request.alumni_avatar_url}
+                              alt={request.alumni_full_name || "Mentor"}
+                              className="tableAvatar"
+                            />
+                          ) : (
+                            <div className="tableAvatar">
+                              {request.alumni_full_name?.slice(0, 1)?.toUpperCase() || "M"}
+                            </div>
+                          )}
+                          <div>
+                            <div className="tableName">
+                              <span>{request.alumni_full_name || "Mentor"}</span>
+                              <img
+                                src={getStatusIcon(request.alumni_verification_status)}
+                                alt={request.alumni_verification_status || "pending"}
+                                className="tableStatusIcon"
+                              />
+                            </div>
+                            <div className="tableMeta">
+                              {formatRole(request.alumni_job_title, request.alumni_organization)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{formatDateTime(getSentDate(request))}</td>
+                      <td>
+                        <div className="tableMessage">
+                          {isEndRequest(request.status)
+                            ? request.end_reason || "-"
+                            : request.message || "-"}
+                        </div>
+                      </td>
+                      <td className="tableActionCell">
+                        <div className="tableActions">
+                          <span className={`accountPill ${normalizeStatus(request.status)}`}>
+                            {getStatusLabel(request.status)}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
-    </PageShell>
+    </AccountListShell>
   );
 }
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-  gap: 20,
-};
+function isEndRequest(status = "") {
+  return ["ending_requested", "ended"].includes(status);
+}
 
-const card = {
-  padding: 18,
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.65)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  backdropFilter: "blur(6px)",
-};
+function normalizeStatus(status = "") {
+  if (status === "accepted") return "accepted";
+  if (status === "rejected") return "rejected";
+  if (status === "ended") return "ended";
+  return "pending";
+}
 
-const title = {
-  fontSize: 16,
-  fontWeight: 500,
-};
+function getStatusLabel(status = "") {
+  if (status === "ending_requested") return "end requested";
+  return status || "pending";
+}
 
-const meta = {
-  fontSize: 13,
-  color: "rgba(0,0,0,0.6)",
-  marginTop: 4,
-};
+function getSentDate(request) {
+  if (request.status === "ending_requested") return request.end_requested_at;
+  if (request.status === "ended") return request.ended_at || request.end_requested_at;
+  return request.created_at;
+}
 
-const row = {
-  display: "grid",
-  gridTemplateColumns: "70px 1fr",
-  gap: 12,
-  marginTop: 10,
-  fontSize: 14,
-};
+function getStatusIcon(status) {
+  if (status === "verified") return verifiedIcon;
+  if (status === "rejected") return rejectedIcon;
+  return pendingIcon;
+}
 
-const label = {
-  color: "rgba(0,0,0,0.6)",
-};
+function formatRole(title, organization) {
+  if (title && organization) return `${title} at ${organization}`;
+  return title || organization || "Mentor";
+}
 
-const value = {
-  wordBreak: "break-word",
-};
-
-const statusValue = (status) => ({
-  textTransform: "capitalize",
-  color:
-    status === "accepted"
-      ? "#2f9e50"
-      : status === "rejected"
-      ? "#d41f1f"
-      : "#d49b1f",
-  fontWeight: 500,
-});
-
-const messageWrap = {
-  marginTop: 14,
-  paddingTop: 12,
-  borderTop: "1px solid rgba(0,0,0,0.05)",
-};
-
-const messageLabel = {
-  fontSize: 13,
-  color: "rgba(0,0,0,0.6)",
-  marginBottom: 6,
-};
-
-const messageText = {
-  fontSize: 14,
-  lineHeight: 1.7,
-  color: "#111111",
-  whiteSpace: "pre-wrap",
-};
-
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 12,
-  marginBottom: 14,
-};
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}

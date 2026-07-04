@@ -167,6 +167,7 @@ export default function Navbar() {
   const mentorRoute = isStudent ? "/my-mentors" : "/my-mentees";
   const mentorText = isStudent ? "My Mentors" : "My Mentees";
   const requestRoute = isStudent ? "/my-requests" : "/mentor-requests";
+  const requestText = isStudent ? "My Requests" : "Received Requests";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -288,21 +289,21 @@ export default function Navbar() {
               <div className="profileDropdown">
                 {isAdmin ? (
                   <>
-                    <Link to="/events" onClick={() => setMenuOpen(false)}>
-                      <Calendar size={14} strokeWidth={2} />
-                      Events
-                    </Link>
                     <Link to="/admin" onClick={() => setMenuOpen(false)}>
                       <LayoutDashboard size={14} strokeWidth={2} />
                       Admin Dashboard
                     </Link>
-                    <Link to="/admin-events" onClick={() => setMenuOpen(false)}>
-                      <ClipboardCheck size={14} strokeWidth={2} />
-                      Event Approvals
-                    </Link>
                     <Link to="/admin-users" onClick={() => setMenuOpen(false)}>
                       <Users size={14} strokeWidth={2} />
                       User Verifications
+                    </Link>
+                    <Link to="/events" onClick={() => setMenuOpen(false)}>
+                      <Calendar size={14} strokeWidth={2} />
+                      Events
+                    </Link>
+                    <Link to="/admin-events" onClick={() => setMenuOpen(false)}>
+                      <ClipboardCheck size={14} strokeWidth={2} />
+                      Event Approvals
                     </Link>
                     <Link to="/create-event" onClick={() => setMenuOpen(false)}>
                       <PlusSquare size={14} strokeWidth={2} />
@@ -319,13 +320,6 @@ export default function Navbar() {
                       <Pencil size={14} strokeWidth={2} />
                       Edit Profile
                     </Link>
-                    <Link
-                      to={isStudent ? "/my-events" : "/my-created-events"}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <Calendar size={14} strokeWidth={2} />
-                      {isStudent ? "My Events" : "Created Events"}
-                    </Link>
                     {(isStudent || isAlumni) && (
                       <Link to={mentorRoute} onClick={() => setMenuOpen(false)}>
                         <Users size={14} strokeWidth={2} />
@@ -335,9 +329,16 @@ export default function Navbar() {
                     {(isStudent || isAlumni) && (
                       <Link to={requestRoute} onClick={() => setMenuOpen(false)}>
                         <Mail size={14} strokeWidth={2} />
-                        My Requests
+                        {requestText}
                       </Link>
                     )}
+                    <Link
+                      to={isStudent ? "/my-events" : "/my-created-events"}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Calendar size={14} strokeWidth={2} />
+                      {isStudent ? "My Events" : "Created Events"}
+                    </Link>
                     {isAlumni && (
                       <Link to="/create-event" onClick={() => setMenuOpen(false)}>
                         <PlusSquare size={14} strokeWidth={2} />

@@ -45,7 +45,8 @@ const getAlumniDirectory = async (req, res) => {
         (
           SELECT COUNT(*)::int
           FROM mentorship_requests mr
-          WHERE mr.alumni_user_id = u.id AND mr.status = 'accepted'
+          WHERE mr.alumni_user_id = u.id
+            AND mr.status IN ('accepted', 'ending_requested')
         ) AS accepted_mentees_count
       FROM users u
       INNER JOIN alumni_profiles ap ON ap.user_id = u.id
@@ -85,7 +86,8 @@ const getPublicAlumniProfile = async (req, res) => {
         (
           SELECT COUNT(*)::int
           FROM mentorship_requests mr
-          WHERE mr.alumni_user_id = u.id AND mr.status = 'accepted'
+          WHERE mr.alumni_user_id = u.id
+            AND mr.status IN ('accepted', 'ending_requested')
         ) AS accepted_mentees_count
       FROM users u
       INNER JOIN alumni_profiles ap ON ap.user_id = u.id
