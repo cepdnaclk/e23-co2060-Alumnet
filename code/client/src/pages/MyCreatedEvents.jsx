@@ -1,22 +1,22 @@
-import { useEffect, useState } from "react";
-import PageShell from "../components/PageShell";
+import { useEffect, useMemo, useState } from "react";
+import { Eye, Pencil } from "lucide-react";
+import { Link } from "react-router-dom";
 import LoadingScreen from "../components/LoadingScreen";
 import { getMyCreatedEvents } from "../api";
 
 export default function MyCreatedEvents() {
   const token = localStorage.getItem("token");
-
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     const loadEvents = async () => {
       try {
         setLoading(true);
         setErr("");
-        const data = await getMyCreatedEvents(token);
-        setEvents(data);
+        setEvents(await getMyCreatedEvents(token));
       } catch (e) {
         setErr(e.message || "Failed to load your events");
       } finally {
@@ -27,151 +27,211 @@ export default function MyCreatedEvents() {
     loadEvents();
   }, [token]);
 
-  const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("en-GB", {
+  const counts = useMemo(
+    () => ({
+      all: events.length,
+      pending: events.filter((event) => event.approval_status === "pending").length,
+      approved: events.filter((event) => event.approval_status === "approved").length,
+      rejected: events.filter((event) => event.approval_status === "rejected").length,
+    }),
+    [events]
+  );
+
+  const filteredEvents = useMemo(
+    () =>
+      statusFilter === "all"
+        ? events
+        : events.filter((event) => event.approval_status === statusFilter),
+    [events, statusFilter]
+  );
+
+  const formatDate = (value) => {
+    if (!value) return "-";
+    return new Date(value).toLocaleDateString("en-GB", {
       day: "numeric",
-      month: "long",
+      month: "short",
       year: "numeric",
     });
   };
 
-  const formatTime = (time) => {
-    if (!time) return "-";
-    return new Date(`1970-01-01T${time}`).toLocaleTimeString([], {
+  const formatTime = (value) => {
+    if (!value) return "-";
+    return new Date(`1970-01-01T${value}`).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
   };
 
-  const statusStyle = (status) => {
-    if (status === "approved") return approvedStatus;
-    if (status === "rejected") return rejectedStatus;
-    return pendingStatus;
-  };
+  if (loading) return <LoadingScreen text="Loading your events..." />;
 
   return (
-    <PageShell
-      title="My Created Events"
-      subtitle="Track approval status of your submitted events"
-    >
-      {err && <div style={errorBox}>{err}</div>}
+    <main className="myCreatedEventsPage">
+      <style>{css}</style>
 
-      {loading ? (
-        <LoadingScreen text="Loading events..." />
-      ) : events.length === 0 ? (
-        <div>You have not created any events yet.</div>
-      ) : (
-        <div style={grid}>
-          {events.map((event) => {
-            const registered = Number(event.registered_count || 0);
-            const slots = Number(event.available_slots || 0);
+      {err && <div className="myEventsAlert">{err}</div>}
 
-            return (
-              <div key={event.id} style={card}>
-                {event.image_url && (
-                  <img src={event.image_url} alt={event.title} style={poster} />
-                )}
+      <section className="myEventsPanel">
+        <div className="myEventsToolbar">
+          <div>
+            <h1>My Created Events</h1>
+            <p>{filteredEvents.length} events shown from {events.length} total events</p>
+          </div>
 
-                <div style={topRow}>
-                  <h3 style={title}>{event.title}</h3>
-                  <span style={statusStyle(event.approval_status)}>
-                    {event.approval_status}
-                  </span>
-                </div>
-
-                <div style={meta}>Date: {formatDate(event.event_date)}</div>
-                <div style={meta}>Time: {formatTime(event.event_time)}</div>
-                <div style={meta}>Venue: {event.venue || "-"}</div>
-                <div style={meta}>Speaker: {event.speaker || "-"}</div>
-                <div style={meta}>
-                  Registered: {registered} / {slots}
-                </div>
-
-                {event.description && <p style={desc}>{event.description}</p>}
-              </div>
-            );
-          })}
+          <div className="myEventsFilters" aria-label="Filter events by status">
+            {[
+              ["all", "All"],
+              ["pending", "Pending"],
+              ["approved", "Approved"],
+              ["rejected", "Rejected"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={statusFilter === value ? "active" : ""}
+                onClick={() => setStatusFilter(value)}
+              >
+                {label} <span>{counts[value]}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      )}
-    </PageShell>
+
+        <div className="myEventsTableShell">
+          <table className="myEventsTable">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Schedule</th>
+                <th>Registrations</th>
+                <th>Status</th>
+                <th className="myEventsActionsHead">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEvents.length === 0 ? (
+                <tr>
+                  <td colSpan="5">
+                    <div className="myEventsEmpty">No events in this view.</div>
+                  </td>
+                </tr>
+              ) : (
+                filteredEvents.map((event) => (
+                  <tr key={event.id}>
+                    <td>
+                      <div className="myEventIdentity">
+                        {event.image_url ? (
+                          <img src={event.image_url} alt="" />
+                        ) : (
+                          <span>{event.title?.slice(0, 1)?.toUpperCase() || "E"}</span>
+                        )}
+                        <div className="myEventIdentityCopy">
+                          <strong>{event.title || "Untitled event"}</strong>
+                          <small>{event.venue || "No venue"}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="myEventSchedule">
+                        <span>{formatDate(event.event_date)}</span>
+                        <small>{formatTime(event.event_time)}</small>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="myEventRegistrationTag">
+                        {Number(event.registered_count || 0)} / {Number(event.available_slots || 0)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`myEventStatus ${event.approval_status}`}>
+                        {event.approval_status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="myEventActions">
+                        <Link
+                          className="myEventView"
+                          to={`/events/${event.id}`}
+                          state={{ eventTitle: event.title }}
+                          title="View event"
+                          aria-label={`View ${event.title}`}
+                        >
+                          <Eye size={14} strokeWidth={2.2} />
+                        </Link>
+                        <Link
+                          className="myEventEdit"
+                          to={`/events/${event.id}/edit`}
+                          title="Edit event"
+                          aria-label={`Edit ${event.title}`}
+                        >
+                          <Pencil size={13} strokeWidth={2.2} />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   );
 }
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
-  gap: 20,
-};
+const css = `
+.myCreatedEventsPage{
+  min-height:100vh;
+  width:100%;
+  background:#fbfbfa;
+  color:#111111;
+  font-family:"Google Sans", Arial, sans-serif;
+  padding:30px max(24px, calc((100% - 1180px) / 2)) 70px;
+  animation:myEventsDissolve .22s ease both;
+}
 
-const card = {
-  padding: 20,
-  borderRadius: 18,
-  background: "rgba(255,255,255,0.75)",
-  border: "1px solid rgba(0,0,0,0.06)",
-};
+.myEventsAlert{ margin:0 0 14px; padding:10px 12px; border-radius:8px; background:#fee8e8; color:#b42318; font-size:13px; }
+.myEventsPanel{ border-top:1px solid rgba(0,0,0,.08); padding-top:16px; }
+.myEventsToolbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; }
+.myEventsToolbar h1{ margin:0; font-size:15px; line-height:1.25; font-weight:600; }
+.myEventsToolbar p{ margin:4px 0 0; color:rgba(17,17,17,.46); font-size:12px; }
 
-const poster = {
-  width: "100%",
-  maxHeight: 220,
-  objectFit: "contain",
-  borderRadius: 14,
-  background: "#f5f5f5",
-  marginBottom: 16,
-};
+.myEventsFilters{ display:inline-flex; gap:5px; padding:4px; border-radius:999px; background:#eef1f4; }
+.myEventsFilters button{ display:inline-flex; align-items:center; gap:6px; height:27px; padding:0 10px; border:0; border-radius:999px; background:transparent; color:rgba(17,17,17,.62); font-size:12px; font-family:inherit; cursor:pointer; }
+.myEventsFilters button.active{ background:#050505; color:#fff; box-shadow:0 8px 18px rgba(0,0,0,.12); }
 
-const topRow = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 12,
-  alignItems: "start",
-};
+.myEventsTableShell{ overflow:auto; border:1px solid rgba(0,0,0,.06); border-radius:8px; background:rgba(255,255,255,.48); }
+.myEventsTable{ width:100%; min-width:720px; border-collapse:collapse; }
+.myEventsTable th{ height:38px; padding:0 12px; color:rgba(17,17,17,.52); font-size:12px; font-weight:600; text-align:left; background:#fbfbfa; border-bottom:1px solid rgba(0,0,0,.06); white-space:nowrap; }
+.myEventsTable td{ padding:10px 12px; border-bottom:1px solid rgba(0,0,0,.06); font-size:13px; vertical-align:middle; }
+.myEventsTable tbody tr:hover{ background:rgba(238,241,244,.42); }
+.myEventsActionsHead{ text-align:right !important; }
 
-const title = {
-  margin: 0,
-  fontSize: 20,
-  fontWeight: 700,
-};
+.myEventIdentity{ display:flex; align-items:center; gap:9px; min-width:270px; }
+.myEventIdentity img,.myEventIdentity>span{ width:34px; height:34px; border-radius:50%; flex:0 0 auto; }
+.myEventIdentity img{ object-fit:cover; }
+.myEventIdentity>span{ display:grid; place-items:center; background:#eef1f4; color:#111; font-size:12px; }
+.myEventIdentityCopy,.myEventSchedule{ display:grid; gap:3px; min-width:0; }
+.myEventIdentityCopy strong{ color:#111; font-size:13px; font-weight:500; }
+.myEventIdentityCopy small,.myEventSchedule small{ color:rgba(17,17,17,.52); font-size:12px; }
+.myEventSchedule>span{ color:rgba(17,17,17,.72); font-size:12px; }
 
-const meta = {
-  marginTop: 8,
-  fontSize: 14,
-  color: "rgba(17,17,17,0.72)",
-};
+.myEventRegistrationTag,.myEventStatus{ display:inline-flex; align-items:center; min-height:23px; border-radius:999px; padding:0 9px; font-size:12px; white-space:nowrap; }
+.myEventRegistrationTag{ background:#eef1f4; color:rgba(17,17,17,.66); }
+.myEventStatus{ text-transform:capitalize; }
+.myEventStatus.pending{ background:#fef3c7; color:#a16207; }
+.myEventStatus.approved{ background:#d8f8e4; color:#047a31; }
+.myEventStatus.rejected{ background:#fee8e8; color:#b42318; }
 
-const desc = {
-  marginTop: 14,
-  fontSize: 14,
-  lineHeight: 1.6,
-};
+.myEventActions{ display:flex; justify-content:flex-end; gap:7px; }
+.myEventEdit,.myEventView{ width:28px; height:28px; display:inline-grid; place-items:center; border-radius:999px; text-decoration:none; transition:transform .16s ease, box-shadow .16s ease; }
+.myEventEdit{ background:#eef1f4; color:#3f4752; }
+.myEventView{ background:#e8f0fe; color:#315fa8; }
+.myEventEdit:hover,.myEventView:hover{ transform:translateY(-1px); box-shadow:0 10px 20px rgba(0,0,0,.12); }
+.myEventsEmpty{ padding:26px 0; text-align:center; color:rgba(17,17,17,.46); font-size:13px; }
 
-const approvedStatus = {
-  padding: "6px 12px",
-  borderRadius: 999,
-  background: "#dcfce7",
-  color: "#166534",
-  fontSize: 13,
-};
-
-const pendingStatus = {
-  padding: "6px 12px",
-  borderRadius: 999,
-  background: "#fef3c7",
-  color: "#92400e",
-  fontSize: 13,
-};
-
-const rejectedStatus = {
-  padding: "6px 12px",
-  borderRadius: 999,
-  background: "#fee2e2",
-  color: "#991b1b",
-  fontSize: 13,
-};
-
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 12,
-  marginBottom: 14,
-};
+@keyframes myEventsDissolve{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:translateY(0); } }
+@media (max-width:860px){
+  .myEventsToolbar{ align-items:flex-start; flex-direction:column; }
+  .myEventsFilters{ width:100%; overflow:auto; }
+}
+`;

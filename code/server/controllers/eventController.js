@@ -92,12 +92,19 @@ const getApprovedEvents = async (req, res) => {
           SELECT COUNT(*)::int
           FROM event_registrations er
           WHERE er.event_id = e.id
-        ) AS registered_count
+        ) AS registered_count,
+        EXISTS (
+          SELECT 1
+          FROM event_registrations er
+          WHERE er.event_id = e.id
+          AND er.student_user_id = $1
+        ) AS is_registered
       FROM events e
       JOIN users u ON u.id = e.created_by
       WHERE e.approval_status = 'approved'
       ORDER BY e.event_date ASC, e.event_time ASC
-      `
+      `,
+      [req.user.id]
     );
 
     return res.status(200).json(result.rows);
@@ -131,6 +138,35 @@ const getPendingEvents = async (req, res) => {
   } catch (error) {
     console.error("Get pending events error:", error);
     return res.status(500).json({ message: "Failed to fetch pending events" });
+  }
+};
+
+const getAdminEvents = async (req, res) => {
+  try {
+    if (!["university_admin", "system_admin"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT
+        e.*,
+        u.full_name AS created_by_name,
+        (
+          SELECT COUNT(*)::int
+          FROM event_registrations er
+          WHERE er.event_id = e.id
+        ) AS registered_count
+      FROM events e
+      JOIN users u ON u.id = e.created_by
+      ORDER BY e.created_at DESC
+      `
+    );
+
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Get admin events error:", error);
+    return res.status(500).json({ message: "Failed to fetch events" });
   }
 };
 
@@ -387,7 +423,7 @@ const getEventById = async (req, res) => {
         ) AS is_registered
       FROM events e
       JOIN users u ON u.id = e.created_by
-      WHERE e.id = $1 AND e.approval_status = 'approved'
+      WHERE e.id = $1
       LIMIT 1
       `,
       [id, req.user.id]
@@ -397,10 +433,121 @@ const getEventById = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    return res.status(200).json(result.rows[0]);
+    const event = result.rows[0];
+    const isAdmin = ["university_admin", "system_admin"].includes(req.user.role);
+    const isOwner = Number(event.created_by) === Number(req.user.id);
+
+    if (event.approval_status !== "approved" && !isAdmin && !isOwner) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    return res.status(200).json(event);
   } catch (error) {
     console.error("Get event by id error:", error);
     return res.status(500).json({ message: "Failed to fetch event" });
+  }
+};
+
+const updateEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const role = req.user.role;
+    const isAdmin = ["university_admin", "system_admin"].includes(role);
+
+    if (!["alumni", "university_admin", "system_admin"].includes(role)) {
+      return res.status(403).json({ message: "Not authorized to edit events" });
+    }
+
+    const existingResult = await pool.query(
+      `
+      SELECT e.*,
+        (SELECT COUNT(*)::int FROM event_registrations er WHERE er.event_id = e.id) AS registered_count
+      FROM events e
+      WHERE e.id = $1
+      `,
+      [id]
+    );
+
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    const existingEvent = existingResult.rows[0];
+    if (!isAdmin && Number(existingEvent.created_by) !== Number(req.user.id)) {
+      return res.status(403).json({ message: "You can only edit your own events" });
+    }
+
+    const {
+      title,
+      event_date,
+      event_time,
+      venue,
+      description,
+      available_slots,
+      image_url,
+      speaker,
+      zoom_link,
+    } = req.body;
+
+    if (!title || !event_date || !event_time || !venue) {
+      return res.status(400).json({
+        message: "title, event_date, event_time, and venue are required",
+      });
+    }
+
+    const slots = Number(available_slots);
+    if (!Number.isInteger(slots) || slots < 0) {
+      return res.status(400).json({
+        message: "Available slots must be a non-negative whole number",
+      });
+    }
+    if (slots < Number(existingEvent.registered_count)) {
+      return res.status(400).json({
+        message: `Available slots cannot be less than the ${existingEvent.registered_count} existing registrations`,
+      });
+    }
+
+    const approvalStatus = isAdmin ? existingEvent.approval_status : "pending";
+    const result = await pool.query(
+      `
+      UPDATE events
+      SET title = $1,
+          event_date = $2,
+          event_time = $3,
+          venue = $4,
+          description = $5,
+          available_slots = $6,
+          image_url = $7,
+          speaker = $8,
+          zoom_link = $9,
+          approval_status = $10
+      WHERE id = $11
+      RETURNING *
+      `,
+      [
+        title,
+        event_date,
+        event_time,
+        venue,
+        description || null,
+        slots,
+        image_url || null,
+        speaker || null,
+        zoom_link || null,
+        approvalStatus,
+        id,
+      ]
+    );
+
+    return res.status(200).json({
+      message: isAdmin
+        ? "Event updated successfully"
+        : "Event updated and sent for admin approval",
+      event: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Update event error:", error);
+    return res.status(500).json({ message: "Failed to update event" });
   }
 };
 
@@ -437,6 +584,7 @@ module.exports = {
   createEvent,
   getApprovedEvents,
   getPendingEvents,
+  getAdminEvents,
   getEventStats,
   approveEvent,
   rejectEvent,
@@ -444,4 +592,5 @@ module.exports = {
   getMyRegisteredEvents,
   getEventById,
   getMyCreatedEvents,
+  updateEvent,
 };
