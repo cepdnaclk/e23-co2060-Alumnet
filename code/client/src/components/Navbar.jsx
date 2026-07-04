@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -38,6 +38,8 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef(null);
+  const profileMenuRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -140,6 +142,25 @@ export default function Navbar() {
     };
   }, [loadChatUnread]);
 
+  useEffect(() => {
+    if (!menuOpen && !showNotifications) return undefined;
+
+    const handleOutsideClick = (event) => {
+      const target = event.target;
+      const clickedNotification = notificationRef.current?.contains(target);
+      const clickedProfileMenu = profileMenuRef.current?.contains(target);
+
+      if (!clickedNotification) setShowNotifications(false);
+      if (!clickedProfileMenu) setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsideClick);
+    };
+  }, [menuOpen, showNotifications]);
+
   const isStudent = role === "student";
   const isAlumni = role === "alumni";
   const isAdmin = role === "university_admin" || role === "system_admin";
@@ -197,7 +218,7 @@ export default function Navbar() {
             <Search size={17} strokeWidth={2} />
           </button>
 
-          <div className="notifWrapper">
+          <div className="notifWrapper" ref={notificationRef}>
             <button
               className="appToolBtn"
               type="button"
@@ -246,7 +267,7 @@ export default function Navbar() {
             )}
           </button>
 
-          <div className="profileMenuWrap">
+          <div className="profileMenuWrap" ref={profileMenuRef}>
             <button
               className="profileTool"
               type="button"
@@ -278,6 +299,10 @@ export default function Navbar() {
                     <Link to="/admin-events" onClick={() => setMenuOpen(false)}>
                       <ClipboardCheck size={14} strokeWidth={2} />
                       Event Approvals
+                    </Link>
+                    <Link to="/admin-users" onClick={() => setMenuOpen(false)}>
+                      <Users size={14} strokeWidth={2} />
+                      User Verifications
                     </Link>
                     <Link to="/create-event" onClick={() => setMenuOpen(false)}>
                       <PlusSquare size={14} strokeWidth={2} />

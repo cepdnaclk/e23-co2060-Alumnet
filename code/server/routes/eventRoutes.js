@@ -3,6 +3,7 @@ const {
   createEvent,
   getApprovedEvents,
   getPendingEvents,
+  getEventStats,
   approveEvent,
   rejectEvent,
   registerForEvent,
@@ -18,6 +19,7 @@ router.get("/", getApprovedEvents);
 router.post("/", protect, createEvent);
 
 router.get("/pending", protect, getPendingEvents);
+router.get("/admin/stats", protect, getEventStats);
 router.patch("/approve/:id", protect, approveEvent);
 router.patch("/reject/:id", protect, rejectEvent);
 

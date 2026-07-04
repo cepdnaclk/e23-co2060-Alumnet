@@ -10,13 +10,13 @@ import {
   GraduationCap,
   Link as LinkIcon,
   Lock,
-  LogIn,
   Mail,
   User,
   Users,
 } from "lucide-react";
 import { registerUser } from "../api";
 import heroBg from "../assets/bg.png";
+import signUpIcon from "../assets/sign up.png";
 
 const DEPARTMENTS = [
   "Chemical & Process Engineering",
@@ -154,7 +154,7 @@ export default function Register() {
 
       <section className={`registerCard ${mounted ? "in" : ""}`}>
         <button className="iconButton" type="button" onClick={goHome}>
-          <LogIn size={21} strokeWidth={2} />
+          <img src={signUpIcon} alt="" />
         </button>
 
         <h1>Create account</h1>
@@ -183,7 +183,7 @@ export default function Register() {
               <input
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Full name"
+                placeholder="Full name *"
                 required
               />
             </Field>
@@ -193,7 +193,7 @@ export default function Register() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
+                placeholder="Email *"
                 required
               />
             </Field>
@@ -203,7 +203,7 @@ export default function Register() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder="Password *"
                 required
               />
               <button
@@ -221,7 +221,7 @@ export default function Register() {
                 <input
                   value={batch}
                   onChange={(e) => setBatch(e.target.value)}
-                  placeholder="Batch, e.g. E23"
+                  placeholder="Batch, e.g. E23 *"
                   required
                 />
               </Field>
@@ -236,13 +236,13 @@ export default function Register() {
               </Field>
             )}
 
-            <Field icon={Building2} className="span2">
+            <Field icon={Building2} className="span2 selectField">
               <select
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 required
               >
-                <option value="">Select department</option>
+                <option value="">Select department *</option>
                 {DEPARTMENTS.map((dept) => (
                   <option key={dept} value={dept}>
                     {dept}
@@ -257,7 +257,7 @@ export default function Register() {
                   <input
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
-                    placeholder="Job title"
+                    placeholder="Job title *"
                     required
                   />
                 </Field>
@@ -266,7 +266,7 @@ export default function Register() {
                   <input
                     value={organization}
                     onChange={(e) => setOrganization(e.target.value)}
-                    placeholder="Company"
+                    placeholder="Company *"
                     required
                   />
                 </Field>
@@ -277,7 +277,7 @@ export default function Register() {
               <input
                 value={interests}
                 onChange={(e) => setInterests(e.target.value)}
-                placeholder={role === "student" ? "Areas of interest" : "Primary interests / expertise"}
+                placeholder={role === "student" ? "Areas of interest" : "Primary interests / expertise *"}
                 required={role === "alumni"}
               />
             </Field>
@@ -296,7 +296,7 @@ export default function Register() {
                   <textarea
                     value={whyNeedMentor}
                     onChange={(e) => setWhyNeedMentor(e.target.value)}
-                    placeholder="Why do you need a mentor?"
+                    placeholder="Why do you need a mentor? *"
                     required
                   />
                 </Field>
@@ -305,7 +305,7 @@ export default function Register() {
                   <textarea
                     value={goals}
                     onChange={(e) => setGoals(e.target.value)}
-                    placeholder="What is your goal?"
+                    placeholder="What is your goal? *"
                     required
                   />
                 </Field>
@@ -319,6 +319,14 @@ export default function Register() {
                 </Field>
 
                 <Field icon={LinkIcon}>
+                  <input
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    placeholder="LinkedIn URL"
+                  />
+                </Field>
+
+                <Field icon={LinkIcon} className="span2">
                   <input
                     value={portfolioUrl}
                     onChange={(e) => setPortfolioUrl(e.target.value)}
@@ -346,14 +354,16 @@ export default function Register() {
               </Field>
             )}
 
-            <Field icon={LinkIcon} className={role === "alumni" ? "" : "span2"}>
-              <input
-                value={linkedinUrl}
-                onChange={(e) => setLinkedinUrl(e.target.value)}
-                placeholder="LinkedIn URL"
-                required={role === "alumni"}
-              />
-            </Field>
+            {role === "alumni" && (
+              <Field icon={LinkIcon}>
+                <input
+                  value={linkedinUrl}
+                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  placeholder="LinkedIn URL *"
+                  required
+                />
+              </Field>
+            )}
           </div>
 
           {error && <div className="errorBox">{error}</div>}
@@ -435,6 +445,11 @@ const css = `
   border-radius:999px;
 }
 
+.registerCard{
+  scrollbar-width:thin;
+  scrollbar-color:rgba(0,0,0,.16) transparent;
+}
+
 .iconButton{
   width:44px;
   height:44px;
@@ -453,6 +468,13 @@ const css = `
   transform:translateY(-1px);
   background:#ffffff;
   box-shadow:0 10px 22px rgba(0,0,0,.15);
+}
+
+.iconButton img{
+  width:24px;
+  height:24px;
+  object-fit:contain;
+  display:block;
 }
 
 .registerCard h1{
@@ -551,6 +573,23 @@ const css = `
 
 .fieldWrap select{
   appearance:none;
+  padding-right:24px;
+}
+
+.fieldWrap.selectField{
+  position:relative;
+}
+
+.fieldWrap.selectField::after{
+  content:">";
+  position:absolute;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%) rotate(90deg);
+  color:rgba(17,17,17,.62);
+  font-size:15px;
+  line-height:1;
+  pointer-events:none;
 }
 
 .fieldWrap textarea{

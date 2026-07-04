@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import PageShell from "../components/PageShell";
+import LoadingScreen from "../components/LoadingScreen";
 import { getProfile, updateProfile } from "../api";
 import { supabase } from "../supabase";
 
@@ -185,11 +186,7 @@ export default function EditProfile() {
   };
 
   if (loading) {
-    return (
-      <PageShell title="My Account" subtitle="Edit Profile">
-        <div>Loading...</div>
-      </PageShell>
-    );
+    return <LoadingScreen text="Loading profile..." />;
   }
 
   const isStudent = role === "student";

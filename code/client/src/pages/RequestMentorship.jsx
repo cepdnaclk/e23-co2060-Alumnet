@@ -1,153 +1,207 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import PageShell from "../components/PageShell";
+import { useParams } from "react-router-dom";
 import { createMentorshipRequest } from "../api";
 
-export default function RequestMentorship(){
+export default function RequestMentorship() {
+  const { id } = useParams();
 
-const { id } = useParams();
-const navigate = useNavigate();
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-const [message,setMessage] = useState("");
-const [loading,setLoading] = useState(false);
-const [error,setError] = useState("");
-const [success,setSuccess] = useState("");
+  const token = localStorage.getItem("token");
 
-const token = localStorage.getItem("token");
+  const sendRequest = async () => {
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
-const sendRequest = async ()=>{
+    try {
+      const res = await createMentorshipRequest(token, {
+        alumni_user_id: Number(id),
+        message,
+      });
 
- setLoading(true);
- setError("");
- setSuccess("");
+      setSuccess(res.message);
+      setMessage("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
- try{
+  return (
+    <main className="requestPage">
+      <style>{css}</style>
 
-  const res = await createMentorshipRequest(token,{
-   alumni_user_id:Number(id),
-   message
-  });
+      <section className="requestMain">
+        <header className="requestHeader">
+          <h1>Request Mentorship</h1>
+          <p>Send a mentorship request to this alumni</p>
+        </header>
 
-  setSuccess(res.message);
-  setMessage("");
+        <section className="requestPanel">
+          <h2>Message to Mentor</h2>
 
- }catch(e){
-  setError(e.message);
- }
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Explain why you want mentorship..."
+          />
 
- setLoading(false);
+          <div className="actionRow">
+            <button
+              className="requestButton"
+              type="button"
+              onClick={sendRequest}
+              disabled={loading}
+            >
+              {loading ? "Sending..." : "Send Request"}
+            </button>
+          </div>
 
-};
-
-return(
-
-<PageShell
-title="Request Mentorship"
-subtitle="Send a mentorship request to this alumni"
-right={
-<button onClick={()=>navigate(-1)} style={secondaryBtn}>
-Back
-</button>
-}
->
-
-<div style={pageWrap}>
-
-<div style={card}>
-
-<h3 style={sectionTitle}>Message to Mentor</h3>
-
-<textarea
-value={message}
-onChange={(e)=>setMessage(e.target.value)}
-placeholder="Explain why you want mentorship..."
-style={textarea}
-/>
-
-<button
-style={primaryBtn}
-onClick={sendRequest}
-disabled={loading}
->
-{loading ? "Sending..." : "Send Request"}
-</button>
-
-{success && <div style={successBox}>{success}</div>}
-{error && <div style={errorBox}>{error}</div>}
-
-</div>
-
-</div>
-
-</PageShell>
-
-);
+          {success && <div className="stateBox success">{success}</div>}
+          {error && <div className="stateBox error">{error}</div>}
+        </section>
+      </section>
+    </main>
+  );
 }
 
-const pageWrap={
-paddingTop:10
+const css = `
+.requestPage{
+  min-height:100vh;
+  background:#fbfbfa;
+  color:#111111;
+  font-family:"Google Sans";
+  animation:pageDissolve .22s ease both;
 }
 
-const card={
-padding:24,
-borderRadius:16,
-background:"rgba(255,255,255,0.7)",
-border:"1px solid rgba(0,0,0,0.06)",
-backdropFilter:"blur(6px)",
-maxWidth:520
+.requestMain{
+  width:min(760px, 100%);
+  margin:0 auto;
+  padding:34px 28px;
 }
 
-const sectionTitle={
-margin:"0 0 14px",
-fontSize:15,
-fontWeight:400,
-color:"#111"
+.requestHeader{
+  margin-bottom:22px;
 }
 
-const textarea={
-width:"100%",
-minHeight:140,
-padding:14,
-borderRadius:12,
-border:"1px solid rgba(0,0,0,0.08)",
-background:"rgba(255,255,255,0.7)",
-resize:"vertical",
-marginBottom:16,
-fontFamily:'"Google Sans"'
+.requestHeader h1{
+  margin:0;
+  font-size:16px;
+  line-height:1.15;
+  font-weight:500;
+  letter-spacing:0;
 }
 
-const primaryBtn={
-background:"rgba(255,255,255,0.8)",
-color:"#111",
-padding:"10px 18px",
-borderRadius:999,
-border:"1px solid rgba(0,0,0,0.08)",
-cursor:"pointer",
-fontSize: 14,
-fontFamily:'"Google Sans"'
+.requestHeader p{
+  margin:5px 0 0;
+  color:rgba(17,17,17,.42);
+  font-size:14px;
+  line-height:1.4;
 }
 
-const secondaryBtn={
-background:"rgba(255,255,255,0.7)",
-color:"#111",
-padding:"10px 16px",
-borderRadius:999,
-border:"1px solid rgba(0,0,0,0.06)",
-cursor:"pointer",
-fontSize: 14,
-fontFamily:'"Google Sans"'
+.requestPanel{
+  min-width:0;
 }
 
-const successBox={
-background:"#dcfce7",
-padding:12,
-borderRadius:12,
-marginTop:14
+.requestPanel h2{
+  margin:0 0 8px;
+  font-size:13px;
+  font-weight:600;
+  color:#111111;
 }
 
-const errorBox={
-background:"#fee2e2",
-padding:12,
-borderRadius:12,
-marginTop:14
+.requestPanel textarea{
+  width:100%;
+  min-height:168px;
+  resize:vertical;
+  padding:12px 0;
+  border:0;
+  border-top:1px solid rgba(0,0,0,.06);
+  border-bottom:1px solid rgba(0,0,0,.06);
+  outline:0;
+  background:transparent;
+  color:#111111;
+  font:inherit;
+  font-size:13px;
+  line-height:1.55;
 }
+
+.requestPanel textarea::placeholder{
+  color:rgba(17,17,17,.42);
+}
+
+.requestPanel textarea:focus{
+  border-bottom-color:rgba(17,17,17,.22);
+}
+
+.actionRow{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-top:18px;
+}
+
+.requestButton{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:38px;
+  padding:0 16px;
+  border-radius:999px;
+  font-family:"Google Sans";
+  font-size:14px;
+  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+
+.requestButton{
+  background:#050505;
+  color:#ffffff;
+  box-shadow:0 8px 18px rgba(25, 62, 182, 0.18);
+}
+
+.requestButton:hover,
+.requestButton:hover{
+  transform:translateY(-1px);
+}
+
+.requestButton:disabled{
+  opacity:.68;
+  cursor:not-allowed;
+  transform:none;
+}
+
+.stateBox{
+  margin-top:14px;
+  padding:10px 12px;
+  border-radius:7px;
+  font-size:13px;
+  line-height:1.45;
+}
+
+.stateBox.success{
+  background:rgba(34,197,94,.14);
+  color:#15803d;
+}
+
+.stateBox.error{
+  background:rgba(215,38,61,.10);
+  color:#b91c1c;
+}
+
+@keyframes pageDissolve{
+  from{ opacity:0; transform:translateY(4px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media (max-width:640px){
+  .requestMain{
+    padding:18px 16px 36px;
+  }
+
+}
+`;

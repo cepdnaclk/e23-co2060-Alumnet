@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
+import LoadingScreen from "../components/LoadingScreen";
 import { getMyCreatedEvents } from "../api";
 
 export default function MyCreatedEvents() {
@@ -57,7 +58,7 @@ export default function MyCreatedEvents() {
       {err && <div style={errorBox}>{err}</div>}
 
       {loading ? (
-        <div>Loading...</div>
+        <LoadingScreen text="Loading events..." />
       ) : events.length === 0 ? (
         <div>You have not created any events yet.</div>
       ) : (

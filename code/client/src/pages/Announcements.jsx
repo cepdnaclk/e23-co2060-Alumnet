@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
+import LoadingScreen from "../components/LoadingScreen";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -173,7 +174,7 @@ export default function Announcements() {
         </p>
       )}
 
-      {loading && <p>Loading events...</p>}
+      {loading && <LoadingScreen text="Loading events..." />}
       {err && <p style={{ color: "red" }}>Error: {err}</p>}
 
       {!loading && !err && events.length === 0 && <p>No upcoming events.</p>}

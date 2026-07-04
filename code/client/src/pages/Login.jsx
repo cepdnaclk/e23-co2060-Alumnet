@@ -51,7 +51,7 @@ export default function Login() {
         </button>
 
         <h1>Sign in</h1>
-        <p className="loginSubtitle">Make a new connection and grow together.</p>
+        <p className="loginSubtitle">Continue your Alumnet mentorship journey.</p>
 
         <form onSubmit={handleSubmit} className="loginForm">
           <label className="inputWrap">

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { getProfile } from "../api";
+import LoadingScreen from "../components/LoadingScreen";
 
 import bannerImage from "../assets/banner.png";
 import verifiedIcon from "../assets/verified.png";
@@ -74,12 +75,7 @@ export default function Profile() {
   const isAlumni = profile?.role === "alumni";
 
   if (loading) {
-    return (
-      <div className="profilePage">
-        <style>{css}</style>
-        <div className="stateBox">Loading profile...</div>
-      </div>
-    );
+    return <LoadingScreen text="Loading profile..." />;
   }
 
   if (err || !profile) {
