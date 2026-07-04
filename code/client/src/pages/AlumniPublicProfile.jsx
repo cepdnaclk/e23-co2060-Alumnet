@@ -4,7 +4,6 @@ import { jwtDecode } from "jwt-decode";
 import { getAlumniProfile } from "../api";
 import LoadingScreen from "../components/LoadingScreen";
 
-import bannerImage from "../assets/banner.png";
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
@@ -83,105 +82,107 @@ export default function AlumniPublicProfile() {
     <div className="profilePage">
       <style>{css}</style>
       <main className="profileMain">
-        <section className="profileHero">
-          <img src={bannerImage} alt="" className="profileBanner" />
-
-          <div className="identityBlock">
-            {profile.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt="avatar"
-                className="profileAvatar"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
-              <div className="profileAvatar fallback">
-                {profile.full_name?.slice(0, 1)?.toUpperCase() || "U"}
-              </div>
-            )}
-
-            <div className="identityLine">
-              <div className="identityCopy">
-                <div className="nameRow">
-                  <h1>{profile.full_name || "Alumni"}</h1>
-                  <img
-                    src={statusIcon}
-                    alt={profile.verification_status || "pending"}
-                    className="verifiedBadge"
-                  />
+        <section className="profileCard">
+          <section className="profileHero">
+            <div className="identityBlock">
+              {profile.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt="avatar"
+                  className="profileAvatar"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="profileAvatar fallback">
+                  {profile.full_name?.slice(0, 1)?.toUpperCase() || "U"}
                 </div>
-                <a href={`mailto:${profile.email}`} className="emailText">
-                  {profile.email}
-                </a>
-              </div>
+              )}
 
-              <div className="identityActions">
-                {isVerified && (
-                  <div
-                    className={`menteeCount ${remainingSlots > 0 ? "available" : "full"}`}
-                    title={remainingSlots > 0 ? "Available" : "Mentor full"}
-                  >
-                    {acceptedCount} / {capacity} left
+              <div className="identityLine">
+                <div className="identityCopy">
+                  <div className="nameRow">
+                    <h1>{profile.full_name || "Alumni"}</h1>
+                    <img
+                      src={statusIcon}
+                      alt={profile.verification_status || "pending"}
+                      className="verifiedBadge"
+                    />
                   </div>
-                )}
-
-                {canRequest && (
-                  <button
-                    className="requestButton"
-                    type="button"
-                    onClick={() =>
-                      navigate(`/request-mentorship/${id}`, {
-                        state: { alumniName: profile.full_name },
-                      })
-                    }
-                  >
-                    Request Mentorship
-                  </button>
-                )}
-
-                {!token && (
-                  <Link to="/login" className="secondaryLink">
-                    Login to request mentorship
-                  </Link>
-                )}
+                  <a href={`mailto:${profile.email}`} className="emailText">
+                    {profile.email}
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
+
+            <div className="identityActions">
+              {isVerified && (
+                <div
+                  className={`menteeCount ${remainingSlots > 0 ? "available" : "full"}`}
+                  title={remainingSlots > 0 ? "Available" : "Mentor full"}
+                >
+                  {acceptedCount} / {capacity} left
+                </div>
+              )}
+
+              {canRequest && (
+                <button
+                  className="requestButton"
+                  type="button"
+                  onClick={() =>
+                    navigate(`/request-mentorship/${id}`, {
+                      state: {
+                        alumniName: profile.full_name,
+                        alumniAvatar: profile.avatar_url,
+                      },
+                    })
+                  }
+                >
+                  Request Mentorship
+                </button>
+              )}
+
+              {!token && (
+                <Link to="/login" className="secondaryLink">
+                  Login to request mentorship
+                </Link>
+              )}
+            </div>
+          </section>
+
+          {!isVerified && (
+            <div className="noticeBox">This mentor is not verified yet.</div>
+          )}
+
+          {isVerified && remainingSlots <= 0 && (
+            <div className="noticeBox">This mentor has reached their mentee capacity.</div>
+          )}
+
+          <section className="detailsGrid">
+            <DetailPanel title="Personal Details">
+              <InfoRow label="Role:" value="Alumni" />
+              <InfoRow label="Department:" value={profile.department} />
+              <InfoRow label="Graduation Year:" value={profile.graduation_year} />
+              <InfoRow label="Bio:" value={profile.bio} multiline />
+              <InfoRow
+                label="Mentee Capacity:"
+                value={profile.preferred_mentee_capacity}
+              />
+            </DetailPanel>
+
+            <DetailPanel title="Professional Details">
+              <InfoRow label="Job Title:" value={profile.job_title} />
+              <InfoRow label="Company:" value={profile.organization} />
+              <InfoRow
+                label="Expertise/Interests:"
+                value={profile.primary_interests}
+                multiline
+              />
+            </DetailPanel>
+          </section>
         </section>
-
-        {!isVerified && (
-          <div className="noticeBox">This mentor is not verified yet.</div>
-        )}
-
-        {isVerified && remainingSlots <= 0 && (
-          <div className="noticeBox">This mentor has reached their mentee capacity.</div>
-        )}
-
-        <section className="detailsGrid">
-          <DetailPanel title="Personal Details">
-            <InfoRow label="Role:" value="Alumni" />
-            <InfoRow label="Department:" value={profile.department} />
-            <InfoRow label="Graduation Year:" value={profile.graduation_year} />
-            <InfoRow label="Bio:" value={profile.bio} multiline />
-            <InfoRow
-              label="Mentee Capacity:"
-              value={profile.preferred_mentee_capacity}
-            />
-          </DetailPanel>
-
-          <DetailPanel title="Professional Details">
-            <InfoRow label="Job Title:" value={profile.job_title} />
-            <InfoRow label="Company:" value={profile.organization} />
-            <InfoRow
-              label="Expertise/Interests:"
-              value={profile.primary_interests}
-              multiline
-            />
-          </DetailPanel>
-        </section>
-
       </main>
     </div>
   );
@@ -219,37 +220,44 @@ function InfoRow({ label, value, isLink = false, multiline = false }) {
 
 const css = `
 .profilePage{
+  position:relative;
   min-height:100vh;
-  background:#fbfbfa;
+  background:transparent;
   color:#111111;
   font-family:"Google Sans";
   animation:pageDissolve .22s ease both;
+  overflow-x:hidden;
 }
 
 .profileMain{
-  max-width:1180px;
+  position:relative;
+  z-index:1;
+  max-width:1340px;
   margin:0 auto;
-  padding:34px 28px 34px;
+  padding:24px 22px 34px;
+}
+
+.profileCard{
+  position:relative;
+  width:100%;
+  margin:0 auto;
+  border-radius:22px;
+  padding:34px 18px 28px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 28px 72px rgba(0,0,0,.22);
 }
 
 .profileHero{
   position:relative;
-  margin-bottom:20px;
-}
-
-.profileBanner{
-  width:100%;
-  height:170px;
-  object-fit:cover;
-  border-radius:18px;
-  display:block;
+  margin-bottom:30px;
 }
 
 .identityBlock{
   position:relative;
-  width:calc(100% - 48px);
-  margin:-52px 0 0 24px;
-  text-align:left;
+  width:min(560px, 100%);
+  margin:0 auto;
+  text-align:center;
 }
 
 .profileAvatar{
@@ -259,10 +267,10 @@ const css = `
   object-fit:cover;
   display:grid;
   place-items:center;
-  margin:0 0 12px;
-  border:3px solid #fbfbfa;
+  margin:0 auto 12px;
+  border:0;
   background:#ecebe7;
-  box-shadow:0 10px 24px rgba(0,0,0,.10);
+  box-shadow:0 10px 24px rgba(0,0,0,.14);
 }
 
 .profileAvatar.fallback{
@@ -273,8 +281,8 @@ const css = `
 .identityLine{
   display:flex;
   align-items:flex-start;
-  justify-content:space-between;
-  gap:18px;
+  justify-content:center;
+  gap:0;
 }
 
 .identityCopy{
@@ -284,28 +292,28 @@ const css = `
 .nameRow{
   display:flex;
   align-items:center;
-  justify-content:flex-start;
-  gap:4px;
+  justify-content:center;
+  gap:5px;
 }
 
 .nameRow h1{
   margin:0;
-  font-size:16px;
+  font-size:18px;
   line-height:1.15;
   font-weight:500;
   letter-spacing:0;
 }
 
 .verifiedBadge{
-  width:17px;
-  height:17px;
+  width:18px;
+  height:18px;
   object-fit:contain;
 }
 
 .emailText{
   display:inline-block;
-  margin:5px 0 0;
-  color:rgba(17,17,17,.42);
+  margin:8px 0 0;
+  color:rgba(17,17,17,.58);
   font-size:14px;
   line-height:1;
   text-decoration:none;
@@ -318,7 +326,7 @@ const css = `
 
 .noticeBox{
   display:inline-flex;
-  margin:0 0 18px;
+  margin:0 16px 18px;
   padding:9px 12px;
   border-radius:7px;
   background:#fee6c7;
@@ -330,6 +338,7 @@ const css = `
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:26px;
+  padding:0 16px;
 }
 
 .detailPanel{
@@ -375,12 +384,15 @@ const css = `
 
 .identityActions{
   display:flex;
-  flex-direction:column;
-  align-items:flex-end;
+  align-items:center;
   gap:8px;
   justify-content:flex-end;
-  padding-top:1px;
-  flex:0 0 auto;
+  flex-wrap:wrap;
+  position:absolute;
+  top:0;
+  right:16px;
+  max-width:360px;
+  transform:none;
 }
 
 .menteeCount{
@@ -440,6 +452,8 @@ const css = `
 }
 
 .stateBox{
+  position:relative;
+  z-index:1;
   max-width:520px;
   margin:120px auto;
   padding:18px 20px;
@@ -470,24 +484,28 @@ const css = `
     gap:28px;
   }
 
-  .identityBlock{
-    margin-left:20px;
+  .identityActions{
+    position:static;
+    justify-content:center;
+    max-width:none;
+    margin-top:14px;
+    transform:none;
   }
 }
 
 @media (max-width:640px){
   .profileMain{
-    padding:18px 16px 36px;
+    padding:10px 14px 36px;
   }
 
-  .profileBanner{
-    height:132px;
-    border-radius:14px;
+  .profileCard{
+    border-radius:18px;
+    padding:26px 14px 22px;
   }
 
   .identityBlock{
-    width:calc(100% - 16px);
-    margin:-46px 0 0 16px;
+    width:100%;
+    margin:0 auto;
   }
 
   .profileAvatar{
@@ -504,10 +522,6 @@ const css = `
   .identityLine{
     align-items:flex-start;
     gap:12px;
-  }
-
-  .identityActions{
-    align-items:flex-start;
   }
 
   .requestButton,

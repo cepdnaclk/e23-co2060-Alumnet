@@ -29,16 +29,51 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
 import Breadcrumbs from "./components/Breadcrumbs";
+import heroBg from "./assets/bg.png";
 
 function AppLayout({ children }) {
   return (
     <div className="appRouteFrame">
+      <style>{appLayoutCss}</style>
+      <img src={heroBg} alt="" className="appRouteBg" />
       <Navbar />
       <Breadcrumbs />
       {children}
     </div>
   );
 }
+
+const appLayoutCss = `
+.appRouteFrame{
+  position:relative;
+  min-height:100vh;
+  overflow-x:hidden;
+  background:#d8ecfb;
+  isolation:isolate;
+}
+
+.appRouteBg{
+  position:fixed;
+  z-index:-1;
+  top:0;
+  left:50%;
+  width:100%;
+  height:auto;
+  min-height:100%;
+  transform:translateX(-50%);
+  object-fit:cover;
+  object-position:center top;
+  pointer-events:none;
+}
+
+@media (max-width:640px){
+  .appRouteBg{
+    height:100%;
+    width:auto;
+    min-width:100%;
+  }
+}
+`;
 
 export default function App() {
   return (

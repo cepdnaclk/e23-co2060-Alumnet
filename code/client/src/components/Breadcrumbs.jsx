@@ -200,29 +200,31 @@ function buildCrumbs(path, alumniName, alumniId, eventTitle) {
 const css = `
 .appBreadcrumbs{
   width:100%;
-  padding:8px 28px;
+  padding:0 60px 10px;
   font-family:"Google Sans";
   color:rgba(17,17,17,.58);
   font-size:13px;
   line-height:1;
-  position:sticky;
-  top:72px;
-  z-index:90;
-  background:rgba(255,255,255,.68);
-  border-bottom:1px solid rgba(0,0,0,.06);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
+  position:relative;
+  z-index:1;
+  background:transparent;
+  display:flex;
+  justify-content:center;
 }
 
 .appBreadcrumbs ol{
-  width:min(1180px, 100%);
+  width:fit-content;
+  max-width:min(1260px, 100%);
   margin:0 auto;
-  display:flex;
+  display:inline-flex;
   align-items:center;
   flex-wrap:wrap;
   gap:0;
   list-style:none;
   padding:0;
+  border-radius:999px;
+  background:transparent;
+  box-shadow:none;
 }
 
 .appBreadcrumbs li{
@@ -233,34 +235,49 @@ const css = `
 
 .appBreadcrumbs a,
 .appBreadcrumbs span{
-  color:rgba(17,17,17,.48);
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  color:rgba(17,17,17,.70);
   text-decoration:none;
-  font-size:13px;
+  font-size:12px;
   line-height:1;
+  white-space:nowrap;
 }
 
 .appBreadcrumbs a{
-  transition:color .18s ease;
+  padding:0 2px;
+  transition:color .18s ease, opacity .18s ease;
 }
 
 .appBreadcrumbs a:hover{
-  color:rgba(17,17,17,.72);
+  color:#111111;
 }
 
 .appBreadcrumbs .current{
+  min-height:24px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#ffffff;
   color:#111111;
-  font-weight:600;
+  font-weight:500;
+  box-shadow:0 10px 24px rgba(0,0,0,.16), 0 2px 7px rgba(0,0,0,.08);
 }
 
 .breadcrumbSeparator{
-  margin:0 9px;
-  color:rgba(17,17,17,.28) !important;
+  margin:0 7px;
+  color:rgba(17,17,17,.34) !important;
 }
 
 @media (max-width:640px){
   .appBreadcrumbs{
-    padding:8px 16px;
-    top:116px;
+    padding:0 16px 10px;
+  }
+
+  .appBreadcrumbs ol{
+    max-width:100%;
+    overflow-x:auto;
+    flex-wrap:nowrap;
   }
 }
 `;
