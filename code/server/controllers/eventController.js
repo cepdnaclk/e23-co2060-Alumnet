@@ -1,5 +1,8 @@
 const  pool  = require("../config/db");
-const { createNotification } = require("../utils/notify");
+const {
+  createNotification,
+  createNotificationsForRoles,
+} = require("../utils/notify");
 
 const createEvent = async (req, res) => {
   try {
@@ -67,6 +70,15 @@ const createEvent = async (req, res) => {
         approvalStatus,
       ]
     );
+
+    if (approvalStatus === "pending") {
+      await createNotificationsForRoles(
+        ["university_admin", "system_admin"],
+        "New Event Awaiting Approval",
+        `A new event "${result.rows[0].title}" has been submitted by an alumnus and is waiting for approval.`,
+        "EVENT_UPDATE"
+      );
+    }
 
     return res.status(201).json({
       message:
