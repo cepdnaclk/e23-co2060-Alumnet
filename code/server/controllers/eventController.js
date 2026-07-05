@@ -226,14 +226,23 @@ const approveEvent = async (req, res) => {
       `
       UPDATE events
       SET approval_status = 'approved'
-      WHERE id = $1
+      WHERE id = $1 AND approval_status <> 'approved'
       RETURNING *
       `,
       [id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Event not found" });
+      const existing = await pool.query(
+        "SELECT approval_status FROM events WHERE id = $1",
+        [id]
+      );
+
+      if (existing.rows.length === 0) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      return res.status(409).json({ message: "Event is already approved" });
     }
 
     await createNotification(
@@ -241,6 +250,13 @@ const approveEvent = async (req, res) => {
       "Event Approved",
       `Your event "${result.rows[0].title}" has been approved and is now live!`,
       "EVENT_UPDATE"
+    );
+
+    await createNotificationsForRoles(
+      ["student"],
+      "New Event Added",
+      `A new event "${result.rows[0].title}" has been added. Visit Events to view the details and register.`,
+      `NEW_EVENT:${result.rows[0].id}`
     );
 
     return res.status(200).json({

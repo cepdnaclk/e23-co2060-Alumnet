@@ -189,9 +189,16 @@ export default function Navbar() {
 
       if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
       else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
-      else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") {
+      else if (notif.type?.startsWith("NEW_EVENT:")) {
+        const eventId = notif.type.split(":")[1];
+        navigate(eventId ? `/events/${eventId}` : "/events");
+      } else if (notif.type === "NEW_EVENT" || notif.title === "New Event Added") {
+        navigate("/events");
+      } else if (notif.type === "EVENT_UPDATE" || notif.type === "EVENT_REGISTRATION") {
         if (isAdmin) {
           navigate("/admin-events");
+        } else if (isAlumni) {
+          navigate("/my-created-events");
         } else {
           navigate("/my-events");
         }
