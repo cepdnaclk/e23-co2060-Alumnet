@@ -3,6 +3,7 @@ const {
   signup,
   login,
   verifyEmail,
+  resendVerificationEmail,
   getProfile,
   updateProfile,
   getPendingUsers,
@@ -19,6 +20,7 @@ const router = express.Router();
 
 router.post("/signup", signup);
 router.post("/login", login);
+router.post("/resend-verification-email", resendVerificationEmail);
 router.get("/verify-email/:token", verifyEmail);
 router.get("/profile", protect, getProfile);
 router.put("/profile", protect, updateProfile);
