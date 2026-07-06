@@ -1,8 +1,9 @@
 @font-face {
   font-family: "Google Sans";
-  src: url("./assets/fonts/GoogleSans.ttf") format("truetype");
+  src: url("./assets/fonts/DMSans-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
+  font-display: swap;
 }
 
 :root {

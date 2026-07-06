@@ -281,7 +281,7 @@ const css = `
 
 .heroSection{
   position:relative;
-  min-height:max(100vh, calc(100vw * 768 / 1364));
+  min-height:min(760px, 100svh);
   display:flex;
   align-items:flex-start;
   justify-content:center;
@@ -294,10 +294,10 @@ const css = `
   top:0;
   left:50%;
   width:100%;
+  height:100%;
   max-width:none;
-  height:auto;
   transform:translateX(-50%);
-  object-fit:contain;
+  object-fit:cover;
   object-position:top center;
 }
 
@@ -517,8 +517,12 @@ const css = `
   }
 
   .heroSection{
-    min-height:max(100vh, calc(100vw * 768 / 1364));
-    padding:168px 18px 0;
+    min-height:clamp(520px, 86svh, 680px);
+    padding:148px 18px 0;
+  }
+
+  .heroImage{
+    object-position:center top;
   }
 
   .heroTitle{

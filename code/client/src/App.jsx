@@ -1,36 +1,38 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import VerifyEmail from "./pages/VerifyEmail";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import EditProfile from "./pages/EditProfile";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
-import Directory from "./pages/Directory";
-import AlumniPublicProfile from "./pages/AlumniPublicProfile";
-import RequestMentorship from "./pages/RequestMentorship";
-import EndMentorship from "./pages/EndMentorship";
-import StudentRequests from "./pages/StudentRequests";
-import MentorRequests from "./pages/MentorRequests";
-import MyMentors from "./pages/MyMentors";
-import MyMentees from "./pages/MyMentees";
-import Events from "./pages/Events";
-import CreateEvent from "./pages/CreateEvent";
-import AdminEvents from "./pages/AdminEvents";
-import MyEvents from "./pages/MyEvents";
-import EventDetails from "./pages/EventDetails";
-import Chat from "./pages/Chat";
-import MyCreatedEvents from "./pages/MyCreatedEvents";
-import EditEvent from "./pages/EditEvent";
-
+import LoadingScreen from "./components/LoadingScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
 import Breadcrumbs from "./components/Breadcrumbs";
 import heroBg from "./assets/bg.png";
+
+const Landing = lazy(() => import("./pages/Landing"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const EditProfile = lazy(() => import("./pages/EditProfile"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const Directory = lazy(() => import("./pages/Directory"));
+const AlumniPublicProfile = lazy(() => import("./pages/AlumniPublicProfile"));
+const RequestMentorship = lazy(() => import("./pages/RequestMentorship"));
+const EndMentorship = lazy(() => import("./pages/EndMentorship"));
+const StudentRequests = lazy(() => import("./pages/StudentRequests"));
+const MentorRequests = lazy(() => import("./pages/MentorRequests"));
+const MyMentors = lazy(() => import("./pages/MyMentors"));
+const MyMentees = lazy(() => import("./pages/MyMentees"));
+const Events = lazy(() => import("./pages/Events"));
+const CreateEvent = lazy(() => import("./pages/CreateEvent"));
+const AdminEvents = lazy(() => import("./pages/AdminEvents"));
+const MyEvents = lazy(() => import("./pages/MyEvents"));
+const EventDetails = lazy(() => import("./pages/EventDetails"));
+const Chat = lazy(() => import("./pages/Chat"));
+const MyCreatedEvents = lazy(() => import("./pages/MyCreatedEvents"));
+const EditEvent = lazy(() => import("./pages/EditEvent"));
 
 function AppLayout({ children }) {
   return (
@@ -54,12 +56,12 @@ const appLayoutCss = `
 }
 
 .appRouteBg{
-  position:fixed;
+  position:absolute;
   z-index:-1;
   top:0;
   left:50%;
   width:100%;
-  height:auto;
+  height:100%;
   min-height:100%;
   transform:translateX(-50%);
   object-fit:cover;
@@ -79,22 +81,23 @@ const appLayoutCss = `
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/verify-email/:token" element={<VerifyEmail />} />
-        <Route
-          path="/my-created-events"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <MyCreatedEvents />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
+          <Route
+            path="/my-created-events"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <MyCreatedEvents />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
         <Route
           path="/home"
@@ -316,8 +319,9 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }
