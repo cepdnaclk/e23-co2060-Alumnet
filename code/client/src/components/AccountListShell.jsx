@@ -63,8 +63,9 @@ const css = `
 
 .accountTableWrap{
   margin:0 -34px -30px;
-  overflow-x:hidden;
+  overflow-x:auto;
   border-top:1px solid rgba(0,0,0,.08);
+  -webkit-overflow-scrolling:touch;
 }
 
 .accountListToolbar{
