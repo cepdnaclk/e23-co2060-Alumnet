@@ -221,7 +221,7 @@ function countByStatus(items, status) {
 }
 
 function InterestTags({ value = "" }) {
-  const interests = value
+  const interests = (value || "")
     .split(/[,|]/)
     .map((item) => item.trim())
     .filter(Boolean)
