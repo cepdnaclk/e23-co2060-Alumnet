@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, Paperclip, Search, Send, Smile, Trash2, Type, X } from "lucide-react";
+import { Mic, Paperclip, Search, Send, Smile, Trash2, Type, X, ChevronLeft } from "lucide-react";
 import {
   deleteChatMessage,
   getChatContacts,
@@ -45,6 +45,7 @@ export default function Chat() {
   const mediaRecorderRef = useRef(null);
   const recordingChunksRef = useRef([]);
   const recordingStreamRef = useRef(null);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   useEffect(() => {
     loadConversations();
@@ -160,6 +161,10 @@ export default function Chat() {
         window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
       } else {
         setMessages([]);
+      }
+      // On small screens hide the contacts sidebar when opening a conversation
+      if (typeof window !== "undefined" && window.innerWidth <= 720) {
+        setShowSidebar(false);
       }
     } catch (err) {
       console.error(err);
@@ -383,7 +388,8 @@ export default function Chat() {
       <style>{css}</style>
 
       <section className="inboxShell">
-        <aside className="inboxSidebar">
+        {showSidebar && (
+          <aside className="inboxSidebar">
           <label className="conversationSearch">
             <Search size={15} strokeWidth={2} />
             <input
@@ -442,7 +448,8 @@ export default function Chat() {
               })
             )}
           </div>
-        </aside>
+          </aside>
+        )}
 
         <section className="chatWindow">
           {!selectedConversation ? (
@@ -454,10 +461,23 @@ export default function Chat() {
           ) : (
             <>
               <header className="chatHeader">
-                <div className="chatHeaderIdentity">
-                  {renderAvatar(selectedConversation, "small", "header-")}
-                  <div>
-                    <h2>{selectedConversation.other_user_name}</h2>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* show a back/contacts button on mobile when sidebar is hidden */}
+                  {typeof window !== "undefined" && window.innerWidth <= 720 && (
+                    <button
+                      type="button"
+                      className="mobileSidebarToggle"
+                      onClick={() => setShowSidebar((s) => !s)}
+                      aria-label="Show contacts"
+                    >
+                      <ChevronLeft size={18} strokeWidth={2} />
+                    </button>
+                  )}
+                  <div className="chatHeaderIdentity">
+                    {renderAvatar(selectedConversation, "small", "header-")}
+                    <div>
+                      <h2>{selectedConversation.other_user_name}</h2>
+                    </div>
                   </div>
                 </div>
               </header>
@@ -1301,6 +1321,45 @@ const css = `
 
   .composer{
     padding:10px 14px 14px;
+  }
+
+  /* Mobile composer: stack textarea, tools, send button */
+  .composerBox{
+    position:relative;
+    min-height:62px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+    padding:8px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.06);
+    box-shadow:0 8px 18px rgba(0,0,0,.06);
+    background:#ffffff;
+  }
+
+  .composerTools{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+    order:2;
+  }
+
+  .sendButton{
+    order:3;
+    align-self:flex-end;
+  }
+
+  .mobileSidebarToggle{
+    background:transparent;
+    border:0;
+    padding:6px;
+    display:inline-grid;
+    place-items:center;
+    margin-right:4px;
   }
 }
 `;
