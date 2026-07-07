@@ -402,6 +402,13 @@ export default function Chat() {
       <style>{css}</style>
 
       <section className="inboxShell">
+        {isMobile && showSidebar && (
+          <div
+            className="mobileSidebarBackdrop"
+            onClick={() => setShowSidebar(false)}
+            aria-hidden="true"
+          />
+        )}
         {showSidebar && (
           <aside className={`inboxSidebar ${isMobile ? "mobileActive" : ""}`}>
             <div className="mobileSidebarHeader">
@@ -1325,10 +1332,12 @@ const css = `
 
 @media (max-width:720px){
   .inboxShell{
+    position:relative;
     grid-template-columns:1fr;
     height:100%;
     min-height:0;
     border-radius:18px;
+    overflow:visible;
   }
 
   .inboxSidebar{
@@ -1339,14 +1348,33 @@ const css = `
 
   .inboxSidebar.mobileActive{
     position:fixed;
-    z-index:25;
-    inset:80px 16px 90px 16px;
-    width:calc(100% - 32px);
-    max-width:420px;
-    margin:0 auto;
-    border-radius:20px;
-    box-shadow:0 28px 72px rgba(0,0,0,.18);
+    z-index:999;
+    top:12px;
+    left:12px;
+    right:12px;
+    bottom:12px;
+    width:auto;
+    max-width:none;
+    margin:0;
+    border-radius:22px;
     background:#fafbfc;
+    box-shadow:0 32px 84px rgba(0,0,0,.24);
+    overflow:hidden;
+  }
+
+  .mobileSidebarBackdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.22);
+    z-index:998;
+  }
+
+  .mobileSidebarHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:18px 14px 6px;
   }
 
   .mobileSidebarToggle{
@@ -1355,10 +1383,24 @@ const css = `
     width:34px;
     height:34px;
     border:0;
-    background:rgba(255,255,255,.85);
+    background:rgba(255,255,255,.95);
     border-radius:50%;
     color:rgba(17,17,17,.78);
     box-shadow:0 6px 16px rgba(0,0,0,.08);
+  }
+
+  .mobileSidebarHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:18px 14px 6px;
+  }
+
+  .mobileSidebarHeader h3{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
   }
 
   .chatWindow{
