@@ -411,9 +411,8 @@ export default function Chat() {
         )}
         {showSidebar && (
           <aside className={`inboxSidebar ${isMobile ? "mobileActive" : ""}`}>
-            <div className="mobileSidebarHeader">
-              <h3>Messages</h3>
-              {isMobile && (
+            {isMobile && (
+              <div className="mobileSidebarHeader">
                 <button
                   type="button"
                   className="mobileSidebarToggle"
@@ -422,8 +421,8 @@ export default function Chat() {
                 >
                   <ChevronLeft size={18} strokeWidth={2} />
                 </button>
-              )}
-            </div>
+              </div>
+            )}
             <label className="conversationSearch">
             <Search size={15} strokeWidth={2} />
             <input
@@ -1347,26 +1346,23 @@ const css = `
   }
 
   .inboxSidebar.mobileActive{
-    position:fixed;
-    z-index:999;
-    top:14px;
-    left:14px;
-    right:14px;
-    bottom:14px;
-    width:auto;
-    max-width:none;
+    position:absolute;
+    z-index:25;
+    inset:0;
+    width:100%;
+    height:100%;
     margin:0;
-    border-radius:28px;
+    border-radius:18px;
     background:#fafbfc;
-    box-shadow:0 32px 84px rgba(0,0,0,.24);
+    box-shadow:0 28px 72px rgba(0,0,0,.18);
     overflow:hidden;
   }
 
   .mobileSidebarBackdrop{
-    position:fixed;
+    position:absolute;
     inset:0;
-    background:rgba(0,0,0,.22);
-    z-index:998;
+    background:rgba(0,0,0,.18);
+    z-index:24;
   }
 
   .mobileSidebarHeader{
