@@ -46,6 +46,7 @@ export default function Chat() {
   const recordingChunksRef = useRef([]);
   const recordingStreamRef = useRef(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -59,6 +60,20 @@ export default function Chat() {
       );
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 720;
+      setIsMobile(mobile);
+      setShowSidebar(!mobile || !selectedConversation);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [selectedConversation]);
 
   useEffect(() => {
     const container = messagesRef.current;
@@ -162,8 +177,7 @@ export default function Chat() {
       } else {
         setMessages([]);
       }
-      // On small screens hide the contacts sidebar when opening a conversation
-      if (typeof window !== "undefined" && window.innerWidth <= 720) {
+      if (isMobile) {
         setShowSidebar(false);
       }
     } catch (err) {
@@ -389,8 +403,21 @@ export default function Chat() {
 
       <section className="inboxShell">
         {showSidebar && (
-          <aside className="inboxSidebar">
-          <label className="conversationSearch">
+          <aside className={`inboxSidebar ${isMobile ? "mobileActive" : ""}`}>
+            <div className="mobileSidebarHeader">
+              <h3>Messages</h3>
+              {isMobile && (
+                <button
+                  type="button"
+                  className="mobileSidebarToggle"
+                  onClick={() => setShowSidebar(false)}
+                  aria-label="Close contacts"
+                >
+                  <ChevronLeft size={18} strokeWidth={2} />
+                </button>
+              )}
+            </div>
+            <label className="conversationSearch">
             <Search size={15} strokeWidth={2} />
             <input
               type="text"
@@ -463,11 +490,11 @@ export default function Chat() {
               <header className="chatHeader">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   {/* show a back/contacts button on mobile when sidebar is hidden */}
-                  {typeof window !== "undefined" && window.innerWidth <= 720 && (
+                      {isMobile && !showSidebar && (
                     <button
                       type="button"
                       className="mobileSidebarToggle"
-                      onClick={() => setShowSidebar((s) => !s)}
+                      onClick={() => setShowSidebar(true)}
                       aria-label="Show contacts"
                     >
                       <ChevronLeft size={18} strokeWidth={2} />
@@ -1308,6 +1335,30 @@ const css = `
     max-height:320px;
     border-right:0;
     border-bottom:1px solid rgba(0,0,0,.08);
+  }
+
+  .inboxSidebar.mobileActive{
+    position:fixed;
+    z-index:25;
+    inset:80px 16px 90px 16px;
+    width:calc(100% - 32px);
+    max-width:420px;
+    margin:0 auto;
+    border-radius:20px;
+    box-shadow:0 28px 72px rgba(0,0,0,.18);
+    background:#fafbfc;
+  }
+
+  .mobileSidebarToggle{
+    display:inline-grid;
+    place-items:center;
+    width:34px;
+    height:34px;
+    border:0;
+    background:rgba(255,255,255,.85);
+    border-radius:50%;
+    color:rgba(17,17,17,.78);
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
   }
 
   .chatWindow{
