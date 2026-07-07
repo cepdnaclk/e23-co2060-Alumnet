@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import PageShell from "../components/PageShell";
+import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
 import { getProfile } from "../api";
 
@@ -63,7 +63,7 @@ export default function Dashboard() {
       : role;
 
   return (
-    <PageShell title="Home" subtitle="Your dashboard">
+    <AccountListShell>
       {err && <div style={errorBox}>{err}</div>}
 
       {loading ? (
@@ -197,9 +197,105 @@ export default function Dashboard() {
               </>
             )}
           </div>
+
+          <div style={{ marginTop: 12 }}>{/* grid of quick cards */}
+            <div style={grid}>
+              {!isAdmin && (
+                <>
+                  <QuickCard
+                    title="My Profile"
+                    text="View your account details and public information."
+                    to="/profile"
+                  />
+
+                  <QuickCard
+                    title="Edit Profile"
+                    text="Update your details, profile image, and links."
+                    to="/edit-profile"
+                  />
+
+                  <QuickCard
+                    title="Directory"
+                    text="Browse alumni and find relevant mentors."
+                    to="/directory"
+                  />
+                </>
+              )}
+
+              {role === "student" && (
+                <>
+                  <QuickCard
+                    title="My Requests"
+                    text="Track mentorship requests you have sent."
+                    to="/my-requests"
+                  />
+                  <QuickCard
+                    title="My Mentors"
+                    text="See mentors who have accepted your requests."
+                    to="/my-mentors"
+                  />
+                </>
+              )}
+
+              {role === "alumni" && (
+                <>
+                  <QuickCard
+                    title="Mentor Requests"
+                    text="Review mentorship requests from students."
+                    to="/mentor-requests"
+                  />
+                  <QuickCard
+                    title="My Mentees"
+                    text="See students currently connected with you."
+                    to="/my-mentees"
+                  />
+                </>
+              )}
+
+              {(role === "university_admin" || role === "system_admin") && (
+                <>
+                  <QuickCard
+                    title="Admin Dashboard"
+                    text="Verify new accounts and manage approvals."
+                    to="/admin"
+                  />
+                  <QuickCard
+                    title="User Verifications"
+                    text="Review and verify pending account requests."
+                    to="/admin-users"
+                  />
+                </>
+              )}
+
+              <QuickCard
+                title="Events"
+                text="See upcoming approved events and register."
+                to="/events"
+              />
+
+              {(role === "alumni" ||
+                role === "university_admin" ||
+                role === "system_admin") && (
+                <>
+                  {(role === "university_admin" || role === "system_admin") && (
+                    <QuickCard
+                      title="Event Approvals"
+                      text="Approve or reject submitted events."
+                      to="/admin-events"
+                    />
+                  )}
+                  <QuickCard
+                    title="Create Event"
+                    text="Create a new event for approval."
+                    to="/create-event"
+                  />
+                </>
+              )}
+            </div>
+          </div>
         </>
       )}
-    </PageShell>
+    </AccountListShell>
   );
 }
 

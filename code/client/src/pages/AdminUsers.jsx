@@ -100,7 +100,7 @@ export default function AdminUsers() {
             <div className="accountListState">No pending users in this view.</div>
           ) : (
             <div className="accountTableWrap">
-              <table className="accountTable adminUsersTable">
+              <table className="accountTable wide">
                 <thead>
                   <tr>
                     <th style={{ width: "34%" }}>User</th>
@@ -185,10 +185,6 @@ function formatDate(value) {
 }
 
 const css = `
-.adminUsersTable{
-  min-width:0;
-}
-
 .adminSoftTag{
   display:inline-flex;
   align-items:center;

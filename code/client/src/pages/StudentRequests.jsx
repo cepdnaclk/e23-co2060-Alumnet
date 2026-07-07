@@ -72,7 +72,7 @@ export default function StudentRequests() {
             <div className="accountListState">No requests match this filter.</div>
           ) : (
             <div className="accountTableWrap">
-              <table className="accountTable">
+              <table className="accountTable wide">
                 <thead>
                   <tr>
                     <th style={{ width: "30%" }}>Mentor</th>

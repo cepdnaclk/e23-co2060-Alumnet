@@ -78,7 +78,7 @@ export default function MyCreatedEvents() {
             <div className="accountListState">No events in this view.</div>
           ) : (
             <div className="accountTableWrap">
-              <table className="accountTable createdEventsTable">
+              <table className="accountTable wide">
                 <thead>
                   <tr>
                     <th style={{ width: "38%" }}>Event</th>

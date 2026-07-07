@@ -135,6 +135,11 @@ const css = `
   table-layout:fixed;
 }
 
+/* Optional wide tables that should allow horizontal scrolling on small screens */
+.accountTable.wide{
+  min-width:1040px;
+}
+
 .accountTable th{
   height:42px;
   padding:0 18px;
