@@ -1349,14 +1349,14 @@ const css = `
   .inboxSidebar.mobileActive{
     position:fixed;
     z-index:999;
-    top:12px;
-    left:12px;
-    right:12px;
-    bottom:12px;
+    top:14px;
+    left:14px;
+    right:14px;
+    bottom:14px;
     width:auto;
     max-width:none;
     margin:0;
-    border-radius:22px;
+    border-radius:28px;
     background:#fafbfc;
     box-shadow:0 32px 84px rgba(0,0,0,.24);
     overflow:hidden;
