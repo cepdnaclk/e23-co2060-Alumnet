@@ -1279,7 +1279,7 @@ const css = `
 @media (max-width:720px){
   .inboxShell{
     grid-template-columns:1fr;
-    height:auto;
+    height:100%;
     min-height:0;
     border-radius:18px;
   }
@@ -1291,7 +1291,8 @@ const css = `
   }
 
   .chatWindow{
-    min-height:520px;
+    min-height:0;
+    flex:1;
   }
 
   .messageThread{
