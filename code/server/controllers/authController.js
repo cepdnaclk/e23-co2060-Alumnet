@@ -38,6 +38,52 @@ async function sendVerificationEmail(email, token) {
   });
 }
 
+async function sendAdminSignupNotification(user) {
+  const adminResult = await pool.query(
+    `SELECT email, full_name, role FROM users WHERE role IN ('system_admin', 'university_admin')`
+  );
+
+  const adminEmails = adminResult.rows
+    .map((admin) => admin.email)
+    .filter(Boolean);
+
+  if (adminEmails.length === 0) {
+    return;
+  }
+
+  const adminUrl = `${getClientUrl()}/admin`;
+
+  await sendEmail({
+    to: adminEmails.join(", "),
+    subject: `New user registered on Alumnet: ${user.full_name}`,
+    html: `
+      <h2>New user registration</h2>
+      <p>A new user has signed up and is awaiting verification.</p>
+      <ul>
+        <li><strong>Name:</strong> ${user.full_name}</li>
+        <li><strong>Email:</strong> ${user.email}</li>
+        <li><strong>Role:</strong> ${user.role}</li>
+      </ul>
+      <p>
+        <a
+          href="${adminUrl}"
+          style="
+            display:inline-block;
+            padding:12px 24px;
+            background:#2563eb;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+          "
+        >
+          Review registration
+        </a>
+      </p>
+      <p>Sign in as an admin and verify the new account from the dashboard.</p>
+    `,
+  });
+}
+
 const signup = async (req, res) => {
   const client = await pool.connect();
   let transactionOpen = false;
@@ -205,6 +251,12 @@ const signup = async (req, res) => {
     } catch (emailError) {
       emailSent = false;
       console.error("Verification email send error:", emailError);
+    }
+
+    try {
+      await sendAdminSignupNotification(user);
+    } catch (adminEmailError) {
+      console.error("Admin notification email send error:", adminEmailError);
     }
 
     return res.status(201).json({
