@@ -95,7 +95,6 @@ export default function Register() {
   const [prefCapacity, setPrefCapacity] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -174,7 +173,7 @@ export default function Register() {
     }
 
     if (role === "student" && !isValidUrl(cvUrl)) {
-      return "Please enter a valid CV URL.";
+      return "Please enter a valid CV Drive URL.";
     }
 
     return "";
@@ -186,7 +185,6 @@ export default function Register() {
     if (loading) return;
 
     setError("");
-    setStatusMessage("");
 
     const linkError = validateLinks();
 
@@ -196,7 +194,6 @@ export default function Register() {
     }
 
     setLoading(true);
-    setStatusMessage("Please wait, your account is being created...");
 
     try {
       const data = await registerUser(payload);
@@ -209,7 +206,6 @@ export default function Register() {
       });
     } catch (err) {
       setError(err.message || "Register failed");
-      setStatusMessage("");
     } finally {
       setLoading(false);
     }
@@ -430,7 +426,7 @@ export default function Register() {
                   />
                 </Field>
 
-                <Field icon={LinkIcon} className="span2">
+                <Field icon={LinkIcon} className="span2 infoField">
                   <input
                     type="text"
                     value={portfolioUrl}
@@ -438,16 +434,30 @@ export default function Register() {
                     placeholder="Portfolio URL"
                     disabled={loading}
                   />
+
+                  <span
+                    className="infoMark"
+                    title="Add your portfolio, personal website, or project showcase link."
+                  >
+                    !
+                  </span>
                 </Field>
 
-                <Field icon={LinkIcon} className="span2">
+                <Field icon={LinkIcon} className="span2 infoField">
                   <input
                     type="text"
                     value={cvUrl}
                     onChange={(e) => setCvUrl(e.target.value)}
-                    placeholder="CV link"
+                    placeholder="CV Drive link"
                     disabled={loading}
                   />
+
+                  <span
+                    className="infoMark"
+                    title="Upload your CV to Google Drive, make the link accessible, and paste the Drive link here."
+                  >
+                    !
+                  </span>
                 </Field>
               </>
             ) : (
@@ -477,22 +487,17 @@ export default function Register() {
             )}
           </div>
 
-          {statusMessage && (
-            <div className="statusBox">
-              {loading && (
-                <img src={bufferingIcon} alt="" className="bufferingIcon" />
-              )}
-              <span>{statusMessage}</span>
-            </div>
-          )}
-
           {error && <div className="errorBox">{error}</div>}
 
           <button className="createButton" type="submit" disabled={loading}>
             {loading && (
               <img src={bufferingIcon} alt="" className="buttonSpinner" />
             )}
-            <span>{loading ? "Creating account..." : "Create account"}</span>
+            <span>
+              {loading
+                ? "Please wait, your account is being created..."
+                : "Create account"}
+            </span>
             {!loading && <ArrowRight size={15} strokeWidth={2.4} />}
           </button>
         </form>
@@ -734,6 +739,28 @@ const css = `
   color:rgba(17,17,17,.64);
 }
 
+.infoField{
+  position:relative;
+  padding-right:10px;
+}
+
+.infoMark{
+  position:relative;
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#111111;
+  color:#ffffff;
+  font-size:12px;
+  font-weight:800;
+  line-height:1;
+  cursor:help;
+  user-select:none;
+}
+
 .passwordToggle{
   display:grid;
   place-items:center;
@@ -754,12 +781,13 @@ const css = `
 }
 
 .createButton{
-  height:35px;
+  min-height:35px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:7px;
   margin-top:2px;
+  padding:8px 16px;
   border-radius:999px;
   border:1px solid rgba(0,0,0,.84);
   background:#050505;
@@ -782,33 +810,13 @@ const css = `
   cursor:not-allowed;
 }
 
-.statusBox{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  padding:8px 10px;
-  border-radius:10px;
-  background:rgba(17,17,17,.06);
-  border:1px solid rgba(17,17,17,.08);
-  color:#111111;
-  font-size:13px;
-  line-height:1.35;
-  text-align:left;
-}
-
-.bufferingIcon,
-.buttonSpinner{
-  width:16px;
-  height:16px;
-  object-fit:contain;
-  flex:0 0 auto;
-  animation:spin .85s linear infinite;
-}
-
 .buttonSpinner{
   width:15px;
   height:15px;
+  object-fit:contain;
+  flex:0 0 auto;
   filter:brightness(0) invert(1);
+  animation:spin .85s linear infinite;
 }
 
 @keyframes spin{
