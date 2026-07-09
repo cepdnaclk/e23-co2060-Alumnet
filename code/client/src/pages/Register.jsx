@@ -17,6 +17,7 @@ import {
 import { registerUser } from "../api";
 import heroBg from "../assets/bg.png";
 import signUpIcon from "../assets/sign up.png";
+import bufferingIcon from "../assets/buffering.png";
 
 const DEPARTMENTS = [
   "Chemical & Process Engineering",
@@ -27,6 +28,8 @@ const DEPARTMENTS = [
   "Manufacturing and Industrial Engineering",
 ];
 
+const BATCHES = ["E20", "E21", "E22", "E23", "E24"];
+
 function Field({ icon: Icon, children, className = "" }) {
   return (
     <label className={`fieldWrap ${className}`}>
@@ -36,6 +39,36 @@ function Field({ icon: Icon, children, className = "" }) {
   );
 }
 
+function normalizeUrl(value) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function isValidDomainUrl(value, allowedDomains) {
+  if (!value.trim()) return true;
+
+  try {
+    const url = new URL(normalizeUrl(value));
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    return allowedDomains.includes(host);
+  } catch {
+    return false;
+  }
+}
+
+function isValidUrl(value) {
+  if (!value.trim()) return true;
+
+  try {
+    new URL(normalizeUrl(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function Register() {
   const navigate = useNavigate();
 
@@ -43,21 +76,26 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [department, setDepartment] = useState("");
   const [batch, setBatch] = useState("");
   const [interests, setInterests] = useState("");
   const [bio, setBio] = useState("");
   const [whyNeedMentor, setWhyNeedMentor] = useState("");
   const [goals, setGoals] = useState("");
+
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [cvUrl, setCvUrl] = useState("");
+
   const [alumniBatch, setAlumniBatch] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [organization, setOrganization] = useState("");
   const [prefCapacity, setPrefCapacity] = useState("");
+
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -69,8 +107,8 @@ export default function Register() {
 
   const payload = useMemo(() => {
     const common = {
-      full_name: fullName,
-      email,
+      full_name: fullName.trim(),
+      email: email.trim(),
       password,
       role,
       department,
@@ -80,26 +118,26 @@ export default function Register() {
       return {
         ...common,
         batch,
-        areas_of_interest: interests,
-        bio,
-        motivation: whyNeedMentor,
-        goal: goals,
-        linkedin_url: linkedinUrl,
-        github_url: githubUrl,
-        portfolio_url: portfolioUrl,
-        cv_url: cvUrl,
+        areas_of_interest: interests.trim(),
+        bio: bio.trim(),
+        motivation: whyNeedMentor.trim(),
+        goal: goals.trim(),
+        linkedin_url: normalizeUrl(linkedinUrl),
+        github_url: normalizeUrl(githubUrl),
+        portfolio_url: normalizeUrl(portfolioUrl),
+        cv_url: normalizeUrl(cvUrl),
       };
     }
 
     return {
       ...common,
-      job_title: jobTitle,
-      organization,
+      job_title: jobTitle.trim(),
+      organization: organization.trim(),
       graduation_year: alumniBatch ? Number(alumniBatch) : null,
-      linkedin_url: linkedinUrl,
-      primary_interests: interests,
+      linkedin_url: normalizeUrl(linkedinUrl),
+      primary_interests: interests.trim(),
       preferred_mentee_capacity: prefCapacity ? Number(prefCapacity) : null,
-      bio,
+      bio: bio.trim(),
     };
   }, [
     fullName,
@@ -122,13 +160,47 @@ export default function Register() {
     prefCapacity,
   ]);
 
+  const validateLinks = () => {
+    if (!isValidDomainUrl(linkedinUrl, ["linkedin.com"])) {
+      return "Please enter a valid LinkedIn URL.";
+    }
+
+    if (role === "student" && !isValidDomainUrl(githubUrl, ["github.com"])) {
+      return "Please enter a valid GitHub URL.";
+    }
+
+    if (role === "student" && !isValidUrl(portfolioUrl)) {
+      return "Please enter a valid portfolio URL.";
+    }
+
+    if (role === "student" && !isValidUrl(cvUrl)) {
+      return "Please enter a valid CV URL.";
+    }
+
+    return "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (loading) return;
+
     setError("");
+    setStatusMessage("");
+
+    const linkError = validateLinks();
+
+    if (linkError) {
+      setError(linkError);
+      return;
+    }
+
     setLoading(true);
+    setStatusMessage("Please wait, your account is being created...");
 
     try {
       const data = await registerUser(payload);
+
       navigate("/verify-email", {
         state: {
           email,
@@ -137,6 +209,7 @@ export default function Register() {
       });
     } catch (err) {
       setError(err.message || "Register failed");
+      setStatusMessage("");
     } finally {
       setLoading(false);
     }
@@ -160,19 +233,22 @@ export default function Register() {
         <h1>Create account</h1>
         <p className="registerSubtitle">Join the Alumnet mentorship community.</p>
 
-        <form onSubmit={handleSubmit} className="registerForm">
+        <form onSubmit={handleSubmit} className="registerForm" noValidate>
           <div className="roleSwitch" aria-label="Account type">
             <button
               type="button"
               className={role === "student" ? "active" : ""}
               onClick={() => setRole("student")}
+              disabled={loading}
             >
               Student
             </button>
+
             <button
               type="button"
               className={role === "alumni" ? "active" : ""}
               onClick={() => setRole("alumni")}
+              disabled={loading}
             >
               Alumni
             </button>
@@ -185,6 +261,7 @@ export default function Register() {
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Full name *"
                 required
+                disabled={loading}
               />
             </Field>
 
@@ -195,6 +272,7 @@ export default function Register() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email *"
                 required
+                disabled={loading}
               />
             </Field>
 
@@ -205,25 +283,35 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password *"
                 required
+                disabled={loading}
               />
+
               <button
                 className="passwordToggle"
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={loading}
               >
-                {showPassword ? <EyeOff size={15} strokeWidth={2.1} /> : <Eye size={15} strokeWidth={2.1} />}
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </Field>
 
             {role === "student" ? (
-              <Field icon={GraduationCap}>
-                <input
+              <Field icon={GraduationCap} className="selectField">
+                <select
                   value={batch}
                   onChange={(e) => setBatch(e.target.value)}
-                  placeholder="Batch, e.g. E23 *"
                   required
-                />
+                  disabled={loading}
+                >
+                  <option value="">Select batch *</option>
+                  {BATCHES.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
               </Field>
             ) : (
               <Field icon={GraduationCap}>
@@ -232,6 +320,7 @@ export default function Register() {
                   value={alumniBatch}
                   onChange={(e) => setAlumniBatch(e.target.value)}
                   placeholder="Graduation year"
+                  disabled={loading}
                 />
               </Field>
             )}
@@ -241,6 +330,7 @@ export default function Register() {
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 required
+                disabled={loading}
               >
                 <option value="">Select department *</option>
                 {DEPARTMENTS.map((dept) => (
@@ -259,6 +349,7 @@ export default function Register() {
                     onChange={(e) => setJobTitle(e.target.value)}
                     placeholder="Job title *"
                     required
+                    disabled={loading}
                   />
                 </Field>
 
@@ -268,6 +359,7 @@ export default function Register() {
                     onChange={(e) => setOrganization(e.target.value)}
                     placeholder="Company *"
                     required
+                    disabled={loading}
                   />
                 </Field>
               </>
@@ -277,8 +369,13 @@ export default function Register() {
               <input
                 value={interests}
                 onChange={(e) => setInterests(e.target.value)}
-                placeholder={role === "student" ? "Areas of interest" : "Primary interests / expertise *"}
+                placeholder={
+                  role === "student"
+                    ? "Areas of interest"
+                    : "Primary interests / expertise *"
+                }
                 required={role === "alumni"}
+                disabled={loading}
               />
             </Field>
 
@@ -287,6 +384,7 @@ export default function Register() {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Brief introduction"
+                disabled={loading}
               />
             </Field>
 
@@ -298,6 +396,7 @@ export default function Register() {
                     onChange={(e) => setWhyNeedMentor(e.target.value)}
                     placeholder="Why do you need a mentor? *"
                     required
+                    disabled={loading}
                   />
                 </Field>
 
@@ -307,38 +406,47 @@ export default function Register() {
                     onChange={(e) => setGoals(e.target.value)}
                     placeholder="What is your goal? *"
                     required
+                    disabled={loading}
                   />
                 </Field>
 
                 <Field icon={LinkIcon}>
                   <input
+                    type="text"
                     value={githubUrl}
                     onChange={(e) => setGithubUrl(e.target.value)}
                     placeholder="GitHub URL"
+                    disabled={loading}
                   />
                 </Field>
 
                 <Field icon={LinkIcon}>
                   <input
+                    type="text"
                     value={linkedinUrl}
                     onChange={(e) => setLinkedinUrl(e.target.value)}
                     placeholder="LinkedIn URL"
+                    disabled={loading}
                   />
                 </Field>
 
                 <Field icon={LinkIcon} className="span2">
                   <input
+                    type="text"
                     value={portfolioUrl}
                     onChange={(e) => setPortfolioUrl(e.target.value)}
                     placeholder="Portfolio URL"
+                    disabled={loading}
                   />
                 </Field>
 
                 <Field icon={LinkIcon} className="span2">
                   <input
+                    type="text"
                     value={cvUrl}
                     onChange={(e) => setCvUrl(e.target.value)}
                     placeholder="CV link"
+                    disabled={loading}
                   />
                 </Field>
               </>
@@ -350,6 +458,7 @@ export default function Register() {
                   onChange={(e) => setPrefCapacity(e.target.value)}
                   placeholder="Preferred mentee capacity"
                   min="0"
+                  disabled={loading}
                 />
               </Field>
             )}
@@ -357,19 +466,33 @@ export default function Register() {
             {role === "alumni" && (
               <Field icon={LinkIcon}>
                 <input
+                  type="text"
                   value={linkedinUrl}
                   onChange={(e) => setLinkedinUrl(e.target.value)}
                   placeholder="LinkedIn URL *"
                   required
+                  disabled={loading}
                 />
               </Field>
             )}
           </div>
 
+          {statusMessage && (
+            <div className="statusBox">
+              {loading && (
+                <img src={bufferingIcon} alt="" className="bufferingIcon" />
+              )}
+              <span>{statusMessage}</span>
+            </div>
+          )}
+
           {error && <div className="errorBox">{error}</div>}
 
           <button className="createButton" type="submit" disabled={loading}>
-            <span>{loading ? "Creating..." : "Create account"}</span>
+            {loading && (
+              <img src={bufferingIcon} alt="" className="buttonSpinner" />
+            )}
+            <span>{loading ? "Creating account..." : "Create account"}</span>
             {!loading && <ArrowRight size={15} strokeWidth={2.4} />}
           </button>
         </form>
@@ -396,7 +519,7 @@ const css = `
   overflow:hidden;
   background:#d8ecfb;
   color:#050505;
-  font-family:"Google Sans";
+  font-family:"Google Sans", Arial, sans-serif;
   padding:26px;
 }
 
@@ -507,10 +630,13 @@ const css = `
 
 .roleSwitch button{
   height:30px;
+  border:none;
   border-radius:999px;
+  background:transparent;
   color:rgba(17,17,17,.74);
   font:inherit;
   font-size:14px;
+  cursor:pointer;
   transition:background .18s ease, box-shadow .18s ease, color .18s ease;
 }
 
@@ -569,6 +695,14 @@ const css = `
   font-size:14px;
 }
 
+.fieldWrap input:disabled,
+.fieldWrap select:disabled,
+.fieldWrap textarea:disabled,
+.roleSwitch button:disabled{
+  opacity:.72;
+  cursor:not-allowed;
+}
+
 .fieldWrap select{
   appearance:none;
   padding-right:24px;
@@ -606,8 +740,11 @@ const css = `
   flex:0 0 auto;
   width:22px;
   height:22px;
+  border:none;
+  background:transparent;
   border-radius:999px;
   color:rgba(17,17,17,.64);
+  cursor:pointer;
   transition:background .18s ease, color .18s ease;
 }
 
@@ -631,6 +768,7 @@ const css = `
   font-size:14px;
   font-weight:500;
   box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.20);
+  cursor:pointer;
   transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
 }
 
@@ -640,8 +778,46 @@ const css = `
 }
 
 .createButton:disabled{
-  opacity:.72;
+  opacity:.78;
   cursor:not-allowed;
+}
+
+.statusBox{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:8px 10px;
+  border-radius:10px;
+  background:rgba(17,17,17,.06);
+  border:1px solid rgba(17,17,17,.08);
+  color:#111111;
+  font-size:13px;
+  line-height:1.35;
+  text-align:left;
+}
+
+.bufferingIcon,
+.buttonSpinner{
+  width:16px;
+  height:16px;
+  object-fit:contain;
+  flex:0 0 auto;
+  animation:spin .85s linear infinite;
+}
+
+.buttonSpinner{
+  width:15px;
+  height:15px;
+  filter:brightness(0) invert(1);
+}
+
+@keyframes spin{
+  from{
+    transform:rotate(0deg);
+  }
+  to{
+    transform:rotate(360deg);
+  }
 }
 
 .errorBox{

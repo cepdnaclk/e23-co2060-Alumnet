@@ -54,7 +54,8 @@ export default function Dashboard() {
   }, [token]);
 
   const role = currentUser?.role || "";
-  const isAdmin = role === "university_admin" || role === "system_admin";
+  const isAdmin =
+    role === "university_admin" || role === "system_admin";
 
   useEffect(() => {
     const load = async () => {
@@ -79,7 +80,8 @@ export default function Dashboard() {
     load();
   }, [token]);
 
-  const firstName = profile?.full_name?.trim()?.split(/\s+/)?.[0] || "there";
+  const firstName =
+    profile?.full_name?.trim()?.split(/\s+/)?.[0] || "there";
 
   const cards = useMemo(() => {
     if (isAdmin) {
@@ -199,60 +201,81 @@ export default function Dashboard() {
 
   return (
     <AccountListShell>
+      <style>{responsiveCss}</style>
+
       {err && <div style={errorBox}>{err}</div>}
 
       {loading ? (
         <LoadingScreen text="Loading dashboard..." />
       ) : (
-        <div style={dashboard}>
-          <section style={welcomeCard}>
+        <div className="dashboard-root" style={dashboard}>
+          <section className="dashboard-welcome" style={welcomeCard}>
             <div style={profileHero}>
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Profile" style={avatar} />
+                <img
+                  src={profile.avatar_url}
+                  alt="Profile"
+                  style={avatar}
+                />
               ) : (
                 <div style={avatarFallback}>
                   {profile?.full_name?.slice(0, 1)?.toUpperCase() || "U"}
                 </div>
               )}
 
-              <h1 style={welcomeTitle}>Hi, {firstName}!</h1>
+              <h1 className="dashboard-welcome-title" style={welcomeTitle}>
+                Hi, {firstName}!
+              </h1>
 
-              <p style={welcomeText}>
+              <p className="dashboard-welcome-text" style={welcomeText}>
                 Find alumni, build meaningful mentorships, stay connected and
                 discover what is happening next.
               </p>
             </div>
           </section>
 
-          <div style={mainLayout}>
-            <main>
+          <div className="dashboard-main-layout" style={mainLayout}>
+            <main className="dashboard-main-content">
               <div style={sectionHeader}>
-                <p style={sectionText}>
+                <p
+                  className="dashboard-section-text"
+                  style={sectionText}
+                >
                   Explore your Alumnet space — connect with alumni, manage
                   mentorships, follow events and stay involved.
                 </p>
               </div>
 
-              <div style={cardGrid}>
+              <div className="dashboard-card-grid" style={cardGrid}>
                 {cards.map((card) => (
                   <DashboardCard key={card.title} {...card} />
                 ))}
               </div>
 
-              <section style={flowCard}>
-                <h2 style={flowTitle}>How Alumnet helps you</h2>
+              <section className="dashboard-flow-card" style={flowCard}>
+                <h2
+                  className="dashboard-flow-title"
+                  style={flowTitle}
+                >
+                  How Alumnet helps you
+                </h2>
 
-                <div style={flowGrid}>
+                <div
+                  className="dashboard-flow-grid"
+                  style={flowGrid}
+                >
                   <FlowItem
                     number="01"
                     title="Discover"
                     text="Search alumni and find people with relevant experience."
                   />
+
                   <FlowItem
                     number="02"
                     title="Connect"
                     text="Send mentorship requests and build academic guidance links."
                   />
+
                   <FlowItem
                     number="03"
                     title="Engage"
@@ -262,7 +285,7 @@ export default function Dashboard() {
               </section>
             </main>
 
-            <aside style={sideColumn}>
+            <aside className="dashboard-side-column" style={sideColumn}>
               <EventCalendar
                 events={events}
                 calendarDate={calendarDate}
@@ -282,29 +305,44 @@ function DashboardCard({ title, text, to, icon: Icon, color }) {
   return (
     <Link
       to={to}
+      className="dashboard-action-card"
       style={{
         ...dashboardCard,
-        background: `linear-gradient(135deg, ${color}, rgba(255,255,255,0.38))`,
+        background: `linear-gradient(
+          135deg,
+          ${color},
+          rgba(255,255,255,0.38)
+        )`,
       }}
     >
       <div style={cardTop}>
-        <div style={iconBox}>
+        <div className="dashboard-icon-box" style={iconBox}>
           <Icon size={22} strokeWidth={1.7} />
         </div>
+
         <div style={arrowBox}>
           <ArrowRight size={16} strokeWidth={1.8} />
         </div>
       </div>
 
       <div>
-        <h3 style={cardTitle}>{title}</h3>
-        <p style={cardText}>{text}</p>
+        <h3 className="dashboard-card-title" style={cardTitle}>
+          {title}
+        </h3>
+
+        <p className="dashboard-card-text" style={cardText}>
+          {text}
+        </p>
       </div>
     </Link>
   );
 }
 
-function EventCalendar({ events, calendarDate, setCalendarDate }) {
+function EventCalendar({
+  events,
+  calendarDate,
+  setCalendarDate,
+}) {
   const year = calendarDate.getFullYear();
   const month = calendarDate.getMonth();
 
@@ -322,11 +360,17 @@ function EventCalendar({ events, calendarDate, setCalendarDate }) {
 
     events.forEach((event) => {
       const date = parseEventDate(event?.event_date);
+
       if (!date) return;
 
-      if (date.getFullYear() === year && date.getMonth() === month) {
+      if (
+        date.getFullYear() === year &&
+        date.getMonth() === month
+      ) {
         const day = date.getDate();
+
         if (!map[day]) map[day] = [];
+
         map[day].push(event);
       }
     });
@@ -336,32 +380,53 @@ function EventCalendar({ events, calendarDate, setCalendarDate }) {
 
   const cells = [
     ...Array(mondayOffset).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    ...Array.from(
+      { length: daysInMonth },
+      (_, index) => index + 1
+    ),
   ];
 
   const today = new Date();
 
   return (
-    <section style={calendarCard}>
+    <section
+      className="dashboard-calendar-card"
+      style={calendarCard}
+    >
       <div style={calendarHeader}>
         <div>
           <div style={smallLabel}>Event calendar</div>
-          <h3 style={calendarTitle}>{monthName}</h3>
+
+          <h3
+            className="dashboard-calendar-title"
+            style={calendarTitle}
+          >
+            {monthName}
+          </h3>
         </div>
 
         <div style={calendarActions}>
           <button
             type="button"
             style={calendarButton}
-            onClick={() => setCalendarDate(new Date(year, month - 1, 1))}
+            onClick={() =>
+              setCalendarDate(
+                new Date(year, month - 1, 1)
+              )
+            }
             aria-label="Previous month"
           >
             <ChevronLeft size={15} />
           </button>
+
           <button
             type="button"
             style={calendarButton}
-            onClick={() => setCalendarDate(new Date(year, month + 1, 1))}
+            onClick={() =>
+              setCalendarDate(
+                new Date(year, month + 1, 1)
+              )
+            }
             aria-label="Next month"
           >
             <ChevronRight size={15} />
@@ -369,15 +434,28 @@ function EventCalendar({ events, calendarDate, setCalendarDate }) {
         </div>
       </div>
 
-      <div style={weekRow}>
-        {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-          <span key={`${day}-${index}`}>{day}</span>
-        ))}
+      <div className="dashboard-week-row" style={weekRow}>
+        {["M", "T", "W", "T", "F", "S", "S"].map(
+          (day, index) => (
+            <span key={`${day}-${index}`}>{day}</span>
+          )
+        )}
       </div>
 
-      <div style={calendarGrid}>
+      <div
+        className="dashboard-calendar-grid"
+        style={calendarGrid}
+      >
         {cells.map((day, index) => {
-          if (!day) return <div key={`blank-${index}`} style={dayCell} />;
+          if (!day) {
+            return (
+              <div
+                key={`blank-${index}`}
+                className="dashboard-day-cell"
+                style={dayCell}
+              />
+            );
+          }
 
           const dayEvents = eventMap[day] || [];
           const hasEvent = dayEvents.length > 0;
@@ -390,7 +468,10 @@ function EventCalendar({ events, calendarDate, setCalendarDate }) {
           return (
             <div
               key={day}
-              title={dayEvents.map((event) => event.title).join(", ")}
+              className="dashboard-day-cell"
+              title={dayEvents
+                .map((event) => event.title)
+                .join(", ")}
               style={{
                 ...dayCell,
                 ...(hasEvent ? eventDayCell : {}),
@@ -398,7 +479,12 @@ function EventCalendar({ events, calendarDate, setCalendarDate }) {
               }}
             >
               <span>{day}</span>
-              {hasEvent && <span style={eventDot}>{dayEvents.length}</span>}
+
+              {hasEvent && (
+                <span style={eventDot}>
+                  {dayEvents.length}
+                </span>
+              )}
             </div>
           );
         })}
@@ -415,26 +501,40 @@ function EventCalendar({ events, calendarDate, setCalendarDate }) {
 function UpcomingEvents({ events }) {
   const upcoming = useMemo(() => {
     const today = new Date();
+
     today.setHours(0, 0, 0, 0);
 
     return events
       .filter((event) => {
         const date = parseEventDate(event?.event_date);
+
         return date && date >= today;
       })
       .sort(
-        (a, b) => parseEventDate(a.event_date) - parseEventDate(b.event_date)
+        (a, b) =>
+          parseEventDate(a.event_date) -
+          parseEventDate(b.event_date)
       )
       .slice(0, 3);
   }, [events]);
 
   return (
-    <section style={upcomingCard}>
+    <section
+      className="dashboard-upcoming-card"
+      style={upcomingCard}
+    >
       <div style={upcomingHeader}>
         <div>
           <div style={smallLabel}>Coming up</div>
-          <h3 style={upcomingTitle}>Upcoming events</h3>
+
+          <h3
+            className="dashboard-upcoming-title"
+            style={upcomingTitle}
+          >
+            Upcoming events
+          </h3>
         </div>
+
         <CalendarDays size={20} strokeWidth={1.6} />
       </div>
 
@@ -443,14 +543,21 @@ function UpcomingEvents({ events }) {
       ) : (
         <div style={eventList}>
           {upcoming.map((event) => (
-            <Link key={event.id} to={`/events/${event.id}`} style={eventItem}>
+            <Link
+              key={event.id}
+              to={`/events/${event.id}`}
+              className="dashboard-event-item"
+              style={eventItem}
+            >
               <div style={eventDateBox}>
                 <span>{formatMonth(event.event_date)}</span>
                 <strong>{formatDay(event.event_date)}</strong>
               </div>
 
               <div style={eventInfo}>
-                <div style={eventTitle}>{event.title}</div>
+                <div style={eventTitle}>
+                  {event.title}
+                </div>
 
                 <div style={eventMeta}>
                   {event.event_time && (
@@ -459,6 +566,7 @@ function UpcomingEvents({ events }) {
                       {formatTime(event.event_time)}
                     </span>
                   )}
+
                   {event.venue && (
                     <span style={eventMetaLine}>
                       <MapPin size={12} />
@@ -477,9 +585,11 @@ function UpcomingEvents({ events }) {
 
 function FlowItem({ number, title, text }) {
   return (
-    <div style={flowItem}>
+    <div className="dashboard-flow-item" style={flowItem}>
       <span style={flowNumber}>{number}</span>
+
       <h3 style={flowItemTitle}>{title}</h3>
+
       <p style={flowText}>{text}</p>
     </div>
   );
@@ -489,40 +599,285 @@ function parseEventDate(value) {
   if (!value) return null;
 
   const dateOnly = String(value).split("T")[0];
-  const [year, month, day] = dateOnly.split("-").map(Number);
+
+  const [year, month, day] = dateOnly
+    .split("-")
+    .map(Number);
 
   if ([year, month, day].every(Number.isFinite)) {
     return new Date(year, month - 1, day);
   }
 
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+
+  return Number.isNaN(parsed.getTime())
+    ? null
+    : parsed;
 }
 
 function formatMonth(value) {
   const date = parseEventDate(value);
+
   return date
-    ? date.toLocaleDateString("en-US", { month: "short" }).toUpperCase()
+    ? date
+        .toLocaleDateString("en-US", {
+          month: "short",
+        })
+        .toUpperCase()
     : "";
 }
 
 function formatDay(value) {
   const date = parseEventDate(value);
+
   return date ? date.getDate() : "";
 }
 
 function formatTime(value) {
   const [hours, minutes] = String(value).split(":");
-  const date = new Date();
-  date.setHours(Number(hours), Number(minutes || 0), 0, 0);
 
-  if (Number.isNaN(date.getTime())) return value;
+  const date = new Date();
+
+  date.setHours(
+    Number(hours),
+    Number(minutes || 0),
+    0,
+    0
+  );
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
 
   return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
   });
 }
+
+const responsiveCss = `
+.dashboard-root,
+.dashboard-root * {
+  box-sizing: border-box;
+}
+
+.dashboard-main-content {
+  min-width: 0;
+}
+
+.dashboard-side-column {
+  min-width: 0;
+}
+
+.dashboard-action-card {
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease;
+}
+
+.dashboard-action-card:hover {
+  transform: translateY(-3px);
+}
+
+@media (max-width: 1180px) {
+  .dashboard-main-layout {
+    grid-template-columns:
+      minmax(0, 1fr) 300px !important;
+    gap: 24px !important;
+  }
+
+  .dashboard-card-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-main-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-side-column {
+    display: grid !important;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-root {
+    width: 100%;
+    gap: 18px !important;
+  }
+
+  .dashboard-welcome {
+    width: 100%;
+    padding: 24px 18px !important;
+    border-radius: 20px !important;
+  }
+
+  .dashboard-welcome-title {
+    font-size: 22px !important;
+  }
+
+  .dashboard-welcome-text {
+    max-width: 300px !important;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+  }
+
+  .dashboard-main-layout {
+    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+  }
+
+  .dashboard-main-content {
+    display: contents;
+  }
+
+  .dashboard-main-content > div:first-child {
+    order: 1;
+  }
+
+  .dashboard-card-grid {
+    order: 2;
+    width: 100%;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-flow-card {
+    order: 3;
+  }
+
+  .dashboard-side-column {
+    order: 4;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .dashboard-section-text {
+    padding: 13px 15px !important;
+    border-radius: 15px !important;
+    font-size: 13px !important;
+  }
+
+  .dashboard-action-card {
+    width: 100%;
+    min-height: 145px !important;
+    padding: 17px !important;
+    border-radius: 18px !important;
+  }
+
+  .dashboard-card-title {
+    font-size: 16px !important;
+  }
+
+  .dashboard-card-text {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+
+  .dashboard-icon-box {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 13px !important;
+  }
+
+  .dashboard-calendar-card,
+  .dashboard-upcoming-card {
+    width: 100%;
+    max-width: 100%;
+    padding: 17px !important;
+    border-radius: 20px !important;
+    overflow: hidden;
+  }
+
+  .dashboard-calendar-title,
+  .dashboard-upcoming-title {
+    font-size: 17px !important;
+  }
+
+  .dashboard-week-row {
+    gap: 2px !important;
+    margin-top: 16px !important;
+  }
+
+  .dashboard-calendar-grid {
+    width: 100%;
+    gap: 2px !important;
+    margin-top: 6px !important;
+  }
+
+  .dashboard-day-cell {
+    width: 100%;
+    min-width: 0;
+    font-size: 11px !important;
+  }
+
+  .dashboard-event-item {
+    grid-template-columns:
+      44px minmax(0, 1fr) !important;
+  }
+
+  .dashboard-flow-card {
+    width: 100%;
+    margin-top: 0 !important;
+    padding: 18px !important;
+    border-radius: 20px !important;
+  }
+
+  .dashboard-flow-title {
+    font-size: 19px !important;
+  }
+
+  .dashboard-flow-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-flow-item {
+    padding: 15px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-welcome {
+    padding: 22px 14px !important;
+  }
+
+  .dashboard-welcome-title {
+    font-size: 20px !important;
+  }
+
+  .dashboard-welcome-text {
+    font-size: 12px !important;
+  }
+
+  .dashboard-calendar-card,
+  .dashboard-upcoming-card {
+    padding: 14px !important;
+  }
+
+  .dashboard-calendar-grid,
+  .dashboard-week-row {
+    gap: 1px !important;
+  }
+
+  .dashboard-day-cell {
+    font-size: 10px !important;
+  }
+
+  .dashboard-action-card {
+    min-height: 135px !important;
+  }
+}
+`;
 
 const dashboard = {
   display: "flex",
@@ -641,7 +996,8 @@ const iconBox = {
   placeItems: "center",
   background: "rgba(255,255,255,.58)",
   color: "rgba(17,17,17,.72)",
-  boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)",
+  boxShadow:
+    "inset 0 0 0 1px rgba(255,255,255,.35)",
 };
 
 const arrowBox = {
@@ -720,7 +1076,7 @@ const calendarButton = {
 
 const weekRow = {
   display: "grid",
-  gridTemplateColumns: "repeat(7, 1fr)",
+  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
   gap: 6,
   marginTop: 18,
   color: "rgba(17,17,17,.38)",
@@ -730,7 +1086,7 @@ const weekRow = {
 
 const calendarGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(7, 1fr)",
+  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
   gap: 6,
   marginTop: 8,
 };
@@ -738,6 +1094,7 @@ const calendarGrid = {
 const dayCell = {
   position: "relative",
   aspectRatio: "1 / 1",
+  minWidth: 0,
   borderRadius: "50%",
   display: "grid",
   placeItems: "center",

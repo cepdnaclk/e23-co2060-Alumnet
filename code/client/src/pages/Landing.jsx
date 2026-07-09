@@ -32,11 +32,40 @@ export default function Landing() {
 
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hideNav, setHideNav] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 40);
 
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDifference = currentScrollY - lastScrollY;
+
+      if (currentScrollY <= 40) {
+        setHideNav(false);
+      } else if (scrollDifference > 5) {
+        setHideNav(true);
+        setMobileMenuOpen(false);
+      } else if (scrollDifference < -5) {
+        setHideNav(false);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const closeMobileMenu = () => {
@@ -47,7 +76,11 @@ export default function Landing() {
     <div className="landingRoot">
       <style>{css}</style>
 
-      <header className={`landingNav ${mounted ? "in" : ""}`}>
+      <header
+        className={`landingNav ${mounted ? "in" : ""} ${
+          hideNav ? "hide" : ""
+        }`}
+      >
         <div className="landingNavInner">
           <button
             className="brandMark"
@@ -319,14 +352,21 @@ a{
   width:100%;
   opacity:0;
   transform:translateY(-10px);
+  will-change:transform, opacity;
   transition:
-    opacity .55s ease,
-    transform .55s ease;
+    opacity .28s ease,
+    transform .28s ease;
 }
 
 .landingNav.in{
   opacity:1;
   transform:translateY(0);
+}
+
+.landingNav.in.hide{
+  opacity:0;
+  transform:translateY(-110%);
+  pointer-events:none;
 }
 
 .landingNavInner{
