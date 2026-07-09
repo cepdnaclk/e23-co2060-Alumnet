@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 
 import alumnetLogo from "../assets/alumnet-logo.png";
 import image1 from "../assets/1.png";
+import image1Mobile from "../assets/1_mobile.png";
 import image3 from "../assets/3.png";
 import studentIcon from "../assets/students.png";
 import alumniIcon from "../assets/alumni.png";
@@ -163,8 +164,8 @@ export default function Landing() {
           <a href="#how" onClick={() => setMobileMenuOpen(false)}>
             How it works
           </a>
-          <button onClick={() => goTo("/register")}>Register</button>
-          <button onClick={() => goTo("/login")}>Login</button>
+          <button className="mobileRegisterBtn" onClick={() => goTo("/register")}>Register</button>
+          <button className="mobileLoginBtn" onClick={() => goTo("/login")}>Login</button>
         </div>
       </header>
 
@@ -174,7 +175,7 @@ export default function Landing() {
 
           <div className="heroTextWrap">
             <h1 className="heroTitle">
-              <span>Reconnect.</span> <span>Mentor.</span> <span>Inspire</span>
+              <span>Reconnect.</span> <span>Mentor.</span> <span>Inspire.</span>
             </h1>
 
             <p className="heroSubtitle">
@@ -196,7 +197,10 @@ export default function Landing() {
               <i />
             </div>
             <div className="phoneSpeaker" />
-            <img src={image1} alt="" />
+            <picture>
+              <source media="(max-width: 560px)" srcSet={image1Mobile} />
+              <img src={image1} alt="" />
+            </picture>
           </div>
         </section>
 
@@ -252,7 +256,7 @@ export default function Landing() {
               approved university events. Alumni can manage their profile and support students
               through structured connections.
             </p>
-            <button className="arrowButton large" onClick={() => goTo("/register")}>
+            <button className="primaryPill connectButton" onClick={() => goTo("/register")}>
               Start connecting
             </button>
           </div>
@@ -451,7 +455,8 @@ a {
 .mobileMenuButton {
   display: none;
   border: 0;
-  background: rgba(255,255,255,0.76);
+  background: #000;
+  color: #fff;
   border-radius: 999px;
   width: 40px;
   height: 40px;
@@ -583,6 +588,13 @@ a {
   transform: translateY(50px) scale(0.5);
   animation: mockupIn 1.15s cubic-bezier(.16,1,.3,1) 0.48s forwards;
   will-change: transform;
+}
+
+.heroMockup picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .heroMockup img {
@@ -907,6 +919,20 @@ a {
   opacity: 0.76;
 }
 
+
+.connectButton {
+  padding: 13px 27px;
+  border: 1px solid rgba(0,0,0,.84);
+  background: #050505;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.20);
+}
+
+.connectButton:hover {
+  background: #050505;
+  color: #fff;
+}
+
 .quoteSection {
   padding: 110px 20px;
   text-align: center;
@@ -993,6 +1019,61 @@ a {
   }
 }
 
+
+@media (min-width: 901px) {
+  .heroSection::after {
+    content: "";
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    right: -180px;
+    top: 170px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.42), rgba(255,255,255,0));
+    animation: softDrift 8s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  .heroMockup:hover {
+    transform: translateY(-10px) scale(1.01) !important;
+    box-shadow: 0 34px 90px rgba(0,0,0,0.26);
+  }
+
+  .splitImage img {
+    transition: transform 0.8s cubic-bezier(.16,1,.3,1), filter 0.8s cubic-bezier(.16,1,.3,1);
+  }
+
+  .splitImage:hover img {
+    transform: scale(1.045);
+    filter: saturate(1.05);
+  }
+
+  .featureGrid.show .featureRow {
+    animation: rowRise 0.65s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  .featureGrid.show .featureRow:nth-child(2) { animation-delay: 0.08s; }
+  .featureGrid.show .featureRow:nth-child(3) { animation-delay: 0.16s; }
+  .featureGrid.show .featureRow:nth-child(4) { animation-delay: 0.24s; }
+}
+
+@keyframes softDrift {
+  from { transform: translate3d(0,0,0) scale(1); }
+  to { transform: translate3d(-70px,55px,0) scale(1.1); }
+}
+
+@keyframes rowRise {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes phoneMockupIn {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 900px) {
   .landingNavLinks,
   .navActions {
@@ -1034,18 +1115,47 @@ a {
   .mobileMenu a,
   .mobileMenu button {
     border: 0;
-    background: transparent;
     text-align: left;
     padding: 14px;
     font-size: 18px;
     border-radius: 12px;
     color: #000;
     font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+    transition: transform 0.22s ease, background 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
   }
 
-  .mobileMenu a:hover,
-  .mobileMenu button:hover {
+  .mobileMenu a {
+    background: transparent;
+  }
+
+  .mobileMenu a:hover {
     background: #f2f2f2;
+    transform: translateX(3px);
+  }
+
+  .mobileMenu .mobileRegisterBtn,
+  .mobileMenu .mobileLoginBtn {
+    text-align: center;
+    border-radius: 999px;
+    font-weight: 500;
+    margin-top: 8px;
+  }
+
+  .mobileMenu .mobileRegisterBtn {
+    background: #000;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.20);
+  }
+
+  .mobileMenu .mobileLoginBtn {
+    background: #fff;
+    color: #111;
+    box-shadow: 0 8px 18px rgba(0,0,0,.10);
+  }
+
+  .mobileMenu .mobileRegisterBtn:hover,
+  .mobileMenu .mobileLoginBtn:hover {
+    transform: translateY(-2px);
   }
 
   .cardsGrid,
@@ -1103,7 +1213,41 @@ a {
   }
 
   .heroMockup {
+    display: block;
+    width: min(260px, 70vw);
+    aspect-ratio: 390 / 780;
+    margin-top: 34px;
+    border: 7px solid #111;
+    border-radius: 46px;
+    background: #111;
+    box-shadow:
+      0 18px 44px rgba(0,0,0,0.24),
+      inset 0 0 0 1px rgba(255,255,255,0.12);
+    animation: phoneMockupIn 0.95s cubic-bezier(.16,1,.3,1) 0.42s forwards;
+  }
+
+  .heroMockup img {
+    border-radius: 38px;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  .browserDots {
     display: none;
+  }
+
+  .phoneSpeaker {
+    display: block;
+    position: absolute;
+    z-index: 5;
+    top: 10px;
+    left: 50%;
+    width: 78px;
+    height: 23px;
+    border-radius: 999px;
+    background: #050505;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+    transform: translateX(-50%);
   }
 
   .wideImage {
