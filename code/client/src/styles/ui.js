@@ -1,5 +1,5 @@
 export const theme = {
-  bg: "#eef7fb",
+  bg: "linear-gradient(180deg, #afd6ff 0%, #cfe7f7 34%, #f6e8ee 62%, #eef7fb 100%)",
   surface: "rgba(250,249,246,0.78)",
   surfaceStrong: "rgba(255,255,255,0.88)",
   text: "#111111",

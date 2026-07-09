@@ -6,7 +6,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
 import Breadcrumbs from "./components/Breadcrumbs";
-import heroBg from "./assets/bg.png";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
@@ -38,7 +37,6 @@ function AppLayout({ children }) {
   return (
     <div className="appRouteFrame">
       <style>{appLayoutCss}</style>
-      <img src={heroBg} alt="" className="appRouteBg" />
       <Navbar />
       <Breadcrumbs />
       {children}
@@ -51,30 +49,21 @@ const appLayoutCss = `
   position:relative;
   min-height:100vh;
   overflow-x:hidden;
-  background:#d8ecfb;
+  background:
+    linear-gradient(180deg, #afd6ff 0%, #cfe7f7 28%, #f6e8ee 52%, #eef7fb 100%);
   isolation:isolate;
 }
 
-.appRouteBg{
-  position:absolute;
+.appRouteFrame::before{
+  content:"";
+  position:fixed;
+  inset:0;
   z-index:-1;
-  top:0;
-  left:50%;
-  width:100%;
-  height:100%;
-  min-height:100%;
-  transform:translateX(-50%);
-  object-fit:cover;
-  object-position:center top;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.48), rgba(255,255,255,0) 42%),
+    radial-gradient(circle at 50% 24%, rgba(255,232,238,.66), rgba(255,232,238,0) 44%),
+    radial-gradient(circle at 50% 14%, rgba(255,255,255,.62), rgba(255,255,255,0) 36%);
   pointer-events:none;
-}
-
-@media (max-width:640px){
-  .appRouteBg{
-    height:100%;
-    width:auto;
-    min-width:100%;
-  }
 }
 `;
 

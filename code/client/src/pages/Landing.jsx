@@ -1,304 +1,277 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+
 import alumnetLogo from "../assets/alumnet-logo.png";
-import heroBg from "../assets/bg.png";
+import image1 from "../assets/1.png";
+import image3 from "../assets/3.png";
+import studentIcon from "../assets/students.png";
+import alumniIcon from "../assets/alumni.png";
+import adminIcon from "../assets/admins.png";
 
 const steps = [
   {
-    number: "1.",
-    title: "Discovery",
-    text: "Browse a curated directory of alumni based on your career interests and goals.",
+    number: "001",
+    title: "Discover",
+    text: "Browse verified alumni by batch, department, profession, and skills.",
   },
   {
-    number: "2.",
-    title: "Connection",
-    text: "Send a request to connect for a coffee chat or a formal long-term mentorship.",
+    number: "002",
+    title: "Connect",
+    text: "Send a focused mentorship request to the alumni who match your goals.",
   },
   {
-    number: "3.",
-    title: "Mentorship",
-    text: "Access structured 1-on-1 sessions, resume reviews, and industry insights.",
+    number: "003",
+    title: "Mentor",
+    text: "Share experience, ask questions, and build meaningful university connections.",
   },
   {
-    number: "4.",
-    title: "Success",
-    text: "Build your professional network and unlock exclusive career opportunities.",
+    number: "004",
+    title: "Grow",
+    text: "Stay close to events, opportunities, and the wider alumni community.",
+  },
+];
+
+const cards = [
+  {
+    title: "For students",
+    text: "Find people who have walked ahead and request mentorship with a clear purpose.",
+    icon: studentIcon,
+  },
+  {
+    title: "For alumni",
+    text: "Share career experience, support students, and stay connected to the university.",
+    icon: alumniIcon,
+  },
+  {
+    title: "For admins",
+    text: "Approve users, manage events, and keep the community secure and organized.",
+    icon: adminIcon,
   },
 ];
 
 export default function Landing() {
   const nav = useNavigate();
+  const rootRef = useRef(null);
 
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hideNav, setHideNav] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 40);
-
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
 
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollDifference = currentScrollY - lastScrollY;
+      const y = window.scrollY;
+      const mockup = document.querySelector(".heroMockup");
+      const gradient = document.querySelector(".heroGradient");
 
-      if (currentScrollY <= 40) {
+      if (mockup && window.innerWidth > 560) {
+        mockup.style.transform = `translateY(${Math.min(y * -0.045, 0)}px) scale(1)`;
+      }
+
+      if (gradient) {
+        gradient.style.transform = `translateY(${Math.min(y * 0.08, 55)}px)`;
+      }
+
+      if (y <= 40) {
         setHideNav(false);
-      } else if (scrollDifference > 5) {
+      } else if (y - lastScrollY > 6) {
         setHideNav(true);
         setMobileMenuOpen(false);
-      } else if (scrollDifference < -5) {
+      } else if (y - lastScrollY < -6) {
         setHideNav(false);
       }
 
-      lastScrollY = currentScrollY;
+      lastScrollY = y;
     };
 
-    window.addEventListener("scroll", handleScroll, {
-      passive: true,
-    });
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const closeMobileMenu = () => {
+  useEffect(() => {
+    const items = document.querySelectorAll(".reveal");
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add("show");
+        });
+      },
+      { threshold: 0.14, rootMargin: "0px 0px -70px 0px" }
+    );
+
+    items.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, []);
+
+  const goTo = (path) => {
     setMobileMenuOpen(false);
+    nav(path);
   };
 
   return (
-    <div className="landingRoot">
+    <div ref={rootRef} className="landingRoot">
       <style>{css}</style>
 
-      <header
-        className={`landingNav ${mounted ? "in" : ""} ${
-          hideNav ? "hide" : ""
-        }`}
-      >
+      <header className={`landingNav ${mounted ? "in" : ""} ${hideNav ? "hide" : ""}`}>
         <div className="landingNavInner">
-          <button
-            className="brandMark"
-            onClick={() => {
-              nav("/");
-              closeMobileMenu();
-            }}
-          >
+          <button className="brandMark" onClick={() => goTo("/")} aria-label="Alumnet home">
             <img src={alumnetLogo} alt="Alumnet" />
           </button>
 
           <nav className="landingNavLinks">
-            <a className="navLink" href="#about">
-              About
-            </a>
-
-            <a className="navLink" href="#features">
-              Features
-            </a>
-
-            <a className="navLink" href="#alumni">
-              For alumni
-            </a>
-
-            <a className="navLink" href="#students">
-              For students
-            </a>
+            <a href="#platform">Platform</a>
+            <a href="#features">Features</a>
+            <a href="#how">How it works</a>
+            <a href="#connect">Connect</a>
           </nav>
 
           <div className="navActions">
-            <button
-              className="pillButton pillButtonDark"
-              onClick={() => nav("/register")}
-            >
+            <button className="navPill navRegister" onClick={() => goTo("/register")}>
               Register
             </button>
-
-            <button
-              className="pillButton pillButtonLight"
-              onClick={() => nav("/login")}
-            >
+            <button className="navPill navLogin" onClick={() => goTo("/login")}>
               Login
             </button>
           </div>
 
           <button
             className="mobileMenuButton"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-label="Toggle navigation menu"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? (
-              <X size={21} strokeWidth={2} />
-            ) : (
-              <Menu size={21} strokeWidth={2} />
-            )}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
 
-        <div
-          className={`mobileMenu ${
-            mobileMenuOpen ? "mobileMenuOpen" : ""
-          }`}
-        >
-          <a
-            className="mobileNavLink"
-            href="#about"
-            onClick={closeMobileMenu}
-          >
-            About
+        <div className={`mobileMenu ${mobileMenuOpen ? "mobileMenuOpen" : ""}`}>
+          <a href="#platform" onClick={() => setMobileMenuOpen(false)}>
+            Platform
           </a>
-
-          <a
-            className="mobileNavLink"
-            href="#features"
-            onClick={closeMobileMenu}
-          >
+          <a href="#features" onClick={() => setMobileMenuOpen(false)}>
             Features
           </a>
-
-          <a
-            className="mobileNavLink"
-            href="#alumni"
-            onClick={closeMobileMenu}
-          >
-            For alumni
+          <a href="#how" onClick={() => setMobileMenuOpen(false)}>
+            How it works
           </a>
-
-          <a
-            className="mobileNavLink"
-            href="#students"
-            onClick={closeMobileMenu}
-          >
-            For students
-          </a>
-
-          <div className="mobileActions">
-            <button
-              className="pillButton pillButtonDark mobileActionButton"
-              onClick={() => {
-                nav("/register");
-                closeMobileMenu();
-              }}
-            >
-              Register
-            </button>
-
-            <button
-              className="pillButton pillButtonLight mobileActionButton"
-              onClick={() => {
-                nav("/login");
-                closeMobileMenu();
-              }}
-            >
-              Login
-            </button>
-          </div>
+          <button onClick={() => goTo("/register")}>Register</button>
+          <button onClick={() => goTo("/login")}>Login</button>
         </div>
       </header>
 
       <main className={`landingMain ${mounted ? "in" : ""}`}>
         <section className="heroSection">
-          <img src={heroBg} alt="" className="heroImage" />
+          <div className="heroGradient" />
 
-          <div className="heroContent">
+          <div className="heroTextWrap">
             <h1 className="heroTitle">
-              Reconnect. Mentor. Inspire.
+              <span>Reconnect.</span> <span>Mentor.</span> <span>Inspire</span>
             </h1>
 
             <p className="heroSubtitle">
-              Empowering alumni and students to build meaningful connections,
-              share knowledge, and grow together.
+              A university alumni network for meaningful mentorship, verified connections, and
+              community events.
             </p>
 
-            <button
-              className="pillButton pillButtonDark heroCta"
-              onClick={() => nav("/register")}
-            >
-              <span>Get started</span>
-              <ArrowRight size={14} strokeWidth={2.4} />
+            <div className="heroActions">
+              <button className="primaryPill heroGetStarted" onClick={() => goTo("/register")}>
+                Get started
+              </button>
+            </div>
+          </div>
+
+          <div className="heroMockup" aria-hidden="true">
+            <div className="browserDots">
+              <i />
+              <i />
+              <i />
+            </div>
+            <div className="phoneSpeaker" />
+            <img src={image1} alt="" />
+          </div>
+        </section>
+
+        <section id="platform" className="introSection reveal">
+          <h2>One place for the people, stories, and guidance behind your university journey.</h2>
+          <p>
+            Alumnet brings students, alumni, and university administrators into one secure space
+            for discovery, mentorship, events, and engagement.
+          </p>
+        </section>
+
+        <section id="features" className="featureSection">
+          <div className="featureGrid reveal">
+            {steps.map((step) => (
+              <article className="featureRow" key={step.number}>
+                <div>
+                  <h3>{step.title}</h3>
+                  <p>{step.text}</p>
+                </div>
+                <span>{step.number}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="claritySection reveal">
+          <div className="clarityTitle">
+            <h2>Built for clarity</h2>
+            <h2 className="sansTitle">Designed for connection</h2>
+          </div>
+
+          <div className="cardsGrid">
+            {cards.map((card) => (
+              <article className="infoCard" key={card.title}>
+                <img className="cardIconImage" src={card.icon} alt="" />
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="how" className="splitSection reveal">
+          <div className="splitImage">
+            <img src={image3} alt="" />
+          </div>
+
+          <div className="splitCopy">
+            <p className="label">HOW IT WORKS</p>
+            <h2>From discovery to mentorship in a few focused steps.</h2>
+            <p>
+              Students can search alumni, send a mentorship request, and stay engaged with
+              approved university events. Alumni can manage their profile and support students
+              through structured connections.
+            </p>
+            <button className="arrowButton large" onClick={() => goTo("/register")}>
+              Start connecting
             </button>
           </div>
         </section>
 
-        <section className="whiteSection" id="about">
-          <div className="sectionInner introInner">
-            <h2 className="sectionTitle">
-              Connect students and alumni through one simple platform.
-            </h2>
-
-            <p className="sectionText">
-              Discover mentors, join approved events, build meaningful academic
-              and professional connections, and grow through a clean, focused
-              alumni network experience.
-            </p>
-          </div>
+        <section className="quoteSection reveal">
+          <div className="quoteIcon">“</div>
+          <h2>The right connection can turn a university memory into a future opportunity.</h2>
+          <p>ALUMNET — CONNECT. MENTOR. INSPIRE.</p>
         </section>
 
-        <section className="greySection" id="features">
-          <div className="sectionInner">
-            <div className="stepsGrid">
-              {steps.map((step) => (
-                <div key={step.title} className="stepItem">
-                  <div className="stepHeading">
-                    <span className="stepNumber">
-                      {step.number}
-                    </span>
+        <section id="connect" className="ctaSection reveal">
+          <h2>Ready to build stronger university connections?</h2>
+          <button className="getStartedButton" onClick={() => goTo("/register")}>
+            Get started
+          </button>
 
-                    <span className="stepTitle">
-                      {step.title}
-                    </span>
-                  </div>
-
-                  <p className="stepText">
-                    {step.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section
-          className="whiteSection whiteSectionLast"
-          id="alumni"
-        >
-          <div className="sectionInner audienceInner">
-            <div className="audienceBlock">
-              <p className="audienceLabel">
-                For alumni
-              </p>
-
-              <h2 className="audienceTitle">
-                Share experience that opens doors.
-              </h2>
-
-              <p className="audienceText">
-                Guide students through mentoring, events, and professional
-                conversations shaped by real career journeys.
-              </p>
-            </div>
-
-            <div
-              className="audienceBlock"
-              id="students"
-            >
-              <p className="audienceLabel">
-                For students
-              </p>
-
-              <h2 className="audienceTitle">
-                Find people who have walked ahead.
-              </h2>
-
-              <p className="audienceText">
-                Discover alumni, request mentorship, and build the confidence
-                to make your next academic or career move.
-              </p>
-            </div>
+          <div className="footerLogoWrap">
+            <img src={alumnetLogo} alt="Alumnet" />
           </div>
         </section>
       </main>
@@ -307,663 +280,883 @@ export default function Landing() {
 }
 
 const css = `
-*,
-*::before,
-*::after{
-  box-sizing:border-box;
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+* {
+  box-sizing: border-box;
 }
 
-html{
-  scroll-behavior:smooth;
+html {
+  scroll-behavior: smooth;
 }
 
-body{
-  margin:0;
+body {
+  margin: 0;
 }
 
-button,
-a{
-  -webkit-tap-highlight-color:transparent;
+button {
+  font-family: inherit;
+  cursor: pointer;
 }
 
-button{
-  font-family:inherit;
-  cursor:pointer;
+a {
+  text-decoration: none;
+  color: inherit;
 }
 
-a{
-  text-decoration:none;
+.landingRoot {
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    #afd6ff 0%,
+    #cfe7f7 24%,
+    #f6e8ee 42%,
+    #eef7fb 68%,
+    #f8fbff 100%
+  );
+  color: #000;
+  overflow: hidden;
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
 }
 
-.landingRoot{
-  width:100%;
-  min-height:100vh;
-  background:#eef7fb;
-  color:#111111;
-  overflow-x:hidden;
-  font-family:"Google Sans", Arial, sans-serif;
-}
-
-.landingNav{
-  position:fixed;
-  z-index:50;
-  top:0;
-  left:0;
-  width:100%;
-  opacity:0;
-  transform:translateY(-10px);
-  will-change:transform, opacity;
+.landingNav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(-60px);
   transition:
-    opacity .28s ease,
-    transform .28s ease;
+    opacity 0.75s cubic-bezier(.2,.8,.2,1),
+    transform 0.75s cubic-bezier(.2,.8,.2,1);
 }
 
-.landingNav.in{
-  opacity:1;
-  transform:translateY(0);
+.landingNav.in {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.landingNav.in.hide{
-  opacity:0;
-  transform:translateY(-110%);
-  pointer-events:none;
+.landingNav.hide {
+  opacity: 0;
+  transform: translateY(-110%);
+  pointer-events: none;
 }
 
-.landingNavInner{
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  align-items:center;
-  width:100%;
-  max-width:1440px;
-  margin:0 auto;
-  padding:22px 38px 0;
-  gap:24px;
+.landingNavInner {
+  height: 60px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
 }
 
-.brandMark{
-  display:inline-flex;
-  align-items:center;
-  justify-self:start;
-  width:118px;
-  padding:0;
-  border:0;
-  background:transparent;
+.brandMark {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: 122px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.brandMark:hover {
+  opacity: 0.72;
+  transform: translateY(-2px);
+}
+
+.brandMark img {
+  width: 100%;
+  display: block;
+}
+
+.landingNavLinks,
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.landingNavLinks a {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #000;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.landingNavLinks a:hover {
+  opacity: 0.6;
+  transform: translateY(-1px);
+}
+
+.navActions {
+  gap: 12px;
+}
+
+.navPill,
+.primaryPill,
+.secondaryPill,
+.getStartedButton {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 500;
   transition:
-    transform .2s ease,
-    opacity .2s ease;
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease,
+    color 0.25s ease;
 }
 
-.brandMark:hover{
-  opacity:.76;
-  transform:translateY(-1px);
+.navPill {
+  padding: 10px 20px;
+  font-size: 15px;
 }
 
-.brandMark img{
-  display:block;
-  width:100%;
-  height:auto;
+.navRegister,
+.primaryPill {
+  background: #000;
+  color: #fff;
 }
 
-.landingNavLinks{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:34px;
-  justify-self:center;
+.navLogin,
+.secondaryPill {
+  background: rgba(255,255,255,1);
+  color: #111;
 }
 
-.navLink{
-  color:#080808;
-  font-size:14px;
-  line-height:1;
-  white-space:nowrap;
+.navPill:hover,
+.primaryPill:hover,
+.secondaryPill:hover,
+.getStartedButton:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 23px rgba(0,0,0,.27), inset 0 1px 0 rgba(255,255,255,.20);
+}
+
+.navRegister:hover,
+.primaryPill:hover,
+.getStartedButton:hover {
+  background: #050505;
+  color: #fff;
+}
+
+.navLogin:hover,
+.secondaryPill:hover {
+  background: rgba(255,255,255,0.86);
+  color: #000000;
+}
+
+.mobileMenuButton {
+  display: none;
+  border: 0;
+  background: rgba(255,255,255,0.76);
+  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileMenu {
+  display: none;
+}
+
+.landingMain {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.landingMain.in {
+  opacity: 1;
+}
+
+.heroSection {
+  position: relative;
+  min-height: 760px;
+  padding: 140px 20px 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    #afd6ff 0%,
+    #cfe7f7 30%,
+    #f6e8ee 55%,
+    #eef7fb 86%,
+    rgba(238,247,251,0) 100%
+  );
+}
+
+.heroGradient {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 72%;
+  background: linear-gradient(
+    180deg,
+    #afd6ff 0%,
+    #cfe7f7 34%,
+    #f6e8ee 60%,
+    #eef7fb 90%,
+    rgba(255,255,255,0) 100%
+  );
+  will-change: transform;
+}
+
+.heroTextWrap {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  width: 100%;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(150px);
+  animation: heroTextIn 1s cubic-bezier(.16,1,.3,1) 0.15s forwards;
+}
+
+.heroTitle {
+  font-family: "Instrument Serif", serif;
+  font-weight: 400;
+  font-size: clamp(56px, 8.4vw, 112px);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+  margin: 0 0 18px;
+  color: #000;
+}
+
+.heroTitle span {
+  display: inline-block;
+  animation: wordFloat 2.8s ease-in-out infinite;
+}
+
+.heroTitle span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.heroTitle span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.heroSubtitle {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  max-width: 620px;
+  margin: 0 auto 26px;
+}
+
+.heroActions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.primaryPill,
+.secondaryPill {
+  padding: 12px 24px;
+  font-size: 15px;
+}
+
+.heroGetStarted {
+  min-width: 132px;
+  padding: 13px 30px;
+  border: 1px solid rgba(0,0,0,.84);
+  box-shadow: 0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.20);
+}
+
+.heroMockup {
+  position: relative;
+  z-index: 3;
+  margin-top: 52px;
+  width: min(960px, 82vw);
+  aspect-ratio: 1920 / 1216;
+  border: 12px solid #000;
+  border-radius: 24px;
+  background: #000;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.2);
+  opacity: 0;
+  transform: translateY(50px) scale(0.5);
+  animation: mockupIn 1.15s cubic-bezier(.16,1,.3,1) 0.48s forwards;
+  will-change: transform;
+}
+
+.heroMockup img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 10px;
+  filter: saturate(0.96);
+}
+
+.browserDots {
+  position: absolute;
+  z-index: 4;
+  left: 14px;
+  top: 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.browserDots i {
+  width: 6px;
+  height: 6px;
+  background: #777;
+  border-radius: 50%;
+  display: block;
+}
+
+.phoneSpeaker {
+  display: none;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(150px);
   transition:
-    opacity .18s ease,
-    transform .18s ease;
+    opacity 0.9s cubic-bezier(.16,1,.3,1),
+    transform 0.9s cubic-bezier(.16,1,.3,1);
 }
 
-.navLink:hover{
-  opacity:.64;
-  transform:translateY(-1px);
+.reveal.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.navActions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:14px;
+.introSection {
+  padding: 92px 20px 72px;
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
 }
 
-.pillButton{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  min-width:78px;
-  padding:11px 18px 12px;
-  border-radius:999px;
-  border:1px solid transparent;
-  font-size:14px;
-  font-weight:500;
-  line-height:1;
-  white-space:nowrap;
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease,
-    background-color .2s ease,
-    opacity .2s ease;
+.introSection,
+.featureSection,
+.splitSection {
+  background: transparent;
 }
 
-.pillButton:hover{
-  transform:translateY(-1px);
+.introSection h2,
+.featureSection h2,
+.claritySection h2,
+.splitCopy h2,
+.quoteSection h2,
+.ctaSection h2 {
+  font-family: "Instrument Serif", serif;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 0.96;
+  margin: 0;
 }
 
-.pillButtonDark{
-  background:#000000;
-  color:#ffffff;
-  border-color:#000000;
-  box-shadow:0 6px 16px rgba(0,0,0,.18);
+.introSection h2 {
+  font-size: clamp(42px, 5vw, 72px);
 }
 
-.pillButtonDark:hover{
-  box-shadow:0 8px 22px rgba(0,0,0,.22);
+.introSection p {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 20px;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: #555;
+  margin: 22px auto 0;
 }
 
-.pillButtonLight{
-  background:rgba(255,255,255,.90);
-  color:#111111;
-  border-color:rgba(255,255,255,.50);
-  box-shadow:0 6px 15px rgba(0,0,0,.10);
+.featureSection {
+  padding: 30px 20px 100px;
 }
 
-.pillButtonLight:hover{
-  background:#ffffff;
+.wideImage {
+  max-width: 1500px;
+  height: 500px;
+  margin: 0 auto 40px;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
-.mobileMenuButton{
-  display:none;
-  align-items:center;
-  justify-content:center;
-  width:42px;
-  height:42px;
-  padding:0;
-  border:0;
-  border-radius:50%;
-  background:rgba(255,255,255,.88);
-  color:#111111;
-  box-shadow:0 5px 16px rgba(0,0,0,.10);
+.wideImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.mobileMenu{
-  display:none;
+.featureGrid {
+  max-width: 980px;
+  margin: 0 auto;
 }
 
-.landingMain{
-  width:100%;
-  opacity:0;
-  transform:translateY(16px);
-  transition:
-    opacity .7s ease .05s,
-    transform .7s ease .05s;
+.featureRow {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 28px 0;
+  border-top: 1px solid #dbe0ec;
+  transition: padding 0.25s ease, opacity 0.25s ease;
 }
 
-.landingMain.in{
-  opacity:1;
-  transform:translateY(0);
+.featureRow:last-child {
+  border-bottom: 1px solid #dbe0ec;
 }
 
-.heroSection{
-  position:relative;
-  width:100%;
-  min-height:min(760px, 100svh);
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  padding:168px 24px 0;
-  overflow:hidden;
+.featureRow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(.16,1,.3,1);
 }
 
-.heroImage{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  max-width:none;
-  object-fit:cover;
-  object-position:top center;
+.featureRow:nth-child(1)::before {
+  background: #dcecff;
 }
 
-.heroContent{
-  position:relative;
-  z-index:1;
-  width:min(760px, 100%);
-  text-align:center;
+.featureRow:nth-child(2)::before {
+  background: #fff0bd;
 }
 
-.heroTitle{
-  margin:0 0 16px;
-  font-size:54px;
-  line-height:1.12;
-  letter-spacing:-0.035em;
-  color:#000000;
-  font-weight:500;
+.featureRow:nth-child(3)::before {
+  background: #e2dcff;
 }
 
-.heroSubtitle{
-  max-width:590px;
-  margin:0 auto 20px;
-  font-size:16px;
-  line-height:1.45;
-  color:#000000;
-  font-weight:300;
+.featureRow:nth-child(4)::before {
+  background: #d9f4e5;
 }
 
-.heroCta{
-  min-width:148px;
+.featureRow:hover {
+  padding-left: 22px;
+  padding-right: 22px;
 }
 
-.whiteSection{
-  width:100%;
-  background:#f8fbf9;
+.featureRow:hover::before {
+  transform: scaleX(1);
 }
 
-.greySection{
-  width:100%;
-  background:#e9f2f4;
+.featureRow h3 {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 22px;
+  line-height: 1;
+  margin: 0 0 10px;
+  font-weight: 700;
 }
 
-.whiteSectionLast{
-  scroll-margin-top:90px;
+.featureRow p {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #222;
 }
 
-.sectionInner{
-  width:100%;
-  max-width:1120px;
-  margin:0 auto;
-  padding:70px 30px 76px;
+.featureRow span {
+  font-family: monospace;
+  color: #6c6c6c;
+  font-size: 14px;
 }
 
-.introInner{
-  max-width:820px;
-  text-align:center;
+.claritySection {
+  position: relative;
+  padding: 100px 20px;
+  background: linear-gradient(180deg, rgba(227,242,255,0.82), rgba(248,251,255,0.92));
+  color: #000;
 }
 
-.sectionTitle{
-  margin:0 0 16px;
-  font-size:42px;
-  line-height:1.08;
-  letter-spacing:-0.04em;
-  color:#111111;
-  font-weight:400;
+.clarityTitle {
+  max-width: 1500px;
+  margin: 0 auto 40px;
+  text-align: right;
 }
 
-.sectionText{
-  max-width:760px;
-  margin:0 auto;
-  font-size:17px;
-  line-height:1.75;
-  color:rgba(17,17,17,.68);
+.claritySection h2 {
+  font-size: clamp(48px, 7vw, 96px);
+  color: #000;
 }
 
-.stepsGrid{
-  display:grid;
-  grid-template-columns:repeat(4, minmax(0, 1fr));
-  gap:24px;
+.claritySection .sansTitle {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.06em;
+  color: #000;
 }
 
-.stepItem{
-  min-width:0;
-  padding:24px 22px;
-  border:1px solid rgba(0,0,0,.07);
-  border-radius:8px;
-  background:rgba(255,255,255,.52);
-  transition:
-    transform .18s ease,
-    opacity .18s ease;
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
-.stepItem:hover{
-  transform:translateY(-3px);
+.infoCard {
+  background: rgba(227,242,255,0.82);
+  color: #000;
+  border-radius: 16px;
+  padding: 40px;
+  min-height: 250px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.stepHeading{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  margin-bottom:10px;
+.infoCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 22px 55px rgba(0,0,0,0.08);
 }
 
-.stepNumber{
-  flex-shrink:0;
-  font-size:18px;
-  color:#111111;
+.cardIconImage {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  margin-bottom: 28px;
+  transition: transform 0.3s ease;
 }
 
-.stepTitle{
-  font-size:20px;
-  line-height:1.1;
-  color:#111111;
+.infoCard:hover .cardIconImage {
+  transform: translateY(-5px) rotate(-4deg) scale(1.08);
 }
 
-.stepText{
-  margin:0;
-  font-size:14px;
-  line-height:1.7;
-  color:rgba(17,17,17,.62);
+.infoCard h3 {
+  font-family: "Instrument Serif", serif;
+  font-size: 22px;
+  line-height: 1;
+  margin: 0 0 12px;
 }
 
-.audienceInner{
-  display:grid;
-  grid-template-columns:repeat(2, minmax(0, 1fr));
-  gap:28px;
+.infoCard p {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  margin: 0;
 }
 
-.audienceBlock{
-  min-width:0;
+.splitSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 120px 20px;
+  align-items: center;
 }
 
-.audienceLabel{
-  margin:0 0 14px;
-  font-size:15px;
-  line-height:1;
-  color:rgba(17,17,17,.56);
+.splitImage {
+  height: 540px;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
-.audienceTitle{
-  margin:0 0 14px;
-  font-size:34px;
-  line-height:1.08;
-  letter-spacing:-0.035em;
-  color:#111111;
-  font-weight:400;
+.splitImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.audienceText{
-  max-width:470px;
-  margin:0;
-  font-size:16px;
-  line-height:1.7;
-  color:rgba(17,17,17,.66);
+.splitCopy {
+  max-width: 520px;
 }
 
-/* TABLET */
+.label {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #555;
+  margin: 0 0 20px;
+}
 
-@media (max-width:960px){
+.splitCopy h2 {
+  font-size: clamp(44px, 5vw, 76px);
+}
 
-  .landingNavInner{
-    grid-template-columns:1fr auto;
-    padding:20px 24px 0;
+.splitCopy p:not(.label) {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: #333;
+  margin: 24px 0;
+}
+
+.arrowButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: #000;
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 0;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.arrowButton:hover {
+  transform: translateY(-2px);
+  opacity: 0.76;
+}
+
+.quoteSection {
+  padding: 110px 20px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(248,251,255,0.78), rgba(218,236,251,0.88));
+}
+
+.quoteIcon {
+  font-family: "Instrument Serif", serif;
+  font-size: 74px;
+  line-height: 0.6;
+}
+
+.quoteSection h2 {
+  font-size: clamp(40px, 5.8vw, 82px);
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.quoteSection p {
+  font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  margin-top: 26px;
+  color: #6c6c6c;
+}
+
+.ctaSection {
+  background: linear-gradient(180deg, #d8ecfb, #b7d9fb);
+  color: #050505;
+  padding: 80px 20px 44px;
+  text-align: center;
+}
+
+.ctaSection h2 {
+  color: #050505;
+  font-size: clamp(42px, 6vw, 82px);
+  max-width: 1180px;
+  margin: 0 auto 28px;
+}
+
+.getStartedButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 25px;
+  border: 1px solid rgba(0,0,0,.84);
+  background: #050505;
+  color: #fff;
+  font-size: 17px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.20);
+}
+
+.footerLogoWrap {
+  width: min(920px, 88vw);
+  margin: 44px auto 0;
+  opacity: 0.9;
+}
+
+.footerLogoWrap img {
+  width: 100%;
+  display: block;
+}
+
+@keyframes heroTextIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
 
-  .landingNavLinks{
-    display:none;
-  }
-
-  .brandMark{
-    width:108px;
-  }
-
-  .heroSection{
-    min-height:700px;
-    padding-top:155px;
-  }
-
-  .heroTitle{
-    font-size:44px;
-  }
-
-  .sectionTitle{
-    font-size:36px;
-  }
-
-  .stepsGrid{
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-    gap:18px;
-  }
-
-  .audienceTitle{
-    font-size:29px;
+@keyframes mockupIn {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-/* MOBILE */
-
-@media (max-width:640px){
-
-  .landingNav{
-    padding:0 12px;
+@keyframes wordFloat {
+  0%, 100% {
+    transform: translateY(0);
   }
-
-  .landingNavInner{
-    display:grid;
-    grid-template-columns:1fr auto;
-    padding:14px 4px 0;
-    gap:12px;
+  50% {
+    transform: translateY(-4px);
   }
+}
 
-  .brandMark{
-    width:96px;
-  }
-
+@media (max-width: 900px) {
   .landingNavLinks,
-  .navActions{
-    display:none;
+  .navActions {
+    display: none;
   }
 
-  .mobileMenuButton{
-    display:inline-flex;
+  .mobileMenuButton {
+    display: flex;
   }
 
-  .mobileMenu{
-    display:flex;
-    position:absolute;
-    top:68px;
-    left:12px;
-    right:12px;
-    flex-direction:column;
-    padding:12px;
-    border:1px solid rgba(0,0,0,.06);
-    border-radius:22px;
-    background:rgba(248,251,249,.94);
-    box-shadow:0 18px 45px rgba(0,0,0,.12);
-    backdrop-filter:blur(18px);
-    -webkit-backdrop-filter:blur(18px);
-
-    opacity:0;
-    visibility:hidden;
-    pointer-events:none;
-    transform:translateY(-8px) scale(.98);
-
-    transition:
-      opacity .2s ease,
-      visibility .2s ease,
-      transform .2s ease;
+  .mobileMenu {
+    display: flex;
+    position: absolute;
+    top: 66px;
+    left: 14px;
+    right: 14px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-10px) scale(0.98);
+    transition: 0.22s ease;
   }
 
-  .mobileMenuOpen{
-    opacity:1;
-    visibility:visible;
-    pointer-events:auto;
-    transform:translateY(0) scale(1);
+  .mobileMenuOpen {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
   }
 
-  .mobileNavLink{
-    display:flex;
-    align-items:center;
-    min-height:46px;
-    padding:0 14px;
-    border-radius:13px;
-    color:#111111;
-    font-size:15px;
-    font-weight:400;
+  .mobileMenu a,
+  .mobileMenu button {
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 14px;
+    font-size: 18px;
+    border-radius: 12px;
+    color: #000;
+    font-family: "Google Sans", "DM Sans", system-ui, sans-serif;
   }
 
-  .mobileNavLink:hover{
-    background:rgba(0,0,0,.04);
+  .mobileMenu a:hover,
+  .mobileMenu button:hover {
+    background: #f2f2f2;
   }
 
-  .mobileActions{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px;
-    padding-top:10px;
-    margin-top:6px;
-    border-top:1px solid rgba(0,0,0,.06);
+  .cardsGrid,
+  .splitSection {
+    grid-template-columns: 1fr;
   }
 
-  .mobileActionButton{
-    width:100%;
-    min-height:43px;
-    font-size:13px;
+  .splitSection {
+    padding: 80px 20px;
   }
 
-  .heroSection{
-    min-height:620px;
-    padding:130px 20px 0;
+  .splitCopy {
+    max-width: 680px;
   }
 
-  .heroImage{
-    object-position:center top;
-  }
-
-  .heroContent{
-    width:100%;
-  }
-
-  .heroTitle{
-    max-width:390px;
-    margin:0 auto 14px;
-    font-size:clamp(34px, 10vw, 42px);
-    line-height:1.04;
-    letter-spacing:-0.045em;
-  }
-
-  .heroSubtitle{
-    max-width:340px;
-    margin:0 auto 20px;
-    font-size:15px;
-    line-height:1.5;
-  }
-
-  .heroCta{
-    min-width:142px;
-    padding:12px 18px 13px;
-    font-size:13px;
-  }
-
-  .sectionInner{
-    padding:52px 20px 56px;
-  }
-
-  .sectionTitle{
-    max-width:420px;
-    margin-left:auto;
-    margin-right:auto;
-    font-size:30px;
-    line-height:1.12;
-    letter-spacing:-0.035em;
-  }
-
-  .sectionText{
-    max-width:390px;
-    font-size:15px;
-    line-height:1.65;
-  }
-
-  .stepsGrid{
-    grid-template-columns:1fr;
-    gap:12px;
-  }
-
-  .stepItem{
-    padding:22px 20px;
-    border-radius:12px;
-  }
-
-  .stepHeading{
-    margin-bottom:8px;
-  }
-
-  .stepNumber{
-    font-size:17px;
-  }
-
-  .stepTitle{
-    font-size:19px;
-  }
-
-  .stepText{
-    font-size:14px;
-    line-height:1.6;
-  }
-
-  .audienceInner{
-    grid-template-columns:1fr;
-    gap:46px;
-  }
-
-  .audienceLabel{
-    margin-bottom:12px;
-    font-size:14px;
-  }
-
-  .audienceTitle{
-    max-width:400px;
-    font-size:28px;
-    line-height:1.1;
-  }
-
-  .audienceText{
-    max-width:400px;
-    font-size:15px;
-    line-height:1.65;
+  .splitImage {
+    height: 420px;
   }
 }
 
-/* SMALL PHONES */
-
-@media (max-width:380px){
-
-  .landingNav{
-    padding:0 10px;
+@media (max-width: 560px) {
+  .brandMark {
+    width: 108px;
   }
 
-  .brandMark{
-    width:88px;
+  .heroSection {
+    min-height: 650px;
+    padding: 112px 15px 56px;
+    background: linear-gradient(
+      180deg,
+      #afd6ff 0%,
+      #cfe7f7 34%,
+      #f6e8ee 60%,
+      #eef7fb 94%
+    );
   }
 
-  .mobileMenuButton{
-    width:39px;
-    height:39px;
+  .heroTitle {
+    font-size: clamp(43px, 13vw, 70px);
+    line-height: 0.88;
   }
 
-  .heroSection{
-    min-height:580px;
-    padding:118px 16px 0;
+  .heroSubtitle {
+    font-size: 16px;
+    max-width: 330px;
   }
 
-  .heroTitle{
-    font-size:32px;
+  .heroActions {
+    gap: 10px;
   }
 
-  .heroSubtitle{
-    font-size:14px;
+  .primaryPill,
+  .secondaryPill {
+    padding: 11px 22px;
   }
 
-  .sectionInner{
-    padding:46px 16px 50px;
+  .heroMockup {
+    display: none;
   }
 
-  .sectionTitle{
-    font-size:27px;
+  .wideImage {
+    height: 270px;
+    border-radius: 14px;
   }
 
-  .stepItem{
-    padding:20px 18px;
+  .featureSection {
+    padding: 20px 15px 70px;
   }
 
-  .audienceTitle{
-    font-size:26px;
+  .introSection {
+    padding: 72px 18px 55px;
+  }
+
+  .introSection p,
+  .featureRow p,
+  .infoCard p,
+  .splitCopy p:not(.label) {
+    font-size: 17px;
+  }
+
+  .featureRow {
+    gap: 14px;
+  }
+
+  .claritySection {
+    padding: 70px 15px;
+  }
+
+  .clarityTitle {
+    text-align: left;
+  }
+
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .infoCard {
+    padding: 30px;
+    min-height: 210px;
+  }
+
+  .splitImage {
+    height: 300px;
+  }
+
+  .quoteSection {
+    padding: 80px 18px;
+  }
+
+  .ctaSection {
+    padding-top: 64px;
   }
 }
 `;

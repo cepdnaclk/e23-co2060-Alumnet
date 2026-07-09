@@ -23,17 +23,17 @@ import LoadingScreen from "../components/LoadingScreen";
 import { getEvents, getProfile } from "../api";
 
 const COLORS = {
-  blue: "rgba(184, 196, 220, 0.68)",
-  sage: "rgba(171, 200, 184, 0.68)",
-  peach: "rgba(233, 173, 140, 0.68)",
-  cream: "rgba(217, 203, 167, 0.70)",
-  lavender: "rgba(197, 191, 210, 0.70)",
-  pink: "rgba(230, 177, 207, 0.68)",
-  yellow: "rgba(234, 223, 119, 0.72)",
-  plum: "#4b304b",
+  blue: "rgba(207, 231, 247, 0.86)",
+  sage: "rgba(217, 244, 229, 0.82)",
+  peach: "rgba(246, 232, 238, 0.88)",
+  cream: "rgba(255, 240, 189, 0.78)",
+  lavender: "rgba(226, 220, 255, 0.80)",
+  pink: "rgba(246, 232, 238, 0.92)",
+  yellow: "rgba(255, 240, 189, 0.82)",
+  plum: "#305f73",
   ink: "#111111",
-  offWhite: "#f7f4ee",
-  softWhite: "#fbfaf7",
+  offWhite: "rgba(255,255,255,.70)",
+  softWhite: "rgba(255,255,255,.78)",
 };
 
 export default function Dashboard() {
@@ -241,7 +241,7 @@ export default function Dashboard() {
                   className="dashboard-section-text"
                   style={sectionText}
                 >
-                  Explore your Alumnet space — connect with alumni, manage
+                  Explore your Alumnet space - connect with alumni, manage
                   mentorships, follow events and stay involved.
                 </p>
               </div>
@@ -656,6 +656,16 @@ function formatTime(value) {
 }
 
 const responsiveCss = `
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+.accountListShell:has(.dashboard-root) {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 22px 34px 34px;
+  overflow: visible;
+}
+
 .dashboard-root,
 .dashboard-root * {
   box-sizing: border-box;
@@ -676,7 +686,17 @@ const responsiveCss = `
 }
 
 .dashboard-action-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-6px);
+  box-shadow: 0 24px 60px rgba(39,91,130,.14) !important;
+}
+
+.dashboard-calendar-card,
+.dashboard-upcoming-card,
+.dashboard-flow-card,
+.dashboard-welcome,
+.dashboard-action-card {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 @media (max-width: 1180px) {
@@ -714,11 +734,12 @@ const responsiveCss = `
   .dashboard-welcome {
     width: 100%;
     padding: 24px 18px !important;
-    border-radius: 20px !important;
+    border-radius: 8px !important;
   }
 
   .dashboard-welcome-title {
-    font-size: 22px !important;
+    font-size: clamp(42px, 14vw, 64px) !important;
+    line-height: .9 !important;
   }
 
   .dashboard-welcome-text {
@@ -771,7 +792,7 @@ const responsiveCss = `
     width: 100%;
     min-height: 145px !important;
     padding: 17px !important;
-    border-radius: 18px !important;
+    border-radius: 8px !important;
   }
 
   .dashboard-card-title {
@@ -786,7 +807,7 @@ const responsiveCss = `
   .dashboard-icon-box {
     width: 40px !important;
     height: 40px !important;
-    border-radius: 13px !important;
+    border-radius: 8px !important;
   }
 
   .dashboard-calendar-card,
@@ -794,7 +815,7 @@ const responsiveCss = `
     width: 100%;
     max-width: 100%;
     padding: 17px !important;
-    border-radius: 20px !important;
+    border-radius: 8px !important;
     overflow: hidden;
   }
 
@@ -829,11 +850,11 @@ const responsiveCss = `
     width: 100%;
     margin-top: 0 !important;
     padding: 18px !important;
-    border-radius: 20px !important;
+    border-radius: 8px !important;
   }
 
   .dashboard-flow-title {
-    font-size: 19px !important;
+    font-size: 34px !important;
   }
 
   .dashboard-flow-grid {
@@ -852,7 +873,7 @@ const responsiveCss = `
   }
 
   .dashboard-welcome-title {
-    font-size: 20px !important;
+    font-size: 38px !important;
   }
 
   .dashboard-welcome-text {
@@ -882,14 +903,16 @@ const responsiveCss = `
 const dashboard = {
   display: "flex",
   flexDirection: "column",
-  gap: 34,
+  gap: 30,
 };
 
 const welcomeCard = {
-  padding: "34px 32px",
-  borderRadius: 28,
-  background: "#fafbfc",
-  border: "1px solid rgba(0,0,0,.06)",
+  padding: "52px 32px 46px",
+  borderRadius: 24,
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,.12))",
+  border: "1px solid rgba(255,255,255,.58)",
+  boxShadow: "0 22px 58px rgba(39,91,130,.10)",
 };
 
 const profileHero = {
@@ -905,8 +928,8 @@ const avatar = {
   height: 78,
   borderRadius: "50%",
   objectFit: "cover",
-  background: "#ecebe7",
-  boxShadow: "0 10px 24px rgba(0,0,0,.14)",
+  background: "#ffffff",
+  boxShadow: "0 16px 34px rgba(39,91,130,.18)",
 };
 
 const avatarFallback = {
@@ -915,9 +938,9 @@ const avatarFallback = {
   borderRadius: "50%",
   display: "grid",
   placeItems: "center",
-  background: "#ecebe7",
+  background: "#ffffff",
   color: "#111111",
-  boxShadow: "0 10px 24px rgba(0,0,0,.14)",
+  boxShadow: "0 16px 34px rgba(39,91,130,.18)",
   fontSize: 30,
   fontWeight: 700,
 };
@@ -925,18 +948,20 @@ const avatarFallback = {
 const welcomeTitle = {
   margin: "8px 0 0",
   color: COLORS.ink,
-  fontSize: 26,
-  lineHeight: 1.15,
-  fontWeight: 650,
-  letterSpacing: "-.03em",
+  fontFamily: '"Instrument Serif", serif',
+  fontSize: "clamp(48px, 7vw, 92px)",
+  lineHeight: .9,
+  fontWeight: 400,
+  letterSpacing: "-.055em",
 };
 
 const welcomeText = {
-  maxWidth: 680,
-  margin: "2px auto 0",
-  color: "rgba(17,17,17,.54)",
-  fontSize: 14,
-  lineHeight: 1.65,
+  maxWidth: 650,
+  margin: "8px auto 0",
+  color: "rgba(17,17,17,.68)",
+  fontSize: 17,
+  lineHeight: 1.5,
+  letterSpacing: "-.02em",
 };
 
 const mainLayout = {
@@ -952,13 +977,15 @@ const sectionHeader = {
 
 const sectionText = {
   margin: 0,
-  padding: "14px 18px",
-  borderRadius: 18,
+  padding: "17px 20px",
+  borderRadius: 16,
   background:
-    "linear-gradient(90deg, rgba(232,177,207,.25), rgba(171,200,184,.25), rgba(234,223,119,.22))",
-  color: "rgba(17,17,17,.58)",
-  fontSize: 14,
+    "linear-gradient(90deg, rgba(255,255,255,.74), rgba(246,232,238,.56), rgba(207,231,247,.58))",
+  border: "1px solid rgba(255,255,255,.62)",
+  color: "rgba(17,17,17,.66)",
+  fontSize: 15,
   lineHeight: 1.55,
+  boxShadow: "0 14px 32px rgba(39,91,130,.08)",
 };
 
 const cardGrid = {
@@ -968,16 +995,16 @@ const cardGrid = {
 };
 
 const dashboardCard = {
-  minHeight: 165,
-  borderRadius: 22,
-  padding: 18,
+  minHeight: 174,
+  borderRadius: 8,
+  padding: 20,
   color: COLORS.ink,
   textDecoration: "none",
-  border: "1px solid rgba(255,255,255,.55)",
+  border: "1px solid rgba(255,255,255,.70)",
   display: "flex",
   flexDirection: "column",
   justifyContent: "space-between",
-  boxShadow: "0 18px 38px rgba(17,17,17,.055)",
+  boxShadow: "0 18px 42px rgba(39,91,130,.10)",
   backdropFilter: "blur(14px)",
   backgroundBlendMode: "soft-light",
 };
@@ -991,10 +1018,10 @@ const cardTop = {
 const iconBox = {
   width: 43,
   height: 43,
-  borderRadius: 14,
+  borderRadius: 8,
   display: "grid",
   placeItems: "center",
-  background: "rgba(255,255,255,.58)",
+  background: "rgba(255,255,255,.70)",
   color: "rgba(17,17,17,.72)",
   boxShadow:
     "inset 0 0 0 1px rgba(255,255,255,.35)",
@@ -1006,12 +1033,12 @@ const arrowBox = {
   borderRadius: "50%",
   display: "grid",
   placeItems: "center",
-  background: "rgba(255,255,255,.58)",
+  background: "rgba(255,255,255,.70)",
 };
 
 const cardTitle = {
   margin: 0,
-  fontSize: 17,
+  fontSize: 18,
   fontWeight: 700,
   color: COLORS.ink,
 };
@@ -1031,10 +1058,10 @@ const sideColumn = {
 
 const calendarCard = {
   padding: 20,
-  borderRadius: 24,
+  borderRadius: 8,
   background: COLORS.offWhite,
-  border: "1px solid rgba(0,0,0,.06)",
-  boxShadow: "0 14px 32px rgba(17,17,17,.045)",
+  border: "1px solid rgba(255,255,255,.66)",
+  boxShadow: "0 18px 42px rgba(39,91,130,.10)",
 };
 
 const calendarHeader = {
@@ -1053,7 +1080,7 @@ const smallLabel = {
 
 const calendarTitle = {
   margin: "5px 0 0",
-  fontSize: 18,
+  fontSize: 20,
   fontWeight: 700,
   color: COLORS.ink,
 };
@@ -1068,7 +1095,7 @@ const calendarButton = {
   height: 29,
   borderRadius: "50%",
   border: "1px solid rgba(0,0,0,.08)",
-  background: "#fff",
+  background: "rgba(255,255,255,.82)",
   display: "grid",
   placeItems: "center",
   cursor: "pointer",
@@ -1146,10 +1173,10 @@ const calendarLink = {
 
 const upcomingCard = {
   padding: 20,
-  borderRadius: 24,
+  borderRadius: 8,
   background: COLORS.softWhite,
-  border: "1px solid rgba(0,0,0,.06)",
-  boxShadow: "0 14px 32px rgba(17,17,17,.035)",
+  border: "1px solid rgba(255,255,255,.66)",
+  boxShadow: "0 18px 42px rgba(39,91,130,.10)",
 };
 
 const upcomingHeader = {
@@ -1160,7 +1187,7 @@ const upcomingHeader = {
 
 const upcomingTitle = {
   margin: "5px 0 0",
-  fontSize: 18,
+  fontSize: 20,
   fontWeight: 700,
 };
 
@@ -1176,15 +1203,15 @@ const eventItem = {
   gridTemplateColumns: "46px minmax(0, 1fr)",
   gap: 10,
   padding: 9,
-  borderRadius: 15,
-  background: "#fff",
+  borderRadius: 8,
+  background: "rgba(255,255,255,.76)",
   color: COLORS.ink,
   textDecoration: "none",
 };
 
 const eventDateBox = {
-  borderRadius: 12,
-  background: "rgba(230, 177, 207, 0.72)",
+  borderRadius: 8,
+  background: "rgba(246, 232, 238, 0.92)",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -1234,15 +1261,19 @@ const emptyText = {
 const flowCard = {
   marginTop: 34,
   padding: 24,
-  borderRadius: 24,
+  borderRadius: 8,
   background: COLORS.softWhite,
-  border: "1px solid rgba(0,0,0,.06)",
+  border: "1px solid rgba(255,255,255,.66)",
+  boxShadow: "0 18px 42px rgba(39,91,130,.10)",
 };
 
 const flowTitle = {
   margin: 0,
-  fontSize: 21,
-  fontWeight: 700,
+  fontFamily: '"Instrument Serif", serif',
+  fontSize: 38,
+  lineHeight: .96,
+  fontWeight: 400,
+  letterSpacing: "-.05em",
   color: COLORS.ink,
 };
 
@@ -1255,9 +1286,9 @@ const flowGrid = {
 
 const flowItem = {
   padding: 17,
-  borderRadius: 18,
-  background: "#fff",
-  border: "1px solid rgba(0,0,0,.05)",
+  borderRadius: 8,
+  background: "rgba(255,255,255,.72)",
+  border: "1px solid rgba(255,255,255,.68)",
 };
 
 const flowNumber = {
