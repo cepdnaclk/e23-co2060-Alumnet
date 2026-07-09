@@ -14,10 +14,13 @@ import {
   User,
   Users,
 } from "lucide-react";
+
 import { registerUser } from "../api";
+
 import heroBg from "../assets/bg.png";
 import signUpIcon from "../assets/sign up.png";
 import bufferingIcon from "../assets/buffering.png";
+import tipIcon from "../assets/tip.png";
 
 const DEPARTMENTS = [
   "Chemical & Process Engineering",
@@ -39,10 +42,55 @@ function Field({ icon: Icon, children, className = "" }) {
   );
 }
 
+function InfoField({
+  icon: Icon,
+  tip,
+  isOpen,
+  onToggle,
+  children,
+}) {
+  return (
+    <div className="infoFieldGroup">
+      {isOpen && (
+        <div className="fieldTip">
+          <img src={tipIcon} alt="" className="fieldTipIcon" />
+
+          <span>{tip}</span>
+        </div>
+      )}
+
+      <label className="fieldWrap infoField">
+        {Icon && <Icon size={15} strokeWidth={2.1} />}
+
+        {children}
+
+        <button
+          type="button"
+          className="infoMark"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggle();
+          }}
+          aria-label="Show field information"
+          aria-expanded={isOpen}
+        >
+          !
+        </button>
+      </label>
+    </div>
+  );
+}
+
 function normalizeUrl(value) {
   const trimmed = value.trim();
+
   if (!trimmed) return "";
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
   return `https://${trimmed}`;
 }
 
@@ -51,7 +99,11 @@ function isValidDomainUrl(value, allowedDomains) {
 
   try {
     const url = new URL(normalizeUrl(value));
-    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+
+    const host = url.hostname
+      .toLowerCase()
+      .replace(/^www\./, "");
+
     return allowedDomains.includes(host);
   } catch {
     return false;
@@ -73,6 +125,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const [role, setRole] = useState("student");
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -96,12 +149,18 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const [openTip, setOpenTip] = useState(null);
+
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 40);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 40);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const payload = useMemo(() => {
@@ -132,10 +191,14 @@ export default function Register() {
       ...common,
       job_title: jobTitle.trim(),
       organization: organization.trim(),
-      graduation_year: alumniBatch ? Number(alumniBatch) : null,
+      graduation_year: alumniBatch
+        ? Number(alumniBatch)
+        : null,
       linkedin_url: normalizeUrl(linkedinUrl),
       primary_interests: interests.trim(),
-      preferred_mentee_capacity: prefCapacity ? Number(prefCapacity) : null,
+      preferred_mentee_capacity: prefCapacity
+        ? Number(prefCapacity)
+        : null,
       bio: bio.trim(),
     };
   }, [
@@ -160,31 +223,51 @@ export default function Register() {
   ]);
 
   const validateLinks = () => {
-    if (!isValidDomainUrl(linkedinUrl, ["linkedin.com"])) {
+    if (
+      !isValidDomainUrl(linkedinUrl, [
+        "linkedin.com",
+      ])
+    ) {
       return "Please enter a valid LinkedIn URL.";
     }
 
-    if (role === "student" && !isValidDomainUrl(githubUrl, ["github.com"])) {
+    if (
+      role === "student" &&
+      !isValidDomainUrl(githubUrl, ["github.com"])
+    ) {
       return "Please enter a valid GitHub URL.";
     }
 
-    if (role === "student" && !isValidUrl(portfolioUrl)) {
+    if (
+      role === "student" &&
+      !isValidUrl(portfolioUrl)
+    ) {
       return "Please enter a valid portfolio URL.";
     }
 
-    if (role === "student" && !isValidUrl(cvUrl)) {
+    if (
+      role === "student" &&
+      !isValidUrl(cvUrl)
+    ) {
       return "Please enter a valid CV Drive URL.";
     }
 
     return "";
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const toggleTip = (tipName) => {
+    setOpenTip((currentTip) =>
+      currentTip === tipName ? null : tipName
+    );
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     if (loading) return;
 
     setError("");
+    setOpenTip(null);
 
     const linkError = validateLinks();
 
@@ -201,11 +284,15 @@ export default function Register() {
       navigate("/verify-email", {
         state: {
           email,
-          message: data.message || "Registration successful.",
+          message:
+            data.message ||
+            "Registration successful.",
         },
       });
     } catch (err) {
-      setError(err.message || "Register failed");
+      setError(
+        err.message || "Register failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -213,28 +300,61 @@ export default function Register() {
 
   const goHome = () => {
     navigate("/");
-    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }));
+
+    requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+      });
+    });
   };
 
   return (
     <main className="registerPage">
       <style>{css}</style>
-      <img src={heroBg} alt="" className="registerBg" />
 
-      <section className={`registerCard ${mounted ? "in" : ""}`}>
-        <button className="iconButton" type="button" onClick={goHome}>
+      <img
+        src={heroBg}
+        alt=""
+        className="registerBg"
+      />
+
+      <section
+        className={`registerCard ${
+          mounted ? "in" : ""
+        }`}
+      >
+        <button
+          className="iconButton"
+          type="button"
+          onClick={goHome}
+        >
           <img src={signUpIcon} alt="" />
         </button>
 
         <h1>Create account</h1>
-        <p className="registerSubtitle">Join the Alumnet mentorship community.</p>
 
-        <form onSubmit={handleSubmit} className="registerForm" noValidate>
-          <div className="roleSwitch" aria-label="Account type">
+        <p className="registerSubtitle">
+          Join the Alumnet mentorship community.
+        </p>
+
+        <form
+          onSubmit={handleSubmit}
+          className="registerForm"
+        >
+          <div
+            className="roleSwitch"
+            aria-label="Account type"
+          >
             <button
               type="button"
-              className={role === "student" ? "active" : ""}
-              onClick={() => setRole("student")}
+              className={
+                role === "student" ? "active" : ""
+              }
+              onClick={() => {
+                setRole("student");
+                setOpenTip(null);
+              }}
               disabled={loading}
             >
               Student
@@ -242,8 +362,13 @@ export default function Register() {
 
             <button
               type="button"
-              className={role === "alumni" ? "active" : ""}
-              onClick={() => setRole("alumni")}
+              className={
+                role === "alumni" ? "active" : ""
+              }
+              onClick={() => {
+                setRole("alumni");
+                setOpenTip(null);
+              }}
               disabled={loading}
             >
               Alumni
@@ -254,7 +379,9 @@ export default function Register() {
             <Field icon={User}>
               <input
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(event) =>
+                  setFullName(event.target.value)
+                }
                 placeholder="Full name *"
                 required
                 disabled={loading}
@@ -265,7 +392,9 @@ export default function Register() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
                 placeholder="Email *"
                 required
                 disabled={loading}
@@ -274,9 +403,13 @@ export default function Register() {
 
             <Field icon={Lock}>
               <input
-                type={showPassword ? "text" : "password"}
+                type={
+                  showPassword ? "text" : "password"
+                }
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
                 placeholder="Password *"
                 required
                 disabled={loading}
@@ -285,25 +418,52 @@ export default function Register() {
               <button
                 className="passwordToggle"
                 type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() =>
+                  setShowPassword((value) => !value)
+                }
+                aria-label={
+                  showPassword
+                    ? "Hide password"
+                    : "Show password"
+                }
                 disabled={loading}
               >
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                {showPassword ? (
+                  <EyeOff
+                    size={15}
+                    strokeWidth={2.1}
+                  />
+                ) : (
+                  <Eye
+                    size={15}
+                    strokeWidth={2.1}
+                  />
+                )}
               </button>
             </Field>
 
             {role === "student" ? (
-              <Field icon={GraduationCap} className="selectField">
+              <Field
+                icon={GraduationCap}
+                className="selectField"
+              >
                 <select
                   value={batch}
-                  onChange={(e) => setBatch(e.target.value)}
+                  onChange={(event) =>
+                    setBatch(event.target.value)
+                  }
                   required
                   disabled={loading}
                 >
-                  <option value="">Select batch *</option>
+                  <option value="">
+                    Select batch *
+                  </option>
+
                   {BATCHES.map((item) => (
-                    <option key={item} value={item}>
+                    <option
+                      key={item}
+                      value={item}
+                    >
                       {item}
                     </option>
                   ))}
@@ -314,23 +474,38 @@ export default function Register() {
                 <input
                   type="number"
                   value={alumniBatch}
-                  onChange={(e) => setAlumniBatch(e.target.value)}
+                  onChange={(event) =>
+                    setAlumniBatch(
+                      event.target.value
+                    )
+                  }
                   placeholder="Graduation year"
                   disabled={loading}
                 />
               </Field>
             )}
 
-            <Field icon={Building2} className="span2 selectField">
+            <Field
+              icon={Building2}
+              className="span2 selectField"
+            >
               <select
                 value={department}
-                onChange={(e) => setDepartment(e.target.value)}
+                onChange={(event) =>
+                  setDepartment(event.target.value)
+                }
                 required
                 disabled={loading}
               >
-                <option value="">Select department *</option>
+                <option value="">
+                  Select department *
+                </option>
+
                 {DEPARTMENTS.map((dept) => (
-                  <option key={dept} value={dept}>
+                  <option
+                    key={dept}
+                    value={dept}
+                  >
                     {dept}
                   </option>
                 ))}
@@ -342,7 +517,9 @@ export default function Register() {
                 <Field icon={Briefcase}>
                   <input
                     value={jobTitle}
-                    onChange={(e) => setJobTitle(e.target.value)}
+                    onChange={(event) =>
+                      setJobTitle(event.target.value)
+                    }
                     placeholder="Job title *"
                     required
                     disabled={loading}
@@ -352,7 +529,11 @@ export default function Register() {
                 <Field icon={Building2}>
                   <input
                     value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
+                    onChange={(event) =>
+                      setOrganization(
+                        event.target.value
+                      )
+                    }
                     placeholder="Company *"
                     required
                     disabled={loading}
@@ -361,10 +542,15 @@ export default function Register() {
               </>
             )}
 
-            <Field icon={Users} className="span2">
+            <Field
+              icon={Users}
+              className="span2"
+            >
               <input
                 value={interests}
-                onChange={(e) => setInterests(e.target.value)}
+                onChange={(event) =>
+                  setInterests(event.target.value)
+                }
                 placeholder={
                   role === "student"
                     ? "Areas of interest"
@@ -375,10 +561,15 @@ export default function Register() {
               />
             </Field>
 
-            <Field icon={FileText} className="span2 tall">
+            <Field
+              icon={FileText}
+              className="span2 tall"
+            >
               <textarea
                 value={bio}
-                onChange={(e) => setBio(e.target.value)}
+                onChange={(event) =>
+                  setBio(event.target.value)
+                }
                 placeholder="Brief introduction"
                 disabled={loading}
               />
@@ -389,7 +580,11 @@ export default function Register() {
                 <Field className="tall">
                   <textarea
                     value={whyNeedMentor}
-                    onChange={(e) => setWhyNeedMentor(e.target.value)}
+                    onChange={(event) =>
+                      setWhyNeedMentor(
+                        event.target.value
+                      )
+                    }
                     placeholder="Why do you need a mentor? *"
                     required
                     disabled={loading}
@@ -399,7 +594,9 @@ export default function Register() {
                 <Field className="tall">
                   <textarea
                     value={goals}
-                    onChange={(e) => setGoals(e.target.value)}
+                    onChange={(event) =>
+                      setGoals(event.target.value)
+                    }
                     placeholder="What is your goal? *"
                     required
                     disabled={loading}
@@ -410,7 +607,9 @@ export default function Register() {
                   <input
                     type="text"
                     value={githubUrl}
-                    onChange={(e) => setGithubUrl(e.target.value)}
+                    onChange={(event) =>
+                      setGithubUrl(event.target.value)
+                    }
                     placeholder="GitHub URL"
                     disabled={loading}
                   />
@@ -420,52 +619,64 @@ export default function Register() {
                   <input
                     type="text"
                     value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    onChange={(event) =>
+                      setLinkedinUrl(
+                        event.target.value
+                      )
+                    }
                     placeholder="LinkedIn URL"
                     disabled={loading}
                   />
                 </Field>
 
-                <Field icon={LinkIcon} className="span2 infoField">
+                <InfoField
+                  icon={LinkIcon}
+                  tip="Add your portfolio, personal website, or project showcase link."
+                  isOpen={openTip === "portfolio"}
+                  onToggle={() =>
+                    toggleTip("portfolio")
+                  }
+                >
                   <input
                     type="text"
                     value={portfolioUrl}
-                    onChange={(e) => setPortfolioUrl(e.target.value)}
+                    onChange={(event) =>
+                      setPortfolioUrl(
+                        event.target.value
+                      )
+                    }
                     placeholder="Portfolio URL"
                     disabled={loading}
                   />
+                </InfoField>
 
-                  <span
-                    className="infoMark"
-                    title="Add your portfolio, personal website, or project showcase link."
-                  >
-                    !
-                  </span>
-                </Field>
-
-                <Field icon={LinkIcon} className="span2 infoField">
+                <InfoField
+                  icon={LinkIcon}
+                  tip="Upload your CV to Google Drive, allow anyone with the link to view it, then paste the Drive link here."
+                  isOpen={openTip === "cv"}
+                  onToggle={() => toggleTip("cv")}
+                >
                   <input
                     type="text"
                     value={cvUrl}
-                    onChange={(e) => setCvUrl(e.target.value)}
+                    onChange={(event) =>
+                      setCvUrl(event.target.value)
+                    }
                     placeholder="CV Drive link"
                     disabled={loading}
                   />
-
-                  <span
-                    className="infoMark"
-                    title="Upload your CV to Google Drive, make the link accessible, and paste the Drive link here."
-                  >
-                    !
-                  </span>
-                </Field>
+                </InfoField>
               </>
             ) : (
               <Field icon={Users}>
                 <input
                   type="number"
                   value={prefCapacity}
-                  onChange={(e) => setPrefCapacity(e.target.value)}
+                  onChange={(event) =>
+                    setPrefCapacity(
+                      event.target.value
+                    )
+                  }
                   placeholder="Preferred mentee capacity"
                   min="0"
                   disabled={loading}
@@ -478,7 +689,11 @@ export default function Register() {
                 <input
                   type="text"
                   value={linkedinUrl}
-                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  onChange={(event) =>
+                    setLinkedinUrl(
+                      event.target.value
+                    )
+                  }
                   placeholder="LinkedIn URL *"
                   required
                   disabled={loading}
@@ -487,27 +702,55 @@ export default function Register() {
             )}
           </div>
 
-          {error && <div className="errorBox">{error}</div>}
+          {error && (
+            <div className="errorBox">
+              {error}
+            </div>
+          )}
 
-          <button className="createButton" type="submit" disabled={loading}>
+          <button
+            className="createButton"
+            type="submit"
+            disabled={loading}
+          >
             {loading && (
-              <img src={bufferingIcon} alt="" className="buttonSpinner" />
+              <img
+                src={bufferingIcon}
+                alt=""
+                className="buttonSpinner"
+              />
             )}
+
             <span>
               {loading
                 ? "Please wait, your account is being created..."
                 : "Create account"}
             </span>
-            {!loading && <ArrowRight size={15} strokeWidth={2.4} />}
+
+            {!loading && (
+              <ArrowRight
+                size={15}
+                strokeWidth={2.4}
+              />
+            )}
           </button>
         </form>
 
         <div className="registerFooter">
-          <span>Already have an account?</span>
-          <Link to="/login">Login</Link>
+          <span>
+            Already have an account?
+          </span>
+
+          <Link to="/login">
+            Login
+          </Link>
         </div>
 
-        <Link className="backHomeLink" to="/" onClick={goHome}>
+        <Link
+          className="backHomeLink"
+          to="/"
+          onClick={goHome}
+        >
           Back to Home
         </Link>
       </section>
@@ -554,7 +797,9 @@ const css = `
   box-shadow:0 28px 72px rgba(0,0,0,.24);
   opacity:0;
   transform:translateY(14px) scale(.985);
-  transition:opacity .55s ease, transform .55s ease;
+  transition:
+    opacity .55s ease,
+    transform .55s ease;
 }
 
 .registerCard.in{
@@ -573,7 +818,9 @@ const css = `
 
 .registerCard{
   scrollbar-width:thin;
-  scrollbar-color:rgba(0,0,0,.16) transparent;
+  scrollbar-color:
+    rgba(0,0,0,.16)
+    transparent;
 }
 
 .iconButton{
@@ -582,18 +829,11 @@ const css = `
   display:inline-grid;
   place-items:center;
   border-radius:14px;
-  color:#111111;
   background:#ffffff;
   border:1px solid rgba(0,0,0,.08);
   box-shadow:0 14px 30px rgba(0,0,0,.18);
   margin-bottom:14px;
-  transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
-}
-
-.iconButton:hover{
-  transform:translateY(-1px);
-  background:#ffffff;
-  box-shadow:0 10px 22px rgba(0,0,0,.15);
+  cursor:pointer;
 }
 
 .iconButton img{
@@ -642,7 +882,6 @@ const css = `
   font:inherit;
   font-size:14px;
   cursor:pointer;
-  transition:background .18s ease, box-shadow .18s ease, color .18s ease;
 }
 
 .roleSwitch button.active{
@@ -653,7 +892,8 @@ const css = `
 
 .formGrid{
   display:grid;
-  grid-template-columns:repeat(2, minmax(0,1fr));
+  grid-template-columns:
+    repeat(2, minmax(0,1fr));
   gap:9px;
 }
 
@@ -667,13 +907,17 @@ const css = `
   background:#eef1f5;
   border:1px solid rgba(0,0,0,.05);
   color:rgba(17,17,17,.70);
-  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
 }
 
 .fieldWrap:focus-within{
   background:#ffffff;
   border-color:rgba(0,0,0,.12);
-  box-shadow:0 0 0 4px rgba(255,255,255,.28);
+  box-shadow:
+    0 0 0 4px rgba(255,255,255,.28);
 }
 
 .fieldWrap.span2{
@@ -722,10 +966,11 @@ const css = `
   position:absolute;
   right:12px;
   top:50%;
-  transform:translateY(-50%) rotate(90deg);
+  transform:
+    translateY(-50%)
+    rotate(90deg);
   color:rgba(17,17,17,.62);
   font-size:15px;
-  line-height:1;
   pointer-events:none;
 }
 
@@ -739,26 +984,80 @@ const css = `
   color:rgba(17,17,17,.64);
 }
 
-.infoField{
+.infoFieldGroup{
   position:relative;
-  padding-right:10px;
+  min-width:0;
+}
+
+.infoField{
+  width:100%;
 }
 
 .infoMark{
-  position:relative;
-  width:18px;
-  height:18px;
-  flex:0 0 18px;
+  width:20px;
+  height:20px;
+  flex:0 0 20px;
+  padding:0;
   display:grid;
   place-items:center;
+  border:0;
   border-radius:50%;
-  background:#111111;
-  color:#ffffff;
+  background: #c9e2ff;
+  color:#111111;
+  font-family:inherit;
   font-size:12px;
   font-weight:800;
   line-height:1;
-  cursor:help;
+  cursor:pointer;
   user-select:none;
+  transition:
+    transform .16s ease,
+    opacity .16s ease;
+}
+
+.infoMark:hover{
+  opacity:.78;
+}
+
+.infoMark:active{
+  transform:scale(.90);
+}
+
+.fieldTip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  margin-bottom:6px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#e8f3ff;
+  border:1px solid #c9e2ff;
+  color:#1769aa;
+  font-size:12px;
+  line-height:1.4;
+  text-align:left;
+  animation:
+    tipAppear .2s ease both;
+}
+
+.fieldTipIcon{
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+  object-fit:contain;
+}
+
+@keyframes tipAppear{
+  from{
+    opacity:0;
+    transform:translateY(4px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
 }
 
 .passwordToggle{
@@ -772,12 +1071,6 @@ const css = `
   border-radius:999px;
   color:rgba(17,17,17,.64);
   cursor:pointer;
-  transition:background .18s ease, color .18s ease;
-}
-
-.passwordToggle:hover{
-  background:rgba(255,255,255,.62);
-  color:#111111;
 }
 
 .createButton{
@@ -795,14 +1088,10 @@ const css = `
   font:inherit;
   font-size:14px;
   font-weight:500;
-  box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.20);
+  box-shadow:
+    0 8px 18px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.20);
   cursor:pointer;
-  transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
-}
-
-.createButton:hover:not(:disabled){
-  transform:translateY(-1px);
-  box-shadow:0 10px 23px rgba(0,0,0,.27), inset 0 1px 0 rgba(255,255,255,.20);
 }
 
 .createButton:disabled{
@@ -815,14 +1104,18 @@ const css = `
   height:15px;
   object-fit:contain;
   flex:0 0 auto;
-  filter:brightness(0) invert(1);
-  animation:spin .85s linear infinite;
+  filter:
+    brightness(0)
+    invert(1);
+  animation:
+    spin .85s linear infinite;
 }
 
 @keyframes spin{
   from{
     transform:rotate(0deg);
   }
+
   to{
     transform:rotate(360deg);
   }
@@ -846,7 +1139,8 @@ const css = `
   gap:5px;
   margin-top:14px;
   padding-top:12px;
-  border-top:1px dashed rgba(0,0,0,.10);
+  border-top:
+    1px dashed rgba(0,0,0,.10);
   color:rgba(17,17,17,.72);
   font-size:13px;
 }
@@ -855,12 +1149,6 @@ const css = `
 .backHomeLink{
   color:#111111;
   text-decoration:none;
-  transition:opacity .18s ease;
-}
-
-.registerFooter a:hover,
-.backHomeLink:hover{
-  opacity:.68;
 }
 
 .backHomeLink{
@@ -884,7 +1172,10 @@ const css = `
 
   .registerCard{
     max-height:none;
-    width:min(420px, calc(100vw - 36px));
+    width:min(
+      420px,
+      calc(100vw - 36px)
+    );
     padding:22px 20px 20px;
   }
 
@@ -894,6 +1185,54 @@ const css = `
 
   .fieldWrap.span2{
     grid-column:auto;
+  }
+
+  .infoFieldGroup{
+    width:100%;
+  }
+
+  .fieldTip{
+    font-size:12px;
+    padding:9px 10px;
+  }
+
+  .fieldTipIcon{
+    width:24px;
+    height:24px;
+    flex-basis:24px;
+  }
+
+  .infoMark{
+    width:22px;
+    height:22px;
+    flex-basis:22px;
+  }
+
+  .createButton{
+    min-height:40px;
+    padding-left:12px;
+    padding-right:12px;
+    font-size:13px;
+  }
+}
+
+@media (max-width:380px){
+  .registerPage{
+    padding:12px;
+  }
+
+  .registerCard{
+    width:calc(100vw - 24px);
+    padding:20px 14px;
+  }
+
+  .fieldTip{
+    align-items:flex-start;
+    font-size:11px;
+  }
+
+  .createButton{
+    font-size:12px;
   }
 }
 `;
