@@ -86,7 +86,7 @@ export default function MyMentors() {
             <div className="accountListState">No mentors match this filter.</div>
           ) : (
             <div className="accountTableWrap">
-              <table className="accountTable">
+              <table className="accountTable wide">
                 <thead>
                   <tr>
                     <th style={{ width: "32%" }}>Mentor</th>

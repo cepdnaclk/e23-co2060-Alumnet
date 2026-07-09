@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Check, Loader2, LogIn, MailCheck, X } from "lucide-react";
-import { verifyEmail } from "../api";
+import { resendVerificationEmail, verifyEmail } from "../api";
 import heroBg from "../assets/bg.png";
 
 export default function VerifyEmail() {
@@ -14,6 +14,8 @@ export default function VerifyEmail() {
   const [message, setMessage] = useState(
     "Please login if you already verified your email, or register again if the link expired."
   );
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 40);
@@ -46,7 +48,7 @@ export default function VerifyEmail() {
 
     if (!token) {
       setStatus("check-email");
-      setMessage("");
+      setMessage(location.state?.message || "");
     } else {
       confirmEmail();
     }
@@ -66,6 +68,22 @@ export default function VerifyEmail() {
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }));
   };
 
+  const handleResend = async () => {
+    if (!email) return;
+
+    setResendLoading(true);
+    setResendMessage("");
+
+    try {
+      const data = await resendVerificationEmail(email);
+      setResendMessage(data.message || "Verification email sent. Please check your inbox.");
+    } catch (err) {
+      setResendMessage(err.message || "Failed to send verification email.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const title = isLoading
     ? "Verifying email"
     : isSuccess
@@ -76,6 +94,8 @@ export default function VerifyEmail() {
 
   const body = isLoading
     ? "Please wait while we confirm your Alumnet account."
+    : isCheckEmail && message
+      ? message
     : isCheckEmail && email
       ? `We sent a verification link to ${email}. Open it to continue.`
       : isCheckEmail
@@ -115,10 +135,30 @@ export default function VerifyEmail() {
         )}
 
         {isCheckEmail && (
-          <Link className="verifyButton" to="/login">
-            <LogIn size={15} strokeWidth={2.2} />
-            <span>Go to login</span>
-          </Link>
+          <>
+            {email && (
+              <button
+                className="verifyButton"
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading}
+              >
+                {resendLoading ? (
+                  <Loader2 className="spin" size={15} strokeWidth={2.2} />
+                ) : (
+                  <MailCheck size={15} strokeWidth={2.2} />
+                )}
+                <span>{resendLoading ? "Sending..." : "Resend verification email"}</span>
+              </button>
+            )}
+
+            {resendMessage && <p className="resendMessage">{resendMessage}</p>}
+
+            <Link className="secondaryButton" to="/login">
+              <LogIn size={15} strokeWidth={2.2} />
+              <span>Go to login</span>
+            </Link>
+          </>
         )}
 
         <Link className="backHomeLink" to="/" onClick={goHome}>
@@ -231,9 +271,45 @@ const css = `
   transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
 }
 
-.verifyButton:hover{
+.verifyButton:hover:not(:disabled){
   transform:translateY(-1px);
   box-shadow:0 10px 23px rgba(0,0,0,.27), inset 0 1px 0 rgba(255,255,255,.20);
+}
+
+.verifyButton:disabled{
+  opacity:.72;
+  cursor:not-allowed;
+}
+
+.secondaryButton{
+  height:35px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:100%;
+  margin-top:9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.72);
+  color:#111111;
+  font:inherit;
+  font-size:14px;
+  font-weight:500;
+  text-decoration:none;
+  border:1px solid rgba(0,0,0,.12);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+
+.secondaryButton:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgba(0,0,0,.12);
+}
+
+.resendMessage{
+  margin:10px 0 0;
+  color:rgba(0,0,0,.78);
+  font-size:13px;
+  line-height:1.35;
 }
 
 .backHomeLink{

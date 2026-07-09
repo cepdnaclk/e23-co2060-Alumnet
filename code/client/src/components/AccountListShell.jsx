@@ -63,8 +63,9 @@ const css = `
 
 .accountTableWrap{
   margin:0 -34px -30px;
-  overflow-x:hidden;
+  overflow-x:auto;
   border-top:1px solid rgba(0,0,0,.08);
+  -webkit-overflow-scrolling:touch;
 }
 
 .accountListToolbar{
@@ -132,6 +133,11 @@ const css = `
   min-width:0;
   border-collapse:collapse;
   table-layout:fixed;
+}
+
+/* Optional wide tables that should allow horizontal scrolling on small screens */
+.accountTable.wide{
+  min-width:1040px;
 }
 
 .accountTable th{

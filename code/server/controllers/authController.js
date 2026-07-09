@@ -4,6 +4,86 @@ const jwt = require("jsonwebtoken");
 const pool  = require("../config/db");
 const sendEmail = require("../utils/sendEmail");
 
+function getClientUrl() {
+  return (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
+}
+
+async function sendVerificationEmail(email, token) {
+  const verificationUrl = `${getClientUrl()}/verify-email/${token}`;
+
+  await sendEmail({
+    to: email,
+    subject: "Verify your Alumnet account",
+    html: `
+      <h2>Welcome to Alumnet!</h2>
+
+      <p>Please verify your email by clicking the button below.</p>
+
+      <a
+        href="${verificationUrl}"
+        style="
+          display:inline-block;
+          padding:12px 24px;
+          background:#2563eb;
+          color:white;
+          text-decoration:none;
+          border-radius:6px;
+        "
+      >
+        Verify Email
+      </a>
+
+      <p>This link expires in 24 hours.</p>
+    `,
+  });
+}
+
+async function sendAdminSignupNotification(user) {
+  const adminResult = await pool.query(
+    `SELECT email, full_name, role FROM users WHERE role IN ('system_admin', 'university_admin')`
+  );
+
+  const adminEmails = adminResult.rows
+    .map((admin) => admin.email)
+    .filter(Boolean);
+
+  if (adminEmails.length === 0) {
+    return;
+  }
+
+  const adminUrl = `${getClientUrl()}/admin`;
+
+  await sendEmail({
+    to: adminEmails.join(", "),
+    subject: `New user registered on Alumnet: ${user.full_name}`,
+    html: `
+      <h2>New user registration</h2>
+      <p>A new user has signed up and is awaiting verification.</p>
+      <ul>
+        <li><strong>Name:</strong> ${user.full_name}</li>
+        <li><strong>Email:</strong> ${user.email}</li>
+        <li><strong>Role:</strong> ${user.role}</li>
+      </ul>
+      <p>
+        <a
+          href="${adminUrl}"
+          style="
+            display:inline-block;
+            padding:12px 24px;
+            background:#2563eb;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+          "
+        >
+          Review registration
+        </a>
+      </p>
+      <p>Sign in as an admin and verify the new account from the dashboard.</p>
+    `,
+  });
+}
+
 const signup = async (req, res) => {
   const client = await pool.connect();
   let transactionOpen = false;
@@ -16,7 +96,6 @@ const signup = async (req, res) => {
       role,
       department,
 
-      // student
       batch,
       areas_of_interest,
       bio,
@@ -27,7 +106,6 @@ const signup = async (req, res) => {
       portfolio_url,
       cv_url,
 
-      // alumni
       job_title,
       organization,
       graduation_year,
@@ -56,17 +134,23 @@ const signup = async (req, res) => {
     transactionOpen = true;
 
     const existingUser = await client.query(
-      "SELECT id FROM users WHERE email = $1",
+      "SELECT id FROM users WHERE LOWER(email) = LOWER($1)",
       [email]
     );
 
     if (existingUser.rows.length > 0) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ message: "Email already registered" });
+      transactionOpen = false;
+
+      return res.status(409).json({
+        message: "Email already registered",
+      });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
+
     const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+
     const emailVerificationTokenExpiry = new Date(
       Date.now() + 24 * 60 * 60 * 1000
     );
@@ -86,8 +170,8 @@ const signup = async (req, res) => {
       RETURNING id, full_name, email, role, email_verified, verification_status, created_at, verified_at, avatar_url
       `,
       [
-        full_name,
-        email,
+        full_name.trim(),
+        email.trim().toLowerCase(),
         password_hash,
         role,
         emailVerificationToken,
@@ -164,47 +248,88 @@ const signup = async (req, res) => {
     await client.query("COMMIT");
     transactionOpen = false;
 
-    const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173")
-      .replace(/\/$/, "");
-    const verificationUrl = `${clientUrl}/verify-email/${emailVerificationToken}`;
-
-    await sendEmail({
-      to: email,
-      subject: "Verify your Alumnet account",
-      html: `
-        <h2>Welcome to Alumnet!</h2>
-
-        <p>Please verify your email by clicking the button below.</p>
-
-        <a
-          href="${verificationUrl}"
-          style="
-            display:inline-block;
-            padding:12px 24px;
-            background:#2563eb;
-            color:white;
-            text-decoration:none;
-            border-radius:6px;
-          "
-        >
-          Verify Email
-        </a>
-
-        <p>This link expires in 24 hours.</p>
-      `,
+    res.status(201).json({
+      message:
+        "Account created successfully. Please check your email to verify your account.",
+      emailSent: true,
     });
 
-    return res.status(201).json({
-      message: "Registration successful.",
+    sendVerificationEmail(user.email, emailVerificationToken).catch((error) => {
+      console.error("Verification email send error:", error);
+    });
+
+    sendAdminSignupNotification(user).catch((error) => {
+      console.error("Admin notification email send error:", error);
     });
   } catch (error) {
     if (transactionOpen) {
       await client.query("ROLLBACK");
     }
+
     console.error("Signup error:", error);
-    return res.status(500).json({ message: "Server error during signup" });
+
+    return res.status(500).json({
+      message: "Server error during signup",
+    });
   } finally {
     client.release();
+  }
+};
+
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const userResult = await pool.query(
+      `
+      SELECT id, email, email_verified
+      FROM users
+      WHERE email = $1
+      `,
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: "No account found for this email." });
+    }
+
+    const user = userResult.rows[0];
+
+    if (user.email_verified) {
+      return res.status(400).json({
+        message: "This email is already verified. Please login.",
+      });
+    }
+
+    const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+    const emailVerificationTokenExpiry = new Date(
+      Date.now() + 24 * 60 * 60 * 1000
+    );
+
+    await pool.query(
+      `
+      UPDATE users
+      SET email_verification_token = $1,
+          email_verification_token_expiry = $2
+      WHERE id = $3
+      `,
+      [emailVerificationToken, emailVerificationTokenExpiry, user.id]
+    );
+
+    await sendVerificationEmail(user.email, emailVerificationToken);
+
+    return res.status(200).json({
+      message: "Verification email sent. Please check your inbox.",
+    });
+  } catch (error) {
+    console.error("Resend verification email error:", error);
+    return res.status(500).json({
+      message: "Failed to send verification email. Please try again later.",
+    });
   }
 };
 
@@ -613,6 +738,7 @@ module.exports = {
   signup,
   login,
   verifyEmail,
+  resendVerificationEmail,
   getProfile,
   updateProfile,
   getPendingUsers,

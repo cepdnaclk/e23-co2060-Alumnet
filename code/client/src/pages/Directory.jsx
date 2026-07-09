@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { getDirectory } from "../api";
+import { jwtDecode } from "jwt-decode";
+import { getDirectory, getMyMentors, getStudentRequests } from "../api";
 import LoadingScreen from "../components/LoadingScreen";
 
 import verifiedIcon from "../assets/verified.png";
@@ -22,13 +23,40 @@ export default function Directory() {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("");
   const [appliedDepartment, setAppliedDepartment] = useState("");
+  const [pendingRequestIds, setPendingRequestIds] = useState(new Set());
+  const [mentorIds, setMentorIds] = useState(new Set());
+
+  const token = useMemo(() => localStorage.getItem("token"), []);
+  const currentUser = useMemo(() => {
+    try {
+      if (!token) return null;
+      return jwtDecode(token);
+    } catch {
+      return null;
+    }
+  }, [token]);
+
+  const isStudent = currentUser?.role === "student";
 
   const loadDirectory = async (searchValue = search, departmentValue = appliedDepartment) => {
     setLoading(true);
 
     try {
-      const data = await getDirectory(searchValue, departmentValue);
-      setAlumni(data);
+      const [directoryData, mentors, studentRequests] = await Promise.all([
+        getDirectory(searchValue, departmentValue),
+        isStudent ? getMyMentors(token) : Promise.resolve([]),
+        isStudent ? getStudentRequests(token) : Promise.resolve([]),
+      ]);
+
+      setAlumni(directoryData);
+      setMentorIds(new Set(mentors.map((mentor) => Number(mentor.id))));
+      setPendingRequestIds(
+        new Set(
+          studentRequests
+            .filter((request) => request.status === "pending")
+            .map((request) => Number(request.alumni_user_id))
+        )
+      );
     } catch (e) {
       console.error(e);
     } finally {
@@ -43,7 +71,7 @@ export default function Directory() {
     }, 300);
 
     return () => window.clearTimeout(timeout);
-  }, [search, appliedDepartment]);
+  }, [search, appliedDepartment, isStudent, token]);
 
   const getStatusIcon = (status) => {
     if (status === "verified") return verifiedIcon;
@@ -157,8 +185,16 @@ export default function Directory() {
                   </div>
 
                   <div className="actionColumn">
-                    <span className={`availability ${remaining > 0 ? "open" : "full"}`}>
-                      {remaining > 0 ? `${remaining} available` : "Mentor full"}
+                    <span
+                      className={`availability ${mentorIds.has(Number(a.id)) ? "mentor" : pendingRequestIds.has(Number(a.id)) ? "pending" : remaining > 0 ? "open" : "full"}`}
+                    >
+                      {mentorIds.has(Number(a.id))
+                        ? "Already your mentor"
+                        : pendingRequestIds.has(Number(a.id))
+                        ? "Request pending"
+                        : remaining > 0
+                        ? `${remaining} slots left`
+                        : "Mentor full"}
                     </span>
                     <Link
                       to={`/directory/${a.id}`}
@@ -179,7 +215,9 @@ export default function Directory() {
 }
 
 function getInterestTags(value = "") {
-  return value
+  const input = value || "";
+
+  return input
     .split(/[,|]/)
     .map((item) => item.trim())
     .filter(Boolean)
@@ -480,21 +518,61 @@ const css = `
   background:rgba(34,197,94,.16);
   color:#15803d;
   animation:availabilityPulse 1.8s ease-in-out infinite;
-}
+    border:1px solid rgba(34,197,94,.24);
+  }
 
-.availability.open::before{
-  background:#22c55e;
-}
+  .availability.open::before{
+    background:#22c55e;
+  }
 
-.availability.full{
-  background:rgba(215,38,61,.10);
-  color:#b91c1c;
-  animation:availabilityFullPulse 1.8s ease-in-out infinite;
-}
+  .availability.full{
+    background:rgba(215,38,61,.10);
+    color:#b91c1c;
+    animation:availabilityFullPulse 1.8s ease-in-out infinite;
+    border:1px solid rgba(215,38,61,.16);
+  }
 
-.availability.full::before{
-  background:#d7263d;
-}
+  .availability.full::before{
+    background:#d7263d;
+  }
+
+  .availability.pending{
+    background:rgba(254,243,199,.92);
+    color:#92400e;
+    border:1px solid rgba(251,191,36,.65);
+    box-shadow:0 6px 14px rgba(251,191,36,.14);
+    animation:availabilityPendingPulse 1.8s ease-in-out infinite;
+  }
+
+  .availability.pending::before{
+    background:#f59e0b;
+  }
+
+  .availability.mentor{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    min-height:22px;
+    padding:0 9px;
+    border-radius:999px;
+    border:1px solid rgba(47,95,245,.14);
+    background:rgba(47,95,245,.10);
+    color:#244ee4;
+    font-size:12px;
+    line-height:1;
+    white-space:nowrap;
+    animation:availabilityMentorPulse 1.8s ease-in-out infinite;
+  }
+
+  .availability.mentor::before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#2f5ff5;
+    flex:0 0 auto;
+  }
 
 .viewLink{
   display:inline-flex;
@@ -531,6 +609,16 @@ const css = `
 @keyframes availabilityFullPulse{
   0%, 100%{ box-shadow:0 6px 16px rgba(185,28,28,.10); }
   50%{ box-shadow:0 7px 22px rgba(185,28,28,.26); }
+}
+
+@keyframes availabilityPendingPulse{
+  0%, 100%{ box-shadow:0 6px 14px rgba(251,191,36,.10); }
+  50%{ box-shadow:0 7px 18px rgba(251,191,36,.22); }
+}
+
+@keyframes availabilityMentorPulse{
+  0%, 100%{ box-shadow:0 6px 16px rgba(47,95,245,.10); }
+  50%{ box-shadow:0 7px 22px rgba(47,95,245,.20); }
 }
 
 @media (max-width:820px){

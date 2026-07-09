@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Eye, EyeOff, LogIn, Mail, Lock } from "lucide-react";
-import { loginUser } from "../api";
+import { ArrowRight, Eye, EyeOff, Loader2, LogIn, Mail, Lock } from "lucide-react";
+import { loginUser, resendVerificationEmail } from "../api";
 import heroBg from "../assets/bg.png";
 
 export default function Login() {
@@ -13,6 +13,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 40);
@@ -22,6 +25,8 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setNeedsEmailVerification(false);
+    setResendMessage("");
     setLoading(true);
 
     try {
@@ -29,9 +34,25 @@ export default function Login() {
       localStorage.setItem("token", data.token);
       navigate("/profile");
     } catch (err) {
-      setError(err.message || "Login failed");
+      const message = err.message || "Login failed";
+      setError(message);
+      setNeedsEmailVerification(message.toLowerCase().includes("verify your email"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendMessage("");
+
+    try {
+      const data = await resendVerificationEmail(email);
+      setResendMessage(data.message || "Verification email sent. Please check your inbox.");
+    } catch (err) {
+      setResendMessage(err.message || "Failed to send verification email.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -84,7 +105,20 @@ export default function Login() {
             </button>
           </label>
 
-          {error && <div className="errorBox">{error}</div>}
+          {error && (
+            <div className="errorBox">
+              <span>{error}</span>
+              {needsEmailVerification && email && (
+                <button type="button" onClick={handleResend} disabled={resendLoading}>
+                  {resendLoading ? (
+                    <Loader2 className="spin" size={13} strokeWidth={2.2} />
+                  ) : null}
+                  {resendLoading ? "Sending..." : "Resend verification email"}
+                </button>
+              )}
+              {resendMessage && <small>{resendMessage}</small>}
+            </div>
+          )}
 
           <button className="signInButton" type="submit" disabled={loading}>
             <span>{loading ? "Signing in..." : "Sign in"}</span>
@@ -269,6 +303,8 @@ const css = `
 }
 
 .errorBox{
+  display:grid;
+  gap:8px;
   padding:8px 10px;
   border-radius:10px;
   background:rgba(239,68,68,.10);
@@ -277,6 +313,43 @@ const css = `
   font-size:13px;
   line-height:1.35;
   text-align:left;
+}
+
+.errorBox button{
+  justify-self:start;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:28px;
+  padding:0 10px;
+  border-radius:999px;
+  border:1px solid rgba(185,28,28,.18);
+  background:#ffffff;
+  color:#991b1b;
+  font:inherit;
+  font-size:12px;
+  cursor:pointer;
+}
+
+.errorBox button:disabled{
+  opacity:.72;
+  cursor:not-allowed;
+}
+
+.errorBox small{
+  color:#7f1d1d;
+  font-size:12px;
+  line-height:1.35;
+}
+
+.spin{
+  animation:spin 900ms linear infinite;
+}
+
+@keyframes spin{
+  to{
+    transform:rotate(360deg);
+  }
 }
 
 .loginFooter{

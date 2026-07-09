@@ -42,7 +42,7 @@ export default function MyEvents() {
         <div className="accountListState">You have not joined any events yet.</div>
       ) : (
         <div className="accountTableWrap">
-          <table className="accountTable myEventsTable">
+          <table className="accountTable wide">
             <thead>
               <tr>
                 <th style={{ width: "32%" }}>Event</th>
@@ -158,10 +158,6 @@ function formatDateTime(value) {
 }
 
 const css = `
-.myEventsTable{
-  min-width:1040px;
-}
-
 .eventTableValue{
   display:inline-flex;
   align-items:center;

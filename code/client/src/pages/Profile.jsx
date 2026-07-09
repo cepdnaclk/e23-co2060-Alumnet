@@ -277,7 +277,9 @@ function InterestTags({ value = "" }) {
 }
 
 function getInterestTags(value = "") {
-  return value
+  const input = value || "";
+
+  return input
     .split(/[,|]/)
     .map((item) => item.trim())
     .filter(Boolean)

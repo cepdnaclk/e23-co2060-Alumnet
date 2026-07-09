@@ -64,7 +64,7 @@ export default function Navbar() {
     };
 
     loadProfile();
-  }, [token, location.pathname]);
+  }, [token]);
 
   useEffect(() => {
     let subscription;
@@ -130,7 +130,7 @@ export default function Navbar() {
   useEffect(() => {
     const handleChatUnreadChange = () => loadChatUnread();
     const handleFocus = () => loadChatUnread();
-    const interval = window.setInterval(loadChatUnread, 8000);
+    const interval = window.setInterval(loadChatUnread, 30000);
 
     window.addEventListener("alumnet:chat-unread-changed", handleChatUnreadChange);
     window.addEventListener("focus", handleFocus);

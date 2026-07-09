@@ -113,7 +113,7 @@ export default function MyMentees() {
             <div className="accountListState">No mentees match this filter.</div>
           ) : (
             <div className="accountTableWrap">
-              <table className="accountTable">
+              <table className="accountTable wide">
                 <thead>
                   <tr>
                     <th style={{ width: "30%" }}>Mentee</th>
@@ -221,7 +221,7 @@ function countByStatus(items, status) {
 }
 
 function InterestTags({ value = "" }) {
-  const interests = value
+  const interests = (value || "")
     .split(/[,|]/)
     .map((item) => item.trim())
     .filter(Boolean)

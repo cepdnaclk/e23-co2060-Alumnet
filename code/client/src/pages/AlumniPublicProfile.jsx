@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { getAlumniProfile, getMyMentors } from "../api";
+import { getAlumniProfile, getMyMentors, getStudentRequests } from "../api";
 import LoadingScreen from "../components/LoadingScreen";
 
 import verifiedIcon from "../assets/verified.png";
@@ -21,6 +21,7 @@ export default function AlumniPublicProfile() {
 
   const [profile, setProfile] = useState(null);
   const [mentorConnection, setMentorConnection] = useState(null);
+  const [pendingRequest, setPendingRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -47,12 +48,25 @@ export default function AlumniPublicProfile() {
         setProfile(data);
 
         if (token && currentUser?.role === "student") {
-          const mentors = await getMyMentors(token);
+          const [mentors, studentRequests] = await Promise.all([
+            getMyMentors(token),
+            getStudentRequests(token),
+          ]);
+
           setMentorConnection(
             mentors.find((mentor) => Number(mentor.id) === Number(id)) || null
           );
+
+          setPendingRequest(
+            studentRequests.find(
+              (request) =>
+                Number(request.alumni_user_id) === Number(id) &&
+                request.status === "pending"
+            ) || null
+          );
         } else {
           setMentorConnection(null);
+          setPendingRequest(null);
         }
       } catch (e) {
         setErr(e.message || "Failed to load alumni profile");
@@ -76,12 +90,14 @@ export default function AlumniPublicProfile() {
   const remainingSlots = Math.max(capacity - acceptedCount, 0);
   const isVerified = profile?.verification_status === "verified";
   const hasEndedMentorship = mentorConnection?.mentorship_status === "ended";
+  const hasPendingRequest = Boolean(pendingRequest);
   const canRequest =
     token &&
     isStudent &&
     !isOwnProfile &&
     isVerified &&
     remainingSlots > 0 &&
+    !hasPendingRequest &&
     (!mentorConnection || hasEndedMentorship);
   const hasMentorConnection = Boolean(mentorConnection) && !hasEndedMentorship;
   const hasPendingEndRequest = mentorConnection?.mentorship_status === "ending_requested";
@@ -163,6 +179,10 @@ export default function AlumniPublicProfile() {
                 >
                   {hasEndedMentorship ? "Request Mentorship Again" : "Request Mentorship"}
                 </button>
+              )}
+
+              {hasPendingRequest && (
+                <div className="pendingRequestPill">Mentorship request pending</div>
               )}
 
               {hasMentorConnection && !hasPendingEndRequest && (
@@ -281,7 +301,9 @@ function InterestTags({ value = "" }) {
 }
 
 function getInterestTags(value = "") {
-  return value
+  const input = value || "";
+
+  return input
     .split(/[,|]/)
     .map((item) => item.trim())
     .filter(Boolean)
@@ -685,22 +707,21 @@ const css = `
   box-shadow:0 10px 22px rgba(47,95,245,.18);
 }
 
-.endPendingPill::before{
-  content:"";
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:#f59e0b;
+.pendingRequestPill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:0 12px;
+  border-radius:999px;
+  background:#F4D35E;
+  color:#000000;
+  font-size:13px;
+  line-height:1;
+  white-space:nowrap;
 }
 
-@media (max-width:640px){
-  .profileMain{
-    padding:10px 14px 36px;
-  }
 
-  .profileCard{
-    border-radius:18px;
-    padding:0 14px 22px;
   }
 
   .profileHero{

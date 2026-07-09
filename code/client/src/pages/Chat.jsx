@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, Paperclip, Search, Send, Smile, Trash2, Type, X } from "lucide-react";
+import { Mic, Paperclip, Search, Send, Smile, Trash2, Type, X, ChevronLeft } from "lucide-react";
 import {
   deleteChatMessage,
   getChatContacts,
@@ -45,6 +45,8 @@ export default function Chat() {
   const mediaRecorderRef = useRef(null);
   const recordingChunksRef = useRef([]);
   const recordingStreamRef = useRef(null);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -58,6 +60,20 @@ export default function Chat() {
       );
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 720;
+      setIsMobile(mobile);
+      setShowSidebar(!mobile || !selectedConversation);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [selectedConversation]);
 
   useEffect(() => {
     const container = messagesRef.current;
@@ -160,6 +176,9 @@ export default function Chat() {
         window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
       } else {
         setMessages([]);
+      }
+      if (isMobile) {
+        setShowSidebar(false);
       }
     } catch (err) {
       console.error(err);
@@ -383,8 +402,28 @@ export default function Chat() {
       <style>{css}</style>
 
       <section className="inboxShell">
-        <aside className="inboxSidebar">
-          <label className="conversationSearch">
+        {isMobile && showSidebar && (
+          <div
+            className="mobileSidebarBackdrop"
+            onClick={() => setShowSidebar(false)}
+            aria-hidden="true"
+          />
+        )}
+        {showSidebar && (
+          <aside className={`inboxSidebar ${isMobile ? "mobileActive" : ""}`}>
+            {isMobile && (
+              <div className="mobileSidebarHeader">
+                <button
+                  type="button"
+                  className="mobileSidebarToggle"
+                  onClick={() => setShowSidebar(false)}
+                  aria-label="Close contacts"
+                >
+                  <ChevronLeft size={18} strokeWidth={2} />
+                </button>
+              </div>
+            )}
+            <label className="conversationSearch">
             <Search size={15} strokeWidth={2} />
             <input
               type="text"
@@ -442,7 +481,8 @@ export default function Chat() {
               })
             )}
           </div>
-        </aside>
+          </aside>
+        )}
 
         <section className="chatWindow">
           {!selectedConversation ? (
@@ -454,10 +494,23 @@ export default function Chat() {
           ) : (
             <>
               <header className="chatHeader">
-                <div className="chatHeaderIdentity">
-                  {renderAvatar(selectedConversation, "small", "header-")}
-                  <div>
-                    <h2>{selectedConversation.other_user_name}</h2>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* show a back/contacts button on mobile when sidebar is hidden */}
+                      {isMobile && !showSidebar && (
+                    <button
+                      type="button"
+                      className="mobileSidebarToggle"
+                      onClick={() => setShowSidebar(true)}
+                      aria-label="Show contacts"
+                    >
+                      <ChevronLeft size={18} strokeWidth={2} />
+                    </button>
+                  )}
+                  <div className="chatHeaderIdentity">
+                    {renderAvatar(selectedConversation, "small", "header-")}
+                    <div>
+                      <h2>{selectedConversation.other_user_name}</h2>
+                    </div>
                   </div>
                 </div>
               </header>
@@ -1278,10 +1331,12 @@ const css = `
 
 @media (max-width:720px){
   .inboxShell{
+    position:relative;
     grid-template-columns:1fr;
-    height:auto;
+    height:100%;
     min-height:0;
     border-radius:18px;
+    overflow:visible;
   }
 
   .inboxSidebar{
@@ -1290,8 +1345,63 @@ const css = `
     border-bottom:1px solid rgba(0,0,0,.08);
   }
 
+  .inboxSidebar.mobileActive{
+    position:absolute;
+    z-index:25;
+    inset:0;
+    width:100%;
+    height:100%;
+    margin:0;
+    border-radius:18px;
+    background:#fafbfc;
+    box-shadow:0 28px 72px rgba(0,0,0,.18);
+    overflow:hidden;
+  }
+
+  .mobileSidebarBackdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.18);
+    z-index:24;
+  }
+
+  .mobileSidebarHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:18px 14px 6px;
+  }
+
+  .mobileSidebarToggle{
+    display:inline-grid;
+    place-items:center;
+    width:34px;
+    height:34px;
+    border:0;
+    background:rgba(255,255,255,.95);
+    border-radius:50%;
+    color:rgba(17,17,17,.78);
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
+  }
+
+  .mobileSidebarHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:18px 14px 6px;
+  }
+
+  .mobileSidebarHeader h3{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+  }
+
   .chatWindow{
-    min-height:520px;
+    min-height:0;
+    flex:1;
   }
 
   .messageThread{
@@ -1300,6 +1410,45 @@ const css = `
 
   .composer{
     padding:10px 14px 14px;
+  }
+
+  /* Mobile composer: stack textarea, tools, send button */
+  .composerBox{
+    position:relative;
+    min-height:62px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+    padding:8px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.06);
+    box-shadow:0 8px 18px rgba(0,0,0,.06);
+    background:#ffffff;
+  }
+
+  .composerTools{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+    order:2;
+  }
+
+  .sendButton{
+    order:3;
+    align-self:flex-end;
+  }
+
+  .mobileSidebarToggle{
+    background:transparent;
+    border:0;
+    padding:6px;
+    display:inline-grid;
+    place-items:center;
+    margin-right:4px;
   }
 }
 `;
