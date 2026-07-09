@@ -96,7 +96,6 @@ const signup = async (req, res) => {
       role,
       department,
 
-      // student
       batch,
       areas_of_interest,
       bio,
@@ -107,7 +106,6 @@ const signup = async (req, res) => {
       portfolio_url,
       cv_url,
 
-      // alumni
       job_title,
       organization,
       graduation_year,
@@ -136,17 +134,23 @@ const signup = async (req, res) => {
     transactionOpen = true;
 
     const existingUser = await client.query(
-      "SELECT id FROM users WHERE email = $1",
+      "SELECT id FROM users WHERE LOWER(email) = LOWER($1)",
       [email]
     );
 
     if (existingUser.rows.length > 0) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ message: "Email already registered" });
+      transactionOpen = false;
+
+      return res.status(409).json({
+        message: "Email already registered",
+      });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
+
     const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+
     const emailVerificationTokenExpiry = new Date(
       Date.now() + 24 * 60 * 60 * 1000
     );
@@ -166,8 +170,8 @@ const signup = async (req, res) => {
       RETURNING id, full_name, email, role, email_verified, verification_status, created_at, verified_at, avatar_url
       `,
       [
-        full_name,
-        email,
+        full_name.trim(),
+        email.trim().toLowerCase(),
         password_hash,
         role,
         emailVerificationToken,
@@ -244,33 +248,29 @@ const signup = async (req, res) => {
     await client.query("COMMIT");
     transactionOpen = false;
 
-    let emailSent = true;
+    res.status(201).json({
+      message:
+        "Account created successfully. Please check your email to verify your account.",
+      emailSent: true,
+    });
 
-    try {
-      await sendVerificationEmail(email, emailVerificationToken);
-    } catch (emailError) {
-      emailSent = false;
-      console.error("Verification email send error:", emailError);
-    }
+    sendVerificationEmail(user.email, emailVerificationToken).catch((error) => {
+      console.error("Verification email send error:", error);
+    });
 
-    try {
-      await sendAdminSignupNotification(user);
-    } catch (adminEmailError) {
-      console.error("Admin notification email send error:", adminEmailError);
-    }
-
-    return res.status(201).json({
-      message: emailSent
-        ? "Registration successful. Please check your email to verify your account."
-        : "Account created, but we could not send the verification email. Please use resend verification email.",
-      emailSent,
+    sendAdminSignupNotification(user).catch((error) => {
+      console.error("Admin notification email send error:", error);
     });
   } catch (error) {
     if (transactionOpen) {
       await client.query("ROLLBACK");
     }
+
     console.error("Signup error:", error);
-    return res.status(500).json({ message: "Server error during signup" });
+
+    return res.status(500).json({
+      message: "Server error during signup",
+    });
   } finally {
     client.release();
   }
