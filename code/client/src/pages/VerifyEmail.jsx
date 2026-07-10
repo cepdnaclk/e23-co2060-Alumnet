@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Check, Loader2, LogIn, MailCheck, X } from "lucide-react";
 import { resendVerificationEmail, verifyEmail } from "../api";
-import heroBg from "../assets/bg.png";
 
 export default function VerifyEmail() {
   const { token } = useParams();
@@ -109,7 +108,6 @@ export default function VerifyEmail() {
   return (
     <main className="verifyPage">
       <style>{css}</style>
-      <img src={heroBg} alt="" className="verifyBg" />
 
       <section className={`verifyCard ${mounted ? "in" : ""}`}>
         <button className="iconButton" type="button" onClick={goHome}>
@@ -176,22 +174,21 @@ const css = `
   display:grid;
   place-items:center;
   overflow:hidden;
-  background:#d8ecfb;
+  background:linear-gradient(180deg, #afd6ff 0%, #cfe7f7 34%, #f6e8ee 62%, #eef7fb 100%);
   color:#050505;
   font-family:"Google Sans";
   padding:24px;
 }
 
-.verifyBg{
+.verifyPage::before{
+  content:"";
   position:fixed;
-  top:0;
-  left:50%;
-  width:100%;
-  height:auto;
-  min-height:100%;
-  transform:translateX(-50%);
-  object-fit:cover;
-  object-position:center top;
+  inset:0;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.52), rgba(255,255,255,0) 42%),
+    radial-gradient(circle at 50% 28%, rgba(255,232,238,.72), rgba(255,232,238,0) 42%),
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,.72), rgba(255,255,255,0) 38%);
+  pointer-events:none;
 }
 
 .verifyCard{
@@ -338,12 +335,6 @@ const css = `
 @media (max-width:640px){
   .verifyPage{
     padding:18px;
-  }
-
-  .verifyBg{
-    height:100%;
-    width:auto;
-    min-width:100%;
   }
 }
 `;

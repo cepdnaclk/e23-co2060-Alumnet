@@ -25,7 +25,7 @@ export default function PageShell({ title, subtitle, children, right }) {
 const responsiveCss = `
 .page-shell-wrap{
   min-height:100vh;
-  background:#f3f3f1;
+  background:transparent;
   font-family:"Google Sans";
   padding:26px 24px 30px;
   animation:pageDissolve .22s ease both;

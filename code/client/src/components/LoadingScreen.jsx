@@ -1,11 +1,8 @@
-import bgImage from "../assets/bg.png";
-
 export default function LoadingScreen({ text = "Loading..." }) {
   return (
     <>
       <style>{css}</style>
       <main className="loadingScreen">
-        <img src={bgImage} alt="" className="loadingBg" />
         <div className="loadingOverlay" />
         <div className="loadingText">{text}</div>
       </main>
@@ -20,25 +17,17 @@ const css = `
   display:grid;
   place-items:center;
   overflow:hidden;
-  background:#fbfbfa;
+  background:linear-gradient(180deg, #afd6ff 0%, #cfe7f7 34%, #f6e8ee 62%, #eef7fb 100%);
   font-family:"Google Sans";
-}
-
-.loadingBg{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  filter:blur(18px);
-  transform:scale(1.08);
-  opacity:.34;
 }
 
 .loadingOverlay{
   position:absolute;
   inset:0;
-  background:rgba(251,251,250,.48);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.48), rgba(255,255,255,0) 42%),
+    radial-gradient(circle at 50% 24%, rgba(255,232,238,.66), rgba(255,232,238,0) 44%),
+    radial-gradient(circle at 50% 14%, rgba(255,255,255,.62), rgba(255,255,255,0) 36%);
 }
 
 .loadingText{

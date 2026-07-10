@@ -17,7 +17,6 @@ import {
 
 import { registerUser } from "../api";
 
-import heroBg from "../assets/bg.png";
 import signUpIcon from "../assets/sign up.png";
 import bufferingIcon from "../assets/buffering.png";
 import tipIcon from "../assets/tip.png";
@@ -312,12 +311,6 @@ export default function Register() {
   return (
     <main className="registerPage">
       <style>{css}</style>
-
-      <img
-        src={heroBg}
-        alt=""
-        className="registerBg"
-      />
 
       <section
         className={`registerCard ${
@@ -765,22 +758,22 @@ const css = `
   display:grid;
   place-items:center;
   overflow:hidden;
-  background:#d8ecfb;
+  background:
+    linear-gradient(180deg, #afd6ff 0%, #cfe7f7 34%, #f6e8ee 62%, #eef7fb 100%);
   color:#050505;
   font-family:"Google Sans", Arial, sans-serif;
   padding:26px;
 }
 
-.registerBg{
+.registerPage::before{
+  content:"";
   position:fixed;
-  top:0;
-  left:50%;
-  width:100%;
-  height:auto;
-  min-height:100%;
-  transform:translateX(-50%);
-  object-fit:cover;
-  object-position:center top;
+  inset:0;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.52), rgba(255,255,255,0) 42%),
+    radial-gradient(circle at 50% 28%, rgba(255,232,238,.72), rgba(255,232,238,0) 42%),
+    radial-gradient(circle at 50% 18%, rgba(255,255,255,.72), rgba(255,255,255,0) 40%);
+  pointer-events:none;
 }
 
 .registerCard{
@@ -792,9 +785,11 @@ const css = `
   border-radius:20px;
   padding:24px 26px 22px;
   text-align:center;
-  background:#ffffff;
-  border:1px solid rgba(255,255,255,.84);
-  box-shadow:0 28px 72px rgba(0,0,0,.24);
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(255,255,255,.78);
+  box-shadow:0 28px 72px rgba(39,91,130,.18);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
   opacity:0;
   transform:translateY(14px) scale(.985);
   transition:
@@ -915,9 +910,9 @@ const css = `
 
 .fieldWrap:focus-within{
   background:#ffffff;
-  border-color:rgba(0,0,0,.12);
+  border-color:rgba(54,127,145,.24);
   box-shadow:
-    0 0 0 4px rgba(255,255,255,.28);
+    0 0 0 4px rgba(201,226,255,.42);
 }
 
 .fieldWrap.span2{
@@ -1092,6 +1087,17 @@ const css = `
     0 8px 18px rgba(0,0,0,.24),
     inset 0 1px 0 rgba(255,255,255,.20);
   cursor:pointer;
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    opacity .2s ease;
+}
+
+.createButton:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:
+    0 10px 23px rgba(0,0,0,.27),
+    inset 0 1px 0 rgba(255,255,255,.20);
 }
 
 .createButton:disabled{
@@ -1163,13 +1169,6 @@ const css = `
     padding:18px;
     overflow:auto;
   }
-
-  .registerBg{
-    height:100%;
-    width:auto;
-    min-width:100%;
-  }
-
   .registerCard{
     max-height:none;
     width:min(

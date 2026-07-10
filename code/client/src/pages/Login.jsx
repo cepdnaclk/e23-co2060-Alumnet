@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff, Loader2, LogIn, Mail, Lock } from "lucide-react";
 import { loginUser, resendVerificationEmail } from "../api";
-import heroBg from "../assets/bg.png";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -64,7 +63,6 @@ export default function Login() {
   return (
     <main className="loginPage">
       <style>{css}</style>
-      <img src={heroBg} alt="" className="loginBg" />
 
       <section className={`loginCard ${mounted ? "in" : ""}`}>
         <button className="iconButton" type="button" onClick={goHome}>
@@ -146,22 +144,22 @@ const css = `
   display:grid;
   place-items:center;
   overflow:hidden;
-  background:#d8ecfb;
+  background:
+    linear-gradient(180deg, #afd6ff 0%, #cfe7f7 34%, #f6e8ee 62%, #eef7fb 100%);
   color:#050505;
   font-family:"Google Sans";
   padding:24px;
 }
 
-.loginBg{
+.loginPage::before{
+  content:"";
   position:fixed;
-  top:0;
-  left:50%;
-  width:100%;
-  height:auto;
-  min-height:100%;
-  transform:translateX(-50%);
-  object-fit:cover;
-  object-position:center top;
+  inset:0;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.52), rgba(255,255,255,0) 42%),
+    radial-gradient(circle at 50% 28%, rgba(255,232,238,.72), rgba(255,232,238,0) 42%),
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,.72), rgba(255,255,255,0) 38%);
+  pointer-events:none;
 }
 
 .loginCard{
@@ -171,9 +169,11 @@ const css = `
   border-radius:18px;
   padding:28px 28px 24px;
   text-align:center;
-  background:#ffffff;
-  border:1px solid rgba(255,255,255,.84);
-  box-shadow:0 28px 68px rgba(0,0,0,.24);
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(255,255,255,.78);
+  box-shadow:0 28px 68px rgba(39,91,130,.18);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
   opacity:0;
   transform:translateY(14px) scale(.985);
   transition:opacity .55s ease, transform .55s ease;
@@ -201,7 +201,7 @@ const css = `
 .iconButton:hover{
   transform:translateY(-1px);
   background:#ffffff;
-  box-shadow:0 10px 22px rgba(0,0,0,.15);
+  box-shadow:0 10px 22px rgba(39,91,130,.16);
 }
 
 .loginCard h1{
@@ -239,8 +239,8 @@ const css = `
 
 .inputWrap:focus-within{
   background:#ffffff;
-  border-color:rgba(0,0,0,.12);
-  box-shadow:0 0 0 4px rgba(255,255,255,.28);
+  border-color:rgba(54,127,145,.24);
+  box-shadow:0 0 0 4px rgba(201,226,255,.42);
 }
 
 .inputWrap input{
@@ -387,12 +387,6 @@ const css = `
 @media (max-width:640px){
   .loginPage{
     padding:18px;
-  }
-
-  .loginBg{
-    height:100%;
-    width:auto;
-    min-width:100%;
   }
 }
 `;
