@@ -633,6 +633,94 @@ const css = `
   white-space:pre-wrap;
 }
 
+.confirmationOverlay{
+  position:fixed;
+  inset:0;
+  z-index:60;
+  display:grid;
+  place-items:center;
+  padding:18px;
+  background:rgba(0,0,0,.36);
+  backdrop-filter:blur(4px);
+}
+
+.confirmationDialog{
+  width:min(420px, 100%);
+  padding:24px;
+  border-radius:18px;
+  background:#ffffff;
+  border:1px solid rgba(255,255,255,.86);
+  box-shadow:0 28px 70px rgba(0,0,0,.26);
+  animation:accountListDissolve .18s ease both;
+}
+
+.confirmationDialog h2{
+  margin:0;
+  color:#111111;
+  font-size:19px;
+  line-height:1.25;
+  font-weight:600;
+}
+
+.confirmationDialog p{
+  margin:10px 0 0;
+  color:rgba(17,17,17,.66);
+  font-size:14px;
+  line-height:1.55;
+}
+
+.confirmationActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:22px;
+  flex-wrap:wrap;
+}
+
+.confirmationButton{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:104px;
+  height:34px;
+  padding:0 14px;
+  border:0;
+  border-radius:999px;
+  font-family:inherit;
+  font-size:13px;
+  line-height:1;
+  cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+}
+
+.confirmationButton.secondary{
+  background:#eef1f4;
+  color:#111111;
+}
+
+.confirmationButton.accept{
+  background:#e8f0fe;
+  color:#315fa8;
+  box-shadow:0 10px 22px rgba(49,95,168,.14);
+}
+
+.confirmationButton.reject{
+  background:#fee8e8;
+  color:#b42318;
+  box-shadow:0 10px 22px rgba(180,35,24,.13);
+}
+
+.confirmationButton:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(0,0,0,.14);
+}
+
+.confirmationButton:disabled{
+  opacity:.68;
+  cursor:not-allowed;
+  transform:none;
+}
+
 @keyframes accountListDissolve{
   from{ opacity:0; transform:translateY(4px); }
   to{ opacity:1; transform:translateY(0); }
@@ -716,6 +804,19 @@ const css = `
   .accountRow{
     grid-template-columns:1fr;
     gap:5px;
+  }
+
+  .confirmationDialog{
+    padding:20px;
+    border-radius:16px;
+  }
+
+  .confirmationActions{
+    flex-direction:column-reverse;
+  }
+
+  .confirmationButton{
+    width:100%;
   }
 }
 `;
