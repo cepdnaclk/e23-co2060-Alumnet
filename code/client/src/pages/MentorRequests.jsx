@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
 import SegmentedFilter from "../components/SegmentedFilter";
+import { formatAppDateTime } from "../utils/dateTime";
 import {
   acceptEndMentorship,
   getMentorRequests,
@@ -21,6 +22,7 @@ export default function MentorRequests() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState(null);
 
   const loadRequests = async () => {
     try {
@@ -49,6 +51,27 @@ export default function MentorRequests() {
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  const openStatusConfirmation = (request, status) => {
+    setPendingConfirmation({
+      id: request.id,
+      studentName: request.student_full_name || "this student",
+      status,
+    });
+  };
+
+  const closeStatusConfirmation = () => {
+    if (actionLoadingId) return;
+    setPendingConfirmation(null);
+  };
+
+  const confirmStatusUpdate = async () => {
+    if (!pendingConfirmation) return;
+
+    const { id, status } = pendingConfirmation;
+    setPendingConfirmation(null);
+    await handleStatusUpdate(id, status);
   };
 
   const handleAcceptEnd = async (id) => {
@@ -83,6 +106,56 @@ export default function MentorRequests() {
 
   return (
     <AccountListShell>
+      {pendingConfirmation && (
+        <div
+          className="confirmationOverlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeStatusConfirmation();
+            }
+          }}
+        >
+          <section
+            className="confirmationDialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mentorship-confirmation-title"
+            aria-describedby="mentorship-confirmation-message"
+          >
+            <h2 id="mentorship-confirmation-title">
+              {pendingConfirmation.status === "accepted"
+                ? "Accept mentorship request?"
+                : "Reject mentorship request?"}
+            </h2>
+            <p id="mentorship-confirmation-message">
+              {pendingConfirmation.status === "accepted"
+                ? `Are you sure you want to accept ${pendingConfirmation.studentName}'s mentorship request?`
+                : `Are you sure you want to reject ${pendingConfirmation.studentName}'s mentorship request?`}
+            </p>
+            <div className="confirmationActions">
+              <button
+                className="confirmationButton secondary"
+                type="button"
+                onClick={closeStatusConfirmation}
+                disabled={Boolean(actionLoadingId)}
+              >
+                Cancel
+              </button>
+              <button
+                className={`confirmationButton ${
+                  pendingConfirmation.status === "accepted" ? "accept" : "reject"
+                }`}
+                type="button"
+                onClick={confirmStatusUpdate}
+                disabled={Boolean(actionLoadingId)}
+              >
+                {pendingConfirmation.status === "accepted" ? "Yes, accept" : "Yes, reject"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {err && <div className="accountListError">{err}</div>}
 
       {loading ? (
@@ -144,7 +217,7 @@ export default function MentorRequests() {
                           </div>
                         </div>
                       </td>
-                      <td>{formatDateTime(getSentDate(request))}</td>
+                      <td>{formatAppDateTime(getSentDate(request))}</td>
                       <td>
                         <div className="tableMessage">
                           {request.status === "ending_requested"
@@ -166,7 +239,7 @@ export default function MentorRequests() {
                                 type="button"
                                 title="Confirm"
                                 aria-label={`Confirm ${request.student_full_name || "student"}`}
-                                onClick={() => handleStatusUpdate(request.id, "accepted")}
+                                onClick={() => openStatusConfirmation(request, "accepted")}
                                 disabled={actionLoadingId === request.id}
                               >
                                 <img src={tickIcon} alt="" />
@@ -177,7 +250,7 @@ export default function MentorRequests() {
                                 type="button"
                                 title="Reject"
                                 aria-label={`Reject ${request.student_full_name || "student"}`}
-                                onClick={() => handleStatusUpdate(request.id, "rejected")}
+                                onClick={() => openStatusConfirmation(request, "rejected")}
                                 disabled={actionLoadingId === request.id}
                               >
                                 <img src={rejectedIcon} alt="" />
@@ -241,7 +314,3 @@ function getStatusIcon(status) {
   return pendingIcon;
 }
 
-function formatDateTime(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
