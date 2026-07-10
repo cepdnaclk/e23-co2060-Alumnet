@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import logo from "../assets/alumnet-logo.png";
+import { formatAppDateTime } from "../utils/dateTime";
 import {
   getChatContacts,
   getMyNotifications,
@@ -256,7 +257,7 @@ export default function Navbar() {
                         <span className="notifTitle">{notif.title}</span>
                         <span className="notifMessage">{notif.message}</span>
                         <span className="notifTime">
-                          {new Date(notif.created_at).toLocaleDateString()}
+                          {formatAppDateTime(notif.created_at)}
                         </span>
                       </button>
                     ))

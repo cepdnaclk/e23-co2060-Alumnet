@@ -3,6 +3,7 @@ import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
 import SegmentedFilter from "../components/SegmentedFilter";
 import { getStudentRequests } from "../api";
+import { formatAppDateTime } from "../utils/dateTime";
 import verifiedIcon from "../assets/verified.png";
 import pendingIcon from "../assets/pending.png";
 import rejectedIcon from "../assets/rejected.png";
@@ -112,7 +113,7 @@ export default function StudentRequests() {
                           </div>
                         </div>
                       </td>
-                      <td>{formatDateTime(getSentDate(request))}</td>
+                      <td>{formatAppDateTime(getSentDate(request))}</td>
                       <td>
                         <div className="tableMessage">
                           {isEndRequest(request.status)
@@ -172,7 +173,3 @@ function formatRole(title, organization) {
   return title || organization || "Mentor";
 }
 
-function formatDateTime(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
