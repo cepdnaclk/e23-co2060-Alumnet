@@ -114,6 +114,7 @@ const getApprovedEvents = async (req, res) => {
       FROM events e
       JOIN users u ON u.id = e.created_by
       WHERE e.approval_status = 'approved'
+        AND e.event_date >= CURRENT_DATE
       ORDER BY e.event_date ASC, e.event_time ASC
       `,
       [req.user.id]
@@ -163,6 +164,7 @@ const getAdminEvents = async (req, res) => {
       `
       SELECT
         e.*,
+        (e.event_date < CURRENT_DATE) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
@@ -349,6 +351,16 @@ const registerForEvent = async (req, res) => {
       });
     }
 
+    const eventDate = new Date(event.event_date);
+    const today = new Date();
+    eventDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    if (eventDate < today) {
+      return res.status(400).json({
+        message: "Registration has closed because this event is past",
+      });
+    }
+
     if (Number(event.registered_count) >= Number(event.available_slots)) {
       return res.status(400).json({
         message: "This event is full",
@@ -437,6 +449,7 @@ const getEventById = async (req, res) => {
       `
       SELECT
         e.*,
+        (e.event_date < CURRENT_DATE) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
@@ -587,6 +600,7 @@ const getMyCreatedEvents = async (req, res) => {
       `
       SELECT
         e.*,
+        (e.event_date < CURRENT_DATE) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
