@@ -32,6 +32,25 @@ const DEPARTMENTS = [
 
 const BATCHES = ["E20", "E21", "E22", "E23", "E24"];
 
+const REGISTER_DRAFT_KEY = "alumnet.registerDraft.v1";
+const REGISTER_DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+function loadRegisterDraft() {
+  try {
+    const savedDraft = JSON.parse(localStorage.getItem(REGISTER_DRAFT_KEY));
+
+    if (!savedDraft || Date.now() - savedDraft.savedAt > REGISTER_DRAFT_MAX_AGE) {
+      localStorage.removeItem(REGISTER_DRAFT_KEY);
+      return {};
+    }
+
+    return savedDraft.values || {};
+  } catch {
+    localStorage.removeItem(REGISTER_DRAFT_KEY);
+    return {};
+  }
+}
+
 function Field({ icon: Icon, children, className = "" }) {
   return (
     <label className={`fieldWrap ${className}`}>
@@ -123,28 +142,30 @@ function isValidUrl(value) {
 export default function Register() {
   const navigate = useNavigate();
 
-  const [role, setRole] = useState("student");
+  const [initialDraft] = useState(loadRegisterDraft);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [role, setRole] = useState(initialDraft.role || "student");
+
+  const [fullName, setFullName] = useState(initialDraft.fullName || "");
+  const [email, setEmail] = useState(initialDraft.email || "");
   const [password, setPassword] = useState("");
 
-  const [department, setDepartment] = useState("");
-  const [batch, setBatch] = useState("");
-  const [interests, setInterests] = useState("");
-  const [bio, setBio] = useState("");
-  const [whyNeedMentor, setWhyNeedMentor] = useState("");
-  const [goals, setGoals] = useState("");
+  const [department, setDepartment] = useState(initialDraft.department || "");
+  const [batch, setBatch] = useState(initialDraft.batch || "");
+  const [interests, setInterests] = useState(initialDraft.interests || "");
+  const [bio, setBio] = useState(initialDraft.bio || "");
+  const [whyNeedMentor, setWhyNeedMentor] = useState(initialDraft.whyNeedMentor || "");
+  const [goals, setGoals] = useState(initialDraft.goals || "");
 
-  const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [githubUrl, setGithubUrl] = useState("");
-  const [portfolioUrl, setPortfolioUrl] = useState("");
-  const [cvUrl, setCvUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState(initialDraft.linkedinUrl || "");
+  const [githubUrl, setGithubUrl] = useState(initialDraft.githubUrl || "");
+  const [portfolioUrl, setPortfolioUrl] = useState(initialDraft.portfolioUrl || "");
+  const [cvUrl, setCvUrl] = useState(initialDraft.cvUrl || "");
 
-  const [alumniBatch, setAlumniBatch] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [prefCapacity, setPrefCapacity] = useState("");
+  const [alumniBatch, setAlumniBatch] = useState(initialDraft.alumniBatch || "");
+  const [jobTitle, setJobTitle] = useState(initialDraft.jobTitle || "");
+  const [organization, setOrganization] = useState(initialDraft.organization || "");
+  const [prefCapacity, setPrefCapacity] = useState(initialDraft.prefCapacity || "");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -161,6 +182,56 @@ export default function Register() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem(
+        REGISTER_DRAFT_KEY,
+        JSON.stringify({
+          savedAt: Date.now(),
+          values: {
+            role,
+            fullName,
+            email,
+            department,
+            batch,
+            interests,
+            bio,
+            whyNeedMentor,
+            goals,
+            linkedinUrl,
+            githubUrl,
+            portfolioUrl,
+            cvUrl,
+            alumniBatch,
+            jobTitle,
+            organization,
+            prefCapacity,
+          },
+        })
+      );
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [
+    role,
+    fullName,
+    email,
+    department,
+    batch,
+    interests,
+    bio,
+    whyNeedMentor,
+    goals,
+    linkedinUrl,
+    githubUrl,
+    portfolioUrl,
+    cvUrl,
+    alumniBatch,
+    jobTitle,
+    organization,
+    prefCapacity,
+  ]);
 
   const payload = useMemo(() => {
     const common = {
@@ -279,6 +350,8 @@ export default function Register() {
 
     try {
       const data = await registerUser(payload);
+
+      localStorage.removeItem(REGISTER_DRAFT_KEY);
 
       navigate("/verify-email", {
         state: {
