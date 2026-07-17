@@ -33,9 +33,10 @@ export default function MyCreatedEvents() {
   const counts = useMemo(
     () => ({
       all: events.length,
-      pending: events.filter((event) => event.approval_status === "pending").length,
-      approved: events.filter((event) => event.approval_status === "approved").length,
-      rejected: events.filter((event) => event.approval_status === "rejected").length,
+      past: events.filter((event) => event.is_past).length,
+      pending: events.filter((event) => !event.is_past && event.approval_status === "pending").length,
+      approved: events.filter((event) => !event.is_past && event.approval_status === "approved").length,
+      rejected: events.filter((event) => !event.is_past && event.approval_status === "rejected").length,
     }),
     [events]
   );
@@ -44,7 +45,9 @@ export default function MyCreatedEvents() {
     () =>
       statusFilter === "all"
         ? events
-        : events.filter((event) => event.approval_status === statusFilter),
+        : statusFilter === "past"
+          ? events.filter((event) => event.is_past)
+          : events.filter((event) => !event.is_past && event.approval_status === statusFilter),
     [events, statusFilter]
   );
 
@@ -53,6 +56,7 @@ export default function MyCreatedEvents() {
     { label: "Pending", value: "pending", count: counts.pending },
     { label: "Approved", value: "approved", count: counts.approved },
     { label: "Rejected", value: "rejected", count: counts.rejected },
+    { label: "Past", value: "past", count: counts.past },
   ];
 
   if (loading) return <LoadingScreen text="Loading your events..." />;
@@ -120,8 +124,8 @@ export default function MyCreatedEvents() {
                         </span>
                       </td>
                       <td>
-                        <span className={`eventStatusPill ${event.approval_status}`}>
-                          {event.approval_status}
+                        <span className={`eventStatusPill ${event.is_past ? "past" : event.approval_status}`}>
+                          {event.is_past ? "Past" : event.approval_status}
                         </span>
                       </td>
                       <td className="tableActionCell">
@@ -256,6 +260,15 @@ const css = `
 
 .eventStatusPill.rejected::before{
   background:#d7263d;
+}
+
+.eventStatusPill.past{
+  background:#e5e7eb;
+  color:#4b5563;
+}
+
+.eventStatusPill.past::before{
+  background:#6b7280;
 }
 
 .accountIconButton.edit{
