@@ -20,9 +20,10 @@ export default function AdminEvents() {
   const counts = useMemo(
     () => ({
       all: events.length,
-      pending: events.filter((event) => event.approval_status === "pending").length,
-      approved: events.filter((event) => event.approval_status === "approved").length,
-      rejected: events.filter((event) => event.approval_status === "rejected").length,
+      past: events.filter((event) => event.is_past).length,
+      pending: events.filter((event) => !event.is_past && event.approval_status === "pending").length,
+      approved: events.filter((event) => !event.is_past && event.approval_status === "approved").length,
+      rejected: events.filter((event) => !event.is_past && event.approval_status === "rejected").length,
     }),
     [events]
   );
@@ -31,7 +32,9 @@ export default function AdminEvents() {
     () =>
       statusFilter === "all"
         ? events
-        : events.filter((event) => event.approval_status === statusFilter),
+        : statusFilter === "past"
+          ? events.filter((event) => event.is_past)
+          : events.filter((event) => !event.is_past && event.approval_status === statusFilter),
     [events, statusFilter]
   );
 
@@ -40,6 +43,7 @@ export default function AdminEvents() {
     { label: "Pending", value: "pending", count: counts.pending },
     { label: "Approved", value: "approved", count: counts.approved },
     { label: "Rejected", value: "rejected", count: counts.rejected },
+    { label: "Past", value: "past", count: counts.past },
   ];
 
   const loadEvents = useCallback(async () => {
@@ -136,8 +140,8 @@ export default function AdminEvents() {
                         </div>
                       </td>
                       <td>
-                        <span className={`eventStatusPill ${event.approval_status}`}>
-                          {event.approval_status}
+                        <span className={`eventStatusPill ${event.is_past ? "past" : event.approval_status}`}>
+                          {event.is_past ? "Past" : event.approval_status}
                         </span>
                       </td>
                       <td className="tableActionCell">
@@ -159,7 +163,7 @@ export default function AdminEvents() {
                           >
                             <Pencil size={15} strokeWidth={2.2} />
                           </Link>
-                          {event.approval_status === "pending" && (
+                          {!event.is_past && event.approval_status === "pending" && (
                             <>
                               <button
                                 className="accountIconButton labeled accept"
@@ -271,6 +275,8 @@ const css = `
 .eventStatusPill.approved::before{ background:#22c55e; }
 .eventStatusPill.rejected{ background:#fee8e8; color:#b42318; }
 .eventStatusPill.rejected::before{ background:#d7263d; }
+.eventStatusPill.past{ background:#d5e3f7; color:#56729c; }
+.eventStatusPill.past::before{ background:#4176e0; }
 
 .accountIconButton.edit{
   background:#eef1f4;
