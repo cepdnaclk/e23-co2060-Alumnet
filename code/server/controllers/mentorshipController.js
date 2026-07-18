@@ -571,6 +571,75 @@ const getMyMentors = async (req, res) => {
   }
 };
 
+const getStudentProfileForMentor = async (req, res) => {
+  try {
+    const alumniId = req.user.id;
+    const alumniRole = req.user.role;
+    const { id: studentId } = req.params;
+
+    if (alumniRole !== "alumni") {
+      return res.status(403).json({
+        message: "Only alumni can view student profiles",
+      });
+    }
+
+    const relationshipResult = await pool.query(
+      `
+      SELECT id, status
+      FROM mentorship_requests
+      WHERE alumni_user_id = $1 AND student_user_id = $2
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [alumniId, studentId]
+    );
+
+    if (relationshipResult.rows.length === 0) {
+      return res.status(403).json({
+        message: "You can only view profiles of students who have requested mentorship",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT
+        u.id,
+        u.full_name,
+        u.email,
+        u.avatar_url,
+        u.verification_status,
+        sp.department,
+        sp.batch,
+        sp.areas_of_interest,
+        sp.bio,
+        sp.motivation,
+        sp.goal,
+        sp.linkedin_url,
+        sp.github_url,
+        sp.portfolio_url,
+        sp.cv_url
+      FROM users u
+      LEFT JOIN student_profiles sp ON sp.user_id = u.id
+      WHERE u.id = $1 AND u.role = 'student'
+      LIMIT 1
+      `,
+      [studentId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Student profile not found" });
+    }
+
+    return res.status(200).json({
+      ...result.rows[0],
+      mentorship_status: relationshipResult.rows[0].status,
+    });
+  } catch (error) {
+    console.error("Student profile for mentor fetch error:", error);
+    return res.status(500).json({ message: "Failed to load student profile" });
+  }
+};
+
 const getMyMentees = async (req, res) => {
   try {
     const alumniId = req.user.id;
@@ -634,6 +703,7 @@ module.exports = {
   acceptEndMentorship,
   getStudentRequests,
   getMentorRequests,
+  getStudentProfileForMentor,
   updateRequestStatus,
   getMyMentors,
   getMyMentees,

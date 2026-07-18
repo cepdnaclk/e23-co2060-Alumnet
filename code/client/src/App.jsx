@@ -18,6 +18,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const Directory = lazy(() => import("./pages/Directory"));
 const AlumniPublicProfile = lazy(() => import("./pages/AlumniPublicProfile"));
+const StudentPublicProfile = lazy(() => import("./pages/StudentPublicProfile"));
 const RequestMentorship = lazy(() => import("./pages/RequestMentorship"));
 const EndMentorship = lazy(() => import("./pages/EndMentorship"));
 const StudentRequests = lazy(() => import("./pages/StudentRequests"));
@@ -138,6 +139,17 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <AlumniPublicProfile />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/students/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <StudentPublicProfile />
               </AppLayout>
             </ProtectedRoute>
           }
