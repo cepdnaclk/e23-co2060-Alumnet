@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
 import SegmentedFilter from "../components/SegmentedFilter";
@@ -141,7 +142,16 @@ export default function MyMentees() {
                           )}
                           <div>
                             <div className="tableName">
-                              <span>{mentee.full_name}</span>
+                              <Link
+                                to={`/students/${mentee.id}`}
+                                state={{
+                                  studentName: mentee.full_name,
+                                  fromMyMentees: true,
+                                }}
+                                className="tableProfileLink"
+                              >
+                                {mentee.full_name}
+                              </Link>
                               <img
                                 src={getStatusIcon(mentee.verification_status)}
                                 alt={mentee.verification_status}
@@ -186,6 +196,16 @@ export default function MyMentees() {
                       </td>
                       <td className="tableActionCell">
                         <div className="tableActions">
+                          <Link
+                            to={`/students/${mentee.id}`}
+                            state={{
+                              studentName: mentee.full_name,
+                              fromMyMentees: true,
+                            }}
+                            className="accountButton"
+                          >
+                            View Profile
+                          </Link>
                           {mentee.mentorship_status === "ending_requested" ? (
                             <button
                               type="button"

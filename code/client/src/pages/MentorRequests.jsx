@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import AccountListShell from "../components/AccountListShell";
 import LoadingScreen from "../components/LoadingScreen";
 import SegmentedFilter from "../components/SegmentedFilter";
@@ -204,7 +205,16 @@ export default function MentorRequests() {
                           )}
                           <div>
                             <div className="tableName">
-                              <span>{request.student_full_name || "Student"}</span>
+                              <Link
+                                to={`/students/${request.student_user_id}`}
+                                state={{
+                                  studentName: request.student_full_name,
+                                  fromMentorRequests: true,
+                                }}
+                                className="tableProfileLink"
+                              >
+                                {request.student_full_name || "Student"}
+                              </Link>
                               <img
                                 src={getStatusIcon(request.student_verification_status)}
                                 alt={request.student_verification_status || "pending"}
@@ -232,6 +242,16 @@ export default function MentorRequests() {
                       </td>
                       <td className="tableActionCell">
                         <div className="tableActions">
+                          <Link
+                            to={`/students/${request.student_user_id}`}
+                            state={{
+                              studentName: request.student_full_name,
+                              fromMentorRequests: true,
+                            }}
+                            className="accountButton"
+                          >
+                            View Profile
+                          </Link>
                           {request.status === "pending" && (
                             <>
                               <button
@@ -267,9 +287,6 @@ export default function MentorRequests() {
                             >
                               {actionLoadingId === request.id ? "Ending..." : "Accept End"}
                             </button>
-                          )}
-                          {!["pending", "ending_requested"].includes(request.status) && (
-                            <span className="tableDash">-</span>
                           )}
                         </div>
                       </td>
