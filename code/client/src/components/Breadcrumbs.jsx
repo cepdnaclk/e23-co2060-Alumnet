@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getAlumniProfile, getEventById } from "../api";
+import { getAlumniProfile, getEventById, getStudentProfile } from "../api";
 
 export default function Breadcrumbs() {
   const location = useLocation();
   const [alumniName, setAlumniName] = useState(location.state?.alumniName || "");
+  const [studentName, setStudentName] = useState(location.state?.studentName || "");
   const [eventTitle, setEventTitle] = useState(location.state?.eventTitle || "");
   const [chatName, setChatName] = useState("");
 
   const path = location.pathname;
   const alumniId = getAlumniId(path);
+  const studentId = getStudentId(path);
   const eventId = getEventId(path);
   const fromMyCreatedEvents = Boolean(location.state?.fromMyCreatedEvents);
   const fromMyEvents = Boolean(location.state?.fromMyEvents);
   const fromMyMentors = Boolean(location.state?.fromMyMentors);
+  const fromMentorRequests = Boolean(location.state?.fromMentorRequests);
+  const fromMyMentees = Boolean(location.state?.fromMyMentees);
 
   useEffect(() => {
     if (path !== "/chat") {
@@ -63,6 +67,36 @@ export default function Breadcrumbs() {
   useEffect(() => {
     let cancelled = false;
 
+    const loadStudentName = async () => {
+      if (!studentId) {
+        setStudentName("");
+        return;
+      }
+
+      if (location.state?.studentName) {
+        setStudentName(location.state.studentName);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("token");
+        const profile = await getStudentProfile(token, studentId);
+        if (!cancelled) setStudentName(profile.full_name || "Student Profile");
+      } catch {
+        if (!cancelled) setStudentName("Student Profile");
+      }
+    };
+
+    loadStudentName();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [studentId, location.state]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     const loadEventTitle = async () => {
       if (!eventId) {
         setEventTitle("");
@@ -96,21 +130,29 @@ export default function Breadcrumbs() {
         path,
         alumniName,
         alumniId,
+        studentName,
+        studentId,
         eventTitle,
         chatName,
         fromMyCreatedEvents,
         fromMyEvents,
-        fromMyMentors
+        fromMyMentors,
+        fromMentorRequests,
+        fromMyMentees
       ),
     [
       path,
       alumniName,
       alumniId,
+      studentName,
+      studentId,
       eventTitle,
       chatName,
       fromMyCreatedEvents,
       fromMyEvents,
       fromMyMentors,
+      fromMentorRequests,
+      fromMyMentees,
     ]
   );
 
@@ -154,6 +196,13 @@ function getAlumniId(path) {
   return "";
 }
 
+function getStudentId(path) {
+  const studentMatch = path.match(/^\/students\/([^/]+)$/);
+  if (studentMatch) return studentMatch[1];
+
+  return "";
+}
+
 function getEventId(path) {
   const eventMatch = path.match(/^\/events\/([^/]+)(?:\/edit)?$/);
   if (eventMatch) return eventMatch[1];
@@ -165,11 +214,15 @@ function buildCrumbs(
   path,
   alumniName,
   alumniId,
+  studentName,
+  studentId,
   eventTitle,
   chatName,
   fromMyCreatedEvents,
   fromMyEvents,
-  fromMyMentors
+  fromMyMentors,
+  fromMentorRequests,
+  fromMyMentees
 ) {
   if (path === "/home") return [{ label: "Home" }];
   if (path === "/profile") return [{ label: "Profile" }];
@@ -212,6 +265,23 @@ function buildCrumbs(
       },
       { label: "End Mentorship" },
     ];
+  }
+  if (path.startsWith("/students/")) {
+    if (fromMyMentees) {
+      return [
+        { label: "My Mentees", to: "/my-mentees" },
+        { label: studentName || "Student Profile" },
+      ];
+    }
+
+    if (fromMentorRequests) {
+      return [
+        { label: "Received Requests", to: "/mentor-requests" },
+        { label: studentName || "Student Profile" },
+      ];
+    }
+
+    return [{ label: studentName || "Student Profile" }];
   }
   if (path === "/chat") {
     return chatName

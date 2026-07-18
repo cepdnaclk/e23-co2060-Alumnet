@@ -233,11 +233,22 @@ const css = `
   font-weight:500;
 }
 
-.tableName span{
+.tableName span,
+.tableProfileLink{
   min-width:0;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+}
+
+.tableProfileLink{
+  color:#111111;
+  text-decoration:none;
+  transition:color .18s ease;
+}
+
+.tableProfileLink:hover{
+  color:#244ee4;
 }
 
 .tableMeta{

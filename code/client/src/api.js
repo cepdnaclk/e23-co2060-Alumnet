@@ -178,6 +178,15 @@ export async function getMentorRequests(token) {
   return handle(res);
 }
 
+export async function getStudentProfile(token, id) {
+  const res = await fetch(`${API_URL}/api/mentorship-requests/students/${id}/profile`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
 export async function updateMentorshipRequest(token, id, status) {
   const res = await fetch(`${API_URL}/api/mentorship-requests/${id}`, {
     method: "PATCH",
