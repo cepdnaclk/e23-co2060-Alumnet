@@ -134,6 +134,15 @@ export async function getAlumniProfile(id) {
   return handle(res);
 }
 
+export async function getRecommendedAlumni(token) {
+  const res = await fetch(`${API_URL}/api/directory/recommended`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
 export async function createMentorshipRequest(token, payload) {
   const res = await fetch(`${API_URL}/api/mentorship-requests`, {
     method: "POST",
