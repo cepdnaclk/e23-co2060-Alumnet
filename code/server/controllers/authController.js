@@ -734,6 +734,20 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const heartbeat = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await pool.query(
+      `UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = $1`,
+      [userId]
+    );
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Heartbeat error:", error);
+    res.status(500).json({ message: "Heartbeat failed" });
+  }
+};
+
 module.exports = {
   signup,
   login,
@@ -743,4 +757,6 @@ module.exports = {
   updateProfile,
   getPendingUsers,
   verifyUser,
+  heartbeat,
 };
+

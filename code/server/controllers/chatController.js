@@ -28,6 +28,18 @@ const getMyConversations = async (req, res) => {
           ELSE student.avatar_url
         END AS other_user_avatar,
 
+        CASE
+          WHEN c.student_user_id = $1
+          THEN alumni.last_seen
+          ELSE student.last_seen
+        END AS other_user_last_seen,
+
+        CASE
+          WHEN c.student_user_id = $1
+          THEN (alumni.last_seen IS NOT NULL AND alumni.last_seen > (NOW() - INTERVAL '2 minutes'))
+          ELSE (student.last_seen IS NOT NULL AND student.last_seen > (NOW() - INTERVAL '2 minutes'))
+        END AS is_online,
+
         (
           SELECT COALESCE(
             CASE
@@ -112,7 +124,9 @@ const getChatContacts = async (req, res) => {
         SELECT
           u.id AS other_user_id,
           u.full_name AS other_user_name,
-          u.avatar_url AS other_user_avatar
+          u.avatar_url AS other_user_avatar,
+          u.last_seen AS other_user_last_seen,
+          (u.last_seen IS NOT NULL AND u.last_seen > (NOW() - INTERVAL '2 minutes')) AS is_online
         FROM mentorship_requests mr
         JOIN users u
           ON u.id = mr.alumni_user_id
@@ -128,7 +142,9 @@ const getChatContacts = async (req, res) => {
         SELECT
           u.id AS other_user_id,
           u.full_name AS other_user_name,
-          u.avatar_url AS other_user_avatar
+          u.avatar_url AS other_user_avatar,
+          u.last_seen AS other_user_last_seen,
+          (u.last_seen IS NOT NULL AND u.last_seen > (NOW() - INTERVAL '2 minutes')) AS is_online
         FROM mentorship_requests mr
         JOIN users u
           ON u.id = mr.student_user_id
@@ -233,6 +249,8 @@ const getChatContacts = async (req, res) => {
         other_user_id: contact.other_user_id,
         other_user_name: contact.other_user_name,
         other_user_avatar: contact.other_user_avatar,
+        other_user_last_seen: contact.other_user_last_seen,
+        is_online: Boolean(contact.is_online),
         last_message:
           formatLastMessagePreview(lastMessage.rows[0]) || null,
         last_message_at:
@@ -298,7 +316,8 @@ const getConversationMessages = async (req, res) => {
     await pool.query(
       `
       UPDATE messages
-      SET is_read = true
+      SET is_read = true,
+          read_at = COALESCE(read_at, CURRENT_TIMESTAMP)
       WHERE conversation_id = $1
         AND sender_id <> $2
         AND COALESCE(is_read, false) = false

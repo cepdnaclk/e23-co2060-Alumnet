@@ -96,6 +96,18 @@ export async function updateProfile(token, payload) {
   return handle(res);
 }
 
+export async function sendHeartbeat(token) {
+  if (!token) return;
+  try {
+    await fetch(`${API_URL}/api/auth/heartbeat`, {
+      method: "POST",
+      headers: { ...authHeaders(token) },
+    });
+  } catch (e) {
+    // Silent catch for background heartbeat
+  }
+}
+
 export async function getPendingUsers(token) {
   const res = await fetch(`${API_URL}/api/auth/admin/pending`, {
     method: "GET",
