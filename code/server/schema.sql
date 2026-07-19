@@ -229,6 +229,8 @@ CREATE TABLE public.messages (
     attachment_mime_type text,
     attachment_size bigint,
     is_read boolean DEFAULT false,
+    delivered_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    read_at timestamp without time zone,
     deleted_at timestamp without time zone,
     deleted_by bigint,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
@@ -346,6 +348,7 @@ CREATE TABLE public.users (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     verified_at timestamp without time zone,
     avatar_url text,
+    last_seen timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT users_role_check CHECK (((role)::text = ANY ((ARRAY['alumni'::character varying, 'student'::character varying, 'system_admin'::character varying, 'university_admin'::character varying])::text[]))),
     CONSTRAINT users_verification_status_check CHECK (((verification_status)::text = ANY ((ARRAY['pending'::character varying, 'verified'::character varying, 'rejected'::character varying])::text[])))
 );

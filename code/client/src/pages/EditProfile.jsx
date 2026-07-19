@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import LoadingScreen from "../components/LoadingScreen";
+import ImageCropperModal from "../components/ImageCropperModal";
 import { getProfile, updateProfile } from "../api";
 import { supabase } from "../supabase";
 
@@ -32,6 +33,7 @@ export default function EditProfile() {
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
   const [success, setSuccess] = useState("");
+  const [croppingImageSrc, setCroppingImageSrc] = useState(null);
 
   const [form, setForm] = useState({
     full_name: "",
@@ -100,22 +102,32 @@ export default function EditProfile() {
     }));
   };
 
-  const handleImageUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCroppingImageSrc(reader.result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setCroppingImageSrc(null);
     try {
       setUploading(true);
       setErr("");
 
-      const ext = file.name.split(".").pop();
+      const ext = "jpg";
       const fileName = `${Date.now()}_${Math.random()
         .toString(36)
         .slice(2)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file);
+        .upload(fileName, croppedFile);
 
       if (uploadError) throw uploadError;
 
@@ -208,16 +220,24 @@ export default function EditProfile() {
 
             <div style={uploadArea}>
               <div style={uploadTitle}>Profile Picture</div>
-              <div style={uploadSub}>Upload a profile image for your account.</div>
+              <div style={uploadSub}>Upload and crop a profile image for your account.</div>
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleImageUpload}
+                onChange={handleFileSelect}
                 style={fileInput}
               />
-              {uploading && <div style={smallText}>Uploading...</div>}
+              {uploading && <div style={smallText}>Uploading cropped image...</div>}
             </div>
           </div>
+
+          {croppingImageSrc && (
+            <ImageCropperModal
+              imageSrc={croppingImageSrc}
+              onCropComplete={handleCropComplete}
+              onCancel={() => setCroppingImageSrc(null)}
+            />
+          )}
 
           <div className="editProfileActions">
             <div style={noteText}>*Email and password cannot be changed here.</div>

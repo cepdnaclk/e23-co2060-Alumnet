@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, Paperclip, Search, Send, Smile, Trash2, Type, X, ChevronLeft } from "lucide-react";
+import { Mic, Paperclip, Search, Send, Smile, Trash2, Type, X, ChevronLeft, Check, CheckCheck } from "lucide-react";
 import {
   deleteChatMessage,
   getChatContacts,
   getConversationMessages,
   getProfile,
   sendMessage,
+  sendHeartbeat,
 } from "../api";
 import { supabase } from "../supabase";
 import docIcon from "../assets/doc.png";
@@ -52,7 +53,27 @@ export default function Chat() {
     loadConversations();
     loadCurrentUser();
 
+    const token = localStorage.getItem("token");
+    sendHeartbeat(token);
+
+    const heartbeatInterval = setInterval(() => {
+      const t = localStorage.getItem("token");
+      if (t) sendHeartbeat(t);
+    }, 25000);
+
+    const pollInterval = setInterval(() => {
+      loadConversations();
+      if (currentChatIdRef.current) {
+        const t = localStorage.getItem("token");
+        getConversationMessages(t, currentChatIdRef.current)
+          .then((data) => setMessages(data))
+          .catch(() => {});
+      }
+    }, 7000);
+
     return () => {
+      clearInterval(heartbeatInterval);
+      clearInterval(pollInterval);
       window.dispatchEvent(
         new CustomEvent("alumnet:chat-selection-changed", {
           detail: { name: "" },
@@ -339,24 +360,61 @@ export default function Chat() {
     return sortOrder === "newest" ? valueB - valueA : valueA - valueB;
   });
 
+  const formatLastSeen = (lastSeenDate, isOnline) => {
+    if (isOnline) return "Online";
+    if (!lastSeenDate) return "Offline";
+    try {
+      const date = new Date(lastSeenDate);
+      const diffMs = Date.now() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 1) return "Offline • Active just now";
+      if (diffMins < 60) return `Offline • Active ${diffMins}m ago`;
+      if (diffHours < 24) return `Offline • Active ${diffHours}h ago`;
+      if (diffDays === 1) return `Offline • Active yesterday at ${formatMessageTime(date)}`;
+      return `Offline • Active ${date.toLocaleDateString([], { month: "short", day: "numeric" })}`;
+    } catch {
+      return "Offline";
+    }
+  };
+
+  const getMessageStatusTooltip = (message) => {
+    if (!message) return "";
+    const sent = message.created_at ? `Sent: ${formatMessageTime(message.created_at)}` : "";
+    const delivered = message.delivered_at
+      ? ` • Delivered: ${formatMessageTime(message.delivered_at)}`
+      : "";
+    const read = message.is_read
+      ? ` • Read: ${message.read_at ? formatMessageTime(message.read_at) : "Yes"}`
+      : " • Unread";
+    return `${sent}${delivered}${read}`;
+  };
+
   const renderAvatar = (conversation, size = "normal", keyPrefix = "") => {
     const brokenKey = `${keyPrefix}${conversation.id}`;
     const hasValidAvatar = conversation.other_user_avatar && !brokenImages[brokenKey];
-
-    if (hasValidAvatar) {
-      return (
-        <img
-          src={getAvatarUrl(conversation.other_user_avatar)}
-          onError={() => handleImageError(brokenKey)}
-          alt=""
-          className={`chatAvatar ${size}`}
-        />
-      );
-    }
+    const isOnline = Boolean(conversation.is_online);
 
     return (
-      <div className={`chatAvatar fallback ${size}`}>
-        {conversation.other_user_name?.charAt(0)?.toUpperCase() || "A"}
+      <div className={`avatarWrapper ${size}`}>
+        {hasValidAvatar ? (
+          <img
+            src={getAvatarUrl(conversation.other_user_avatar)}
+            onError={() => handleImageError(brokenKey)}
+            alt=""
+            className={`chatAvatar ${size}`}
+          />
+        ) : (
+          <div className={`chatAvatar fallback ${size}`}>
+            {conversation.other_user_name?.charAt(0)?.toUpperCase() || "A"}
+          </div>
+        )}
+        <span
+          className={`statusDot ${isOnline ? "online" : "offline"}`}
+          title={isOnline ? "Online" : "Offline"}
+        />
       </div>
     );
   };
@@ -510,6 +568,16 @@ export default function Chat() {
                     {renderAvatar(selectedConversation, "small", "header-")}
                     <div>
                       <h2>{selectedConversation.other_user_name}</h2>
+                      <span
+                        className={`chatHeaderStatus ${
+                          selectedConversation.is_online ? "online" : "offline"
+                        }`}
+                      >
+                        {formatLastSeen(
+                          selectedConversation.other_user_last_seen,
+                          selectedConversation.is_online
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -532,7 +600,26 @@ export default function Chat() {
                           <span className="messageSender">
                             {isMine ? `${currentUser?.full_name || "Me"} (Me)` : selectedConversation.other_user_name}
                           </span>
-                          <span className="messageTime">{formatMessageTime(message.created_at)}</span>
+                          <span
+                            className="messageTime"
+                            title={getMessageStatusTooltip(message)}
+                          >
+                            {formatMessageTime(message.created_at)}
+                            {isMine && !message.deleted_at && (
+                              <span
+                                className="statusTicks"
+                                title={getMessageStatusTooltip(message)}
+                              >
+                                {message.is_read ? (
+                                  <CheckCheck size={14} className="tickRead" />
+                                ) : message.delivered_at ? (
+                                  <CheckCheck size={14} className="tickDelivered" />
+                                ) : (
+                                  <Check size={14} className="tickSent" />
+                                )}
+                              </span>
+                            )}
+                          </span>
                         </div>
                         <div className={`messageBubble ${message.deleted_at ? "deleted" : ""}`}>
                           {renderMessageContent(message)}
@@ -842,6 +929,47 @@ const css = `
   transform:translateY(-1px);
 }
 
+.avatarWrapper{
+  position:relative;
+  display:inline-block;
+  flex-shrink:0;
+}
+
+.avatarWrapper.small{
+  width:34px;
+  height:34px;
+}
+
+.avatarWrapper.normal{
+  width:42px;
+  height:42px;
+}
+
+.statusDot{
+  position:absolute;
+  bottom:1px;
+  right:1px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  border:2px solid #ffffff;
+}
+
+.avatarWrapper.small .statusDot{
+  width:8px;
+  height:8px;
+  bottom:0;
+  right:0;
+}
+
+.statusDot.online{
+  background:#22c55e;
+}
+
+.statusDot.offline{
+  background:#94a3b8;
+}
+
 .chatAvatar{
   width:42px;
   height:42px;
@@ -985,8 +1113,23 @@ const css = `
 .chatHeader h2{
   margin:0;
   font-size:14px;
-  font-weight:500;
+  font-weight:600;
   line-height:1.2;
+}
+
+.chatHeaderStatus{
+  display:block;
+  font-size:11px;
+  margin-top:2px;
+}
+
+.chatHeaderStatus.online{
+  color:#16a34a;
+  font-weight:500;
+}
+
+.chatHeaderStatus.offline{
+  color:#64748b;
 }
 
 .messageThread{
@@ -1034,6 +1177,27 @@ const css = `
 .messageTime{
   color:rgba(17,17,17,.52);
   font-weight:400;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+
+.statusTicks{
+  display:inline-flex;
+  align-items:center;
+  margin-left:2px;
+}
+
+.tickRead{
+  color:#2563eb;
+}
+
+.tickDelivered{
+  color:#64748b;
+}
+
+.tickSent{
+  color:#94a3b8;
 }
 
 .messageBubble{

@@ -8,6 +8,7 @@ const {
   updateProfile,
   getPendingUsers,
   verifyUser,
+  heartbeat,
 } = require("../controllers/authController");
 const {
   getStats: getAdminStats,
@@ -24,6 +25,7 @@ router.post("/resend-verification-email", resendVerificationEmail);
 router.get("/verify-email/:token", verifyEmail);
 router.get("/profile", protect, getProfile);
 router.put("/profile", protect, updateProfile);
+router.post("/heartbeat", protect, heartbeat);
 
 router.get("/admin/pending", protect, getPendingUsers);
 router.patch("/admin/verify/:userId", protect, verifyUser);
