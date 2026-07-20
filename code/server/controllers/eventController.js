@@ -3,6 +3,10 @@ const {
   createNotification,
   createNotificationsForRoles,
 } = require("../utils/notify");
+const {
+  sendUserNotificationEmail,
+  sendRoleNotificationEmail,
+} = require("../utils/emailNotifications");
 
 const ALLOWED_REMINDER_MINUTES = new Set([60, 1440, 2880, 10080]);
 
@@ -80,6 +84,21 @@ const createEvent = async (req, res) => {
         `A new event "${result.rows[0].title}" has been submitted by an alumnus and is waiting for approval.`,
         "EVENT_UPDATE"
       );
+
+      sendRoleNotificationEmail({
+        category: "event",
+        roles: ["university_admin", "system_admin"],
+        subject: `Event awaiting approval: ${result.rows[0].title}`,
+        heading: "A new event needs approval",
+        message: `An alumnus submitted "${result.rows[0].title}". Review the event details and approve or reject it.`,
+        buttonText: "Review event",
+        buttonPath: "/admin-events",
+        details: [
+          { label: "Date", value: event_date },
+          { label: "Time", value: event_time },
+          { label: "Venue", value: venue },
+        ],
+      });
     }
 
     return res.status(201).json({
@@ -263,6 +282,31 @@ const approveEvent = async (req, res) => {
       `NEW_EVENT:${result.rows[0].id}`
     );
 
+    sendUserNotificationEmail({
+      category: "event",
+      userId: result.rows[0].created_by,
+      subject: `Your event "${result.rows[0].title}" was approved`,
+      heading: "Your event is now live",
+      message: `Your event "${result.rows[0].title}" has been approved by the administration and is now visible on Alumnet.`,
+      buttonText: "View event",
+      buttonPath: `/events/${result.rows[0].id}`,
+    });
+
+    sendRoleNotificationEmail({
+        category: "event",
+      roles: ["student"],
+      subject: `New Alumnet event: ${result.rows[0].title}`,
+      heading: "A new event is available",
+      message: `"${result.rows[0].title}" has been added to Alumnet. View the details and register before the available slots are filled.`,
+      buttonText: "View event",
+      buttonPath: `/events/${result.rows[0].id}`,
+      details: [
+        { label: "Date", value: result.rows[0].event_date },
+        { label: "Time", value: result.rows[0].event_time },
+        { label: "Venue", value: result.rows[0].venue },
+      ],
+    });
+
     return res.status(200).json({
       message: "Event approved successfully",
       event: result.rows[0],
@@ -303,6 +347,16 @@ const rejectEvent = async (req, res) => {
       `Your event "${result.rows[0].title}" was declined by the administration.`,
       "EVENT_UPDATE"
     );
+
+    sendUserNotificationEmail({
+      category: "event",
+      userId: result.rows[0].created_by,
+      subject: `Update on your event "${result.rows[0].title}"`,
+      heading: "Your event was not approved",
+      message: `Your event "${result.rows[0].title}" was declined by the administration. You can review and update the event before submitting it again.`,
+      buttonText: "View my events",
+      buttonPath: "/my-created-events",
+    });
 
     return res.status(200).json({
       message: "Event rejected",
@@ -427,9 +481,26 @@ const registerForEvent = async (req, res) => {
     await createNotification(
       event.created_by,
       "New Event Registration",
-      `A student has been registered to your event: "${event.title}".`,
+      `A student has registered for your event: "${event.title}".`,
       "EVENT_REGISTRATION"
     );
+
+    const studentResult = await pool.query(
+      "SELECT full_name FROM users WHERE id = $1",
+      [studentUserId]
+    );
+    const studentName = studentResult.rows[0]?.full_name || "A student";
+
+    sendUserNotificationEmail({
+      category: "event",
+      userId: event.created_by,
+      subject: `New registration for "${event.title}"`,
+      heading: "A student registered for your event",
+      message: `${studentName} has registered for "${event.title}".`,
+      buttonText: "View event",
+      buttonPath: `/events/${event.id}`,
+      details: [{ label: "Student", value: studentName }],
+    });
 
     return res.status(201).json({
       message: "Registered for event successfully",

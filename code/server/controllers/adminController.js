@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const { createNotification } = require("../utils/notify");
+const { sendUserNotificationEmail } = require("../utils/emailNotifications");
 
 const getStats = async (req, res) => {
   try {
@@ -94,6 +95,16 @@ const verifyUserStatus = async (req, res) => {
         "Your account has been verified by the administrator. Welcome to Alumnet!",
         "ACCOUNT_UPDATE"
       );
+
+      sendUserNotificationEmail({
+      category: "account",
+        userId: id,
+        subject: "Your Alumnet account has been approved",
+        heading: "Your account is approved",
+        message: "Your Alumnet account has been verified by the administrator. You can now access the platform.",
+        buttonText: "Log in to Alumnet",
+        buttonPath: "/login",
+      });
     } else {
       await createNotification(
         id,
@@ -101,6 +112,16 @@ const verifyUserStatus = async (req, res) => {
         "Your account registration request has been declined by the administrator.",
         "ACCOUNT_UPDATE"
       );
+
+      sendUserNotificationEmail({
+      category: "account",
+        userId: id,
+        subject: "Update on your Alumnet account",
+        heading: "Your account could not be approved",
+        message: "Your Alumnet registration request was declined by the administrator. Please contact the university if you believe this was a mistake.",
+        buttonText: "Visit Alumnet",
+        buttonPath: "/",
+      });
     }
 
     res.json(updatedUser);

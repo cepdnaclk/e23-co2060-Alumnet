@@ -40,7 +40,7 @@ async function sendVerificationEmail(email, token) {
 
 async function sendAdminSignupNotification(user) {
   const adminResult = await pool.query(
-    `SELECT email, full_name, role FROM users WHERE role IN ('system_admin', 'university_admin')`
+    `SELECT email, full_name, role FROM users WHERE role IN ('system_admin', 'university_admin') AND email_account_notifications = TRUE`
   );
 
   const adminEmails = adminResult.rows
@@ -355,7 +355,11 @@ const login = async (req, res) => {
         verification_status,
         created_at,
         verified_at,
-        avatar_url
+        avatar_url,
+        email_mentorship_notifications,
+        email_event_notifications,
+        email_account_notifications,
+        email_preferences_configured
       FROM users
       WHERE email = $1
       `,
@@ -403,6 +407,10 @@ const login = async (req, res) => {
         created_at: user.created_at,
         verified_at: user.verified_at,
         avatar_url: user.avatar_url,
+        email_mentorship_notifications: user.email_mentorship_notifications,
+        email_event_notifications: user.email_event_notifications,
+        email_account_notifications: user.email_account_notifications,
+        email_preferences_configured: user.email_preferences_configured,
       },
     });
   } catch (error) {
@@ -734,6 +742,90 @@ const updateProfile = async (req, res) => {
   }
 };
 
+
+const getEmailPreferences = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        email_mentorship_notifications,
+        email_event_notifications,
+        email_account_notifications,
+        email_preferences_configured
+      FROM users
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("Get email preferences error:", error);
+    return res.status(500).json({ message: "Failed to load email preferences" });
+  }
+};
+
+const updateEmailPreferences = async (req, res) => {
+  try {
+    const {
+      email_mentorship_notifications,
+      email_event_notifications,
+      email_account_notifications,
+    } = req.body;
+
+    const values = [
+      email_mentorship_notifications,
+      email_event_notifications,
+      email_account_notifications,
+    ];
+
+    if (values.some((value) => typeof value !== "boolean")) {
+      return res.status(400).json({
+        message: "All email preference values must be true or false",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET email_mentorship_notifications = $1,
+          email_event_notifications = $2,
+          email_account_notifications = $3,
+          email_preferences_configured = TRUE
+      WHERE id = $4
+      RETURNING
+        email_mentorship_notifications,
+        email_event_notifications,
+        email_account_notifications,
+        email_preferences_configured
+      `,
+      [
+        email_mentorship_notifications,
+        email_event_notifications,
+        email_account_notifications,
+        req.user.id,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      message: "Email preferences updated successfully",
+      preferences: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Update email preferences error:", error);
+    return res.status(500).json({ message: "Failed to update email preferences" });
+  }
+};
+
 const heartbeat = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -758,5 +850,7 @@ module.exports = {
   getPendingUsers,
   verifyUser,
   heartbeat,
+  getEmailPreferences,
+  updateEmailPreferences,
 };
 
