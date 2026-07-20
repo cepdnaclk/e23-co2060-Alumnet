@@ -454,22 +454,35 @@ const registerForEvent = async (req, res) => {
         [eventId, studentUserId]
       );
       registration = result.rows[0];
-      await client.query(
-        `INSERT INTO event_reminders (registration_id, minutes_before, sent_at)
-         SELECT $1, selected.minutes_before,
-           CASE
-             WHEN selected.minutes_before > 0
-              AND ((e.event_date + e.event_time) AT TIME ZONE 'Asia/Colombo')
-                  - (selected.minutes_before * INTERVAL '1 minute') <= CURRENT_TIMESTAMP
-             THEN CURRENT_TIMESTAMP
-             ELSE NULL
-           END
-         FROM UNNEST($2::integer[]) AS selected(minutes_before)
-         CROSS JOIN events e
-         WHERE e.id = $3
-         ON CONFLICT (registration_id, minutes_before) DO NOTHING`,
-        [registration.id, reminderMinutes, eventId]
-      );
+      // Reminder support was added after event registrations. Keep joining an
+      // event working while an older deployment is waiting for that migration.
+      await client.query("SAVEPOINT event_reminders_insert");
+      try {
+        await client.query(
+          `INSERT INTO event_reminders (registration_id, minutes_before, sent_at)
+           SELECT $1, selected.minutes_before,
+             CASE
+               WHEN selected.minutes_before > 0
+                AND ((e.event_date + e.event_time) AT TIME ZONE 'Asia/Colombo')
+                    - (selected.minutes_before * INTERVAL '1 minute') <= CURRENT_TIMESTAMP
+               THEN CURRENT_TIMESTAMP
+               ELSE NULL
+             END
+           FROM UNNEST($2::integer[]) AS selected(minutes_before)
+           CROSS JOIN events e
+           WHERE e.id = $3
+           ON CONFLICT (registration_id, minutes_before) DO NOTHING`,
+          [registration.id, reminderMinutes, eventId]
+        );
+      } catch (reminderError) {
+        await client.query("ROLLBACK TO SAVEPOINT event_reminders_insert");
+        if (reminderError.code !== "42P01") {
+          throw reminderError;
+        }
+        console.warn(
+          "event_reminders table is missing; registration saved without reminders"
+        );
+      }
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
