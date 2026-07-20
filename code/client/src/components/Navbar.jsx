@@ -190,6 +190,10 @@ export default function Navbar() {
 
       if (notif.type === "MENTOR_REQUEST") navigate("/mentor-requests");
       else if (notif.type === "REQUEST_UPDATE") navigate("/my-mentors");
+      else if (notif.type?.startsWith("EVENT_REMINDER:")) {
+        const eventId = notif.type.split(":")[1];
+        navigate(eventId ? `/events/${eventId}` : "/my-events");
+      }
       else if (notif.type?.startsWith("NEW_EVENT:")) {
         const eventId = notif.type.split(":")[1];
         navigate(eventId ? `/events/${eventId}` : "/events");

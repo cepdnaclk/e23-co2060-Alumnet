@@ -113,7 +113,7 @@ CREATE TABLE public.event_registrations (
     id integer NOT NULL,
     event_id integer NOT NULL,
     student_user_id integer NOT NULL,
-    registered_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    registered_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -268,7 +268,7 @@ CREATE TABLE public.notifications (
     message text NOT NULL,
     type character varying(50) NOT NULL,
     is_read boolean DEFAULT false,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -735,6 +735,20 @@ ALTER TABLE ONLY public.student_profiles
 
 
 --
+-- Event reminder preferences and delivery state.
+CREATE TABLE public.event_reminders (
+    id bigserial PRIMARY KEY,
+    registration_id integer NOT NULL REFERENCES public.event_registrations(id) ON DELETE CASCADE,
+    minutes_before integer NOT NULL,
+    sent_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT event_reminders_minutes_check CHECK (minutes_before IN (0, 60, 1440, 2880, 10080)),
+    CONSTRAINT event_reminders_registration_minutes_key UNIQUE (registration_id, minutes_before)
+);
+
+CREATE INDEX idx_event_reminders_unsent
+    ON public.event_reminders (sent_at) WHERE sent_at IS NULL;
+
 -- PostgreSQL database dump complete
 --
 

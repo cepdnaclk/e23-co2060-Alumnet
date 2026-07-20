@@ -7,6 +7,7 @@ import dateIcon from "../assets/date.png";
 import timeIcon from "../assets/time.png";
 import locationIcon from "../assets/location.png";
 import viewIcon from "../assets/view.png";
+import { formatAppDateTime, formatEventDate, formatEventTime, isEventDayPast } from "../utils/dateTime";
 
 export default function MyEvents() {
   const token = localStorage.getItem("token");
@@ -45,7 +46,7 @@ export default function MyEvents() {
           <table className="accountTable wide">
             <thead>
               <tr>
-                <th style={{ width: "32%" }}>Event</th>
+                <th style={{ width: "27%" }}>Event</th>
                 <th style={{ width: "12%" }}>
                   <span className="tableHeaderIcon">
                     <img src={dateIcon} alt="" />
@@ -58,14 +59,15 @@ export default function MyEvents() {
                     Time
                   </span>
                 </th>
-                <th style={{ width: "18%" }}>
+                <th style={{ width: "16%" }}>
                   <span className="tableHeaderIcon">
                     <img src={locationIcon} alt="" />
                     Venue
                   </span>
                 </th>
-                <th style={{ width: "15%" }}>Joined</th>
-                <th className="tableActionHeader" style={{ width: "12%" }}>Action</th>
+                <th style={{ width: "14%" }}>Joined</th>
+                <th style={{ width: "9%" }}>Status</th>
+                <th className="tableActionHeader" style={{ width: "11%" }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -92,12 +94,12 @@ export default function MyEvents() {
                   </td>
                   <td>
                     <span className="eventTableValue">
-                      {formatDate(event.event_date)}
+                      {formatEventDate(event.event_date)}
                     </span>
                   </td>
                   <td>
                     <span className="eventTableValue">
-                      {formatTime(event.event_time)}
+                      {formatEventTime(event.event_time)}
                     </span>
                   </td>
                   <td>
@@ -107,7 +109,12 @@ export default function MyEvents() {
                   </td>
                   <td>
                     <span className="eventTableValue">
-                      {formatDateTime(event.registered_at)}
+                      {formatAppDateTime(event.registered_at)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`eventStatus ${isEventDayPast(event) ? "past" : "upcoming"}`}>
+                      {isEventDayPast(event) ? "Past" : "Upcoming"}
                     </span>
                   </td>
                   <td className="tableActionCell">
@@ -135,28 +142,6 @@ export default function MyEvents() {
   );
 }
 
-function formatDate(date) {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatTime(time) {
-  if (!time) return "-";
-  return new Date(`1970-01-01T${time}`).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatDateTime(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
 const css = `
 .eventTableValue{
   display:inline-flex;
@@ -164,5 +149,22 @@ const css = `
   min-width:0;
   color:#111111;
   overflow-wrap:anywhere;
+}
+.eventStatus{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:0 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+}
+.eventStatus.upcoming{
+  background:#e7f7ed;
+  color:#087333;
+}
+.eventStatus.past{
+  background:#eef0f3;
+  color:#62666d;
 }
 `;
