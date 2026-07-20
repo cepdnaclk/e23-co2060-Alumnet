@@ -1,10 +1,79 @@
 import { useState } from "react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Clock3,
+  Ellipsis,
+  GraduationCap,
+  ImagePlus,
+  Loader2,
+  MapPin,
+  Presentation,
+  Trophy,
+  Upload,
+  Users,
+  Wrench,
+  X,
+} from "lucide-react";
 import { createEvent } from "../api";
 import { supabase } from "../supabase";
+
+const EVENT_TYPES = {
+  lecture: {
+    name: "Lecture",
+    Icon: GraduationCap,
+    dynamicLabel: "Speaker",
+    dynamicPlaceholder: "Speaker name",
+    venueLabel: "Venue",
+    extras: ["organization"],
+  },
+  workshop: {
+    name: "Workshop",
+    Icon: Wrench,
+    dynamicLabel: "Instructor / Trainer",
+    dynamicPlaceholder: "Instructor or trainer name",
+    venueLabel: "Venue / Zoom Link",
+    extras: ["organization", "zoom_link", "duration"],
+  },
+  conference: {
+    name: "Conference",
+    Icon: Presentation,
+    dynamicLabel: "Host Organization",
+    dynamicPlaceholder: "Hosting organization",
+    venueLabel: "Venue",
+    extras: ["keynote_speaker", "registration_deadline"],
+  },
+  competition: {
+    name: "Competition",
+    Icon: Trophy,
+    dynamicLabel: "Organizer",
+    dynamicPlaceholder: "Organizer name",
+    venueLabel: "Venue",
+    extras: ["team_size", "registration_deadline", "prize_pool"],
+  },
+  other: {
+    name: "Other",
+    Icon: Ellipsis,
+    dynamicLabel: "Organizer",
+    dynamicPlaceholder: "Organizer name",
+    venueLabel: "Venue / Location",
+    extras: [],
+  },
+};
+
+const EMPTY_DETAILS = {
+  organization: "",
+  keynote_speaker: "",
+  duration: "",
+  team_size: "",
+  registration_deadline: "",
+  prize_pool: "",
+};
 
 export default function CreateEvent() {
   const token = localStorage.getItem("token");
 
+  const [eventType, setEventType] = useState("");
   const [title, setTitle] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
@@ -13,6 +82,7 @@ export default function CreateEvent() {
   const [availableSlots, setAvailableSlots] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [zoomLink, setZoomLink] = useState("");
+  const [details, setDetails] = useState(EMPTY_DETAILS);
 
   const [eventPoster, setEventPoster] = useState(null);
   const [posterPreview, setPosterPreview] = useState("");
@@ -58,6 +128,10 @@ export default function CreateEvent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!eventType) {
+      setErr("Please select an event type");
+      return;
+    }
     setLoading(true);
     setErr("");
     setSuccess("");
@@ -66,6 +140,7 @@ export default function CreateEvent() {
       const uploadedPosterUrl = await uploadPoster();
 
       const data = await createEvent(token, {
+        event_type: eventType,
         title,
         event_date: eventDate,
         event_time: eventTime,
@@ -75,11 +150,15 @@ export default function CreateEvent() {
         speaker,
         image_url: uploadedPosterUrl,
         zoom_link: zoomLink,
+        event_details: Object.fromEntries(
+          Object.entries(details).filter(([, value]) => String(value).trim())
+        ),
       });
 
       setSuccess(data.message || "Event created successfully");
 
       setTitle("");
+      setEventType("");
       setEventDate("");
       setEventTime("");
       setVenue("");
@@ -87,6 +166,7 @@ export default function CreateEvent() {
       setAvailableSlots("");
       setSpeaker("");
       setZoomLink("");
+      setDetails(EMPTY_DETAILS);
       setEventPoster(null);
       setPosterPreview("");
     } catch (e) {
@@ -96,73 +176,101 @@ export default function CreateEvent() {
     }
   };
 
+  const removePoster = () => {
+    if (posterPreview) URL.revokeObjectURL(posterPreview);
+    setEventPoster(null);
+    setPosterPreview("");
+  };
+
+  const typeConfig = EVENT_TYPES[eventType];
+  const setDetail = (name, value) => {
+    setDetails((current) => ({ ...current, [name]: value }));
+  };
+
   return (
     <main className="createEventPage">
       <style>{css}</style>
-      <section className="createEventShell">
-      <form onSubmit={handleSubmit} style={card}>
-        <div style={posterUploadRow}>
-          <div style={posterPreviewBox}>
-            {posterPreview ? (
-              <img
-                src={posterPreview}
-                alt="Event poster preview"
-                style={posterImg}
-              />
-            ) : (
-              <span style={posterPlaceholder}>E</span>
-            )}
-          </div>
+      <form onSubmit={handleSubmit} className="createEventLayout">
+        <div className="createEventMain">
+          <section className="formCard">
+            <div className="sectionHeading">
+              <span>01</span>
+              <div><h2>What are you planning?</h2><p>Choose the event format that fits best.</p></div>
+            </div>
+            <div className="eventTypeGrid" role="radiogroup" aria-label="Event type">
+          {Object.entries(EVENT_TYPES).map(([value, option]) => {
+            const TypeIcon = option.Icon;
+            const selected = eventType === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                className={`eventTypeCard${selected ? " selected" : ""}`}
+                onClick={() => setEventType(value)}
+              >
+                <span className="typeIcon"><TypeIcon size={14} strokeWidth={1.9} /></span>
+                <strong>{option.name}</strong>
+              </button>
+            );
+          })}
+            </div>
+          </section>
 
-          <div>
-            <h3 style={posterTitle}>Event Poster</h3>
-            <p style={posterText}>Upload a poster image for this event.</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handlePosterChange}
-              style={input}
-            />
-          </div>
-        </div>
-
-        <div style={grid}>
-          <Field label="Title">
+          <section className="formCard">
+            <div className="sectionHeading">
+              <span>02</span>
+              <div><h2>Tell us about the event</h2><p>Add the information attendees need to know.</p></div>
+            </div>
+            <div className="fieldGrid">
+          <Field label="Event title" full>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder="Give your event a clear, memorable name"
               required
-              style={input}
             />
           </Field>
 
-          <Field label="Speaker">
+          <Field label={`${typeConfig?.dynamicLabel || "Speaker / Organizer"} *`}>
             <input
               value={speaker}
               onChange={(e) => setSpeaker(e.target.value)}
-              placeholder="Speaker name"
-              style={input}
+              placeholder={typeConfig?.dynamicPlaceholder || "Select an event type first"}
+              required
             />
           </Field>
 
-          <Field label="Venue">
+          {typeConfig?.extras.includes("organization") && (
+            <Field label={eventType === "lecture" ? "Organization / Department" : "Organization"}>
+              <input value={details.organization} onChange={(e) => setDetail("organization", e.target.value)} placeholder="Organization name" />
+            </Field>
+          )}
+
+          {typeConfig?.extras.includes("keynote_speaker") && (
+            <Field label="Chief Guest / Keynote Speaker">
+              <input value={details.keynote_speaker} onChange={(e) => setDetail("keynote_speaker", e.target.value)} placeholder="Guest or keynote speaker" />
+            </Field>
+          )}
+
+          <Field label={typeConfig?.venueLabel || "Venue"}>
             <input
               value={venue}
               onChange={(e) => setVenue(e.target.value)}
+              placeholder="Where will the event take place?"
               required
-              style={input}
             />
           </Field>
 
-          <Field label="Zoom Link">
+          {typeConfig?.extras.includes("zoom_link") && <Field label="Zoom Link (optional)">
             <input
               type="url"
               value={zoomLink}
               onChange={(e) => setZoomLink(e.target.value)}
               placeholder="For online events"
-              style={input}
             />
-          </Field>
+          </Field>}
 
           <Field label="Date">
             <input
@@ -170,7 +278,6 @@ export default function CreateEvent() {
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
               required
-              style={input}
             />
           </Field>
 
@@ -180,9 +287,32 @@ export default function CreateEvent() {
               value={eventTime}
               onChange={(e) => setEventTime(e.target.value)}
               required
-              style={input}
             />
           </Field>
+
+          {typeConfig?.extras.includes("duration") && (
+            <Field label="Duration">
+              <input value={details.duration} onChange={(e) => setDetail("duration", e.target.value)} placeholder="e.g. 3 hours" />
+            </Field>
+          )}
+
+          {typeConfig?.extras.includes("team_size") && (
+            <Field label="Team Size">
+              <input type="number" min="1" value={details.team_size} onChange={(e) => setDetail("team_size", e.target.value)} placeholder="Members per team" />
+            </Field>
+          )}
+
+          {typeConfig?.extras.includes("registration_deadline") && (
+            <Field label="Registration Deadline">
+              <input type="datetime-local" value={details.registration_deadline} onChange={(e) => setDetail("registration_deadline", e.target.value)} />
+            </Field>
+          )}
+
+          {typeConfig?.extras.includes("prize_pool") && (
+            <Field label="Prize Pool / Awards">
+              <input value={details.prize_pool} onChange={(e) => setDetail("prize_pool", e.target.value)} placeholder="Prize or award details" />
+            </Field>
+          )}
 
           <Field label="Available Slots">
             <input
@@ -190,36 +320,61 @@ export default function CreateEvent() {
               min="0"
               value={availableSlots}
               onChange={(e) => setAvailableSlots(e.target.value)}
-              style={input}
+              placeholder="0 for unlimited"
             />
           </Field>
-        </div>
-
-        <Field label="Description">
+          <Field label="Description" full>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            style={textarea}
-            placeholder="Add a short description for the event..."
+            placeholder="Share what attendees can expect, who the event is for, and anything they should bring..."
           />
         </Field>
+            </div>
+          </section>
+        </div>
 
-        <button type="submit" disabled={loading} className="createEventButton">
-          {loading ? "Creating..." : "Create Event"}
-        </button>
+        <aside className="createEventSidebar">
+          <section className="posterCard">
+            <div className="posterCardHeading"><span>Event poster</span><small>Optional</small></div>
+            <label className={`posterDropzone${posterPreview ? " hasImage" : ""}`}>
+              {posterPreview ? <img src={posterPreview} alt="Event poster preview" /> : <>
+                <span className="uploadIcon"><ImagePlus size={23} /></span>
+                <strong>Upload a poster</strong>
+                <small>PNG, JPG or WEBP<br />Portrait works best</small>
+              </>}
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePosterChange} />
+            </label>
+            {eventPoster && <div className="posterFile"><Upload size={14} /><span>{eventPoster.name}</span><button type="button" onClick={removePoster} aria-label="Remove poster"><X size={14} /></button></div>}
+          </section>
 
-        {success && <div style={successBox}>{success}</div>}
-        {err && <div style={errorBox}>{err}</div>}
+          <section className="eventSummary">
+            <p>Event preview</p>
+            <h3>{title || "Your event title"}</h3>
+            <div><CalendarDays size={15} /><span>{eventDate || "Date not set"}</span></div>
+            <div><Clock3 size={15} /><span>{eventTime || "Time not set"}</span></div>
+            <div><MapPin size={15} /><span>{venue || "Venue not set"}</span></div>
+            <div><Users size={15} /><span>{availableSlots ? `${availableSlots} available slots` : "Unlimited attendance"}</span></div>
+          </section>
+
+          {(success || err) && <div className={`formNotice ${success ? "success" : "error"}`} role="status">{success || err}</div>}
+
+          <button type="submit" disabled={loading} className="createEventButton">
+            {loading && <Loader2 size={15} className="spin" />}
+            {loading ? "Creating event..." : "Create Event"}
+            {!loading && <ArrowRight size={16} />}
+          </button>
+          <p className="approvalNote">Your event will be visible after admin approval.</p>
+        </aside>
       </form>
-      </section>
     </main>
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, children, full = false }) {
   return (
-    <div style={fieldWrap}>
-      <label style={labelStyle}>{label}</label>
+    <div className={`formField${full ? " full" : ""}`}>
+      <label>{label}</label>
       {children}
     </div>
   );
@@ -227,160 +382,91 @@ function Field({ label, children }) {
 
 const css = `
 .createEventPage{
-  position:relative;
-  min-height:100vh;
-  background:transparent;
-  color:#111111;
-  font-family:"Google Sans";
-  padding:24px 22px 34px;
+  min-height:100vh; color:#111; font-family:"Google Sans"; padding:34px 22px;
   animation:createEventDissolve .22s ease both;
-  overflow-x:hidden;
+  width:min(1340px,calc(100% - 44px)); margin:0 auto; background:#fff; border:1px solid rgba(255,255,255,.84); border-radius:22px; box-shadow:0 28px 72px rgba(0,0,0,.22); overflow:hidden;
 }
-
-.createEventShell{
-  width:min(1340px, 100%);
-  margin:0 auto;
-  border-radius:22px;
-  padding:28px 34px 30px;
-  background:#ffffff;
-  border:1px solid rgba(255,255,255,.84);
-  box-shadow:0 28px 72px rgba(0,0,0,.22);
-  overflow:hidden;
+.createEventHero{ display:flex; align-items:center; justify-content:space-between; gap:22px; margin:-12px -22px 28px; padding:30px 34px 28px; background:#fafbfc; border-bottom:1px solid rgba(0,0,0,.06); }
+.createEventTitle{ display:flex; align-items:center; gap:14px; }
+.createEventTitle > span{ width:46px; height:46px; display:grid; place-items:center; border-radius:13px; background:#111; color:#fff; }
+.createEventHero h1{ margin:0; font-size:22px; font-weight:600; letter-spacing:-.25px; }
+.createEventHero .createEventTitle p{ margin:4px 0 0; color:rgba(17,17,17,.52); font-size:13px; }
+.heroNote{ color:#c73434; font-size:13px; text-align:right; }
+.createEventLayout{ display:grid; grid-template-columns:minmax(0,1fr) 290px; align-items:start; gap:28px; padding:0 12px 18px; }
+.createEventMain{ display:grid; gap:22px; }
+.formCard{ padding:0; }
+.formCard + .formCard{ padding-top:24px; border-top:1px solid rgba(0,0,0,.07); }
+.posterCard,.eventSummary{ padding:20px; border:1px solid rgba(0,0,0,.06); border-radius:16px; background:#fafbfc; }
+.sectionHeading{ display:flex; align-items:flex-start; gap:12px; margin-bottom:22px; }
+.sectionHeading > span{
+  display:grid; place-items:center; width:28px; height:28px; flex:0 0 auto; border-radius:8px; background:#eef1f4; color:rgba(17,17,17,.58); font-size:11px; font-weight:600;
 }
-
+.sectionHeading h2{ margin:0; font-size:17px; font-weight:650; letter-spacing:-.15px; }
+.sectionHeading p{ margin:4px 0 0; color:rgba(22,33,30,.48); font-size:12px; }
+.eventTypeGrid{ display:flex; align-items:center; gap:3px; width:100%; padding:4px; border-radius:12px; background:#eceeef; overflow-x:auto; scrollbar-width:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,.025); }
+.eventTypeGrid::-webkit-scrollbar{ display:none; }
+.eventTypeCard{ display:inline-flex; flex:1 0 max-content; align-items:center; justify-content:center; gap:7px; min-width:110px; height:38px; padding:0 18px; border:0; border-radius:9px; background:transparent; color:rgba(17,17,17,.48); white-space:nowrap; transition:background .18s ease,box-shadow .18s ease,color .18s ease; }
+.eventTypeCard:hover{ color:#111; background:rgba(255,255,255,.42); }
+.eventTypeCard.selected{ background:#fff; color:#111; box-shadow:0 2px 8px rgba(0,0,0,.10),0 0 0 1px rgba(0,0,0,.025); }
+.eventTypeCard strong{ color:inherit; font-size:12px; font-weight:500; }
+.typeIcon{ display:grid; place-items:center; }
+.fieldGrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.formField{ display:flex; flex-direction:column; gap:7px; min-width:0; }
+.formField.full{ grid-column:1/-1; }
+.formField > label{ color:rgba(17,17,17,.55); font-size:12px; font-weight:400; }
+.formField input,.formField textarea{ width:100%; padding:11px 13px; border:1px solid rgba(0,0,0,.06); border-radius:10px; outline:none; background:#f3f5f8; color:#111; font-size:13px; transition:.18s ease; }
+.formField input:focus,.formField textarea:focus{ border-color:rgba(0,0,0,.24); background:#f8f9fa; box-shadow:0 0 0 3px rgba(0,0,0,.04); }
+.formField input::placeholder,.formField textarea::placeholder{ color:rgba(22,33,30,.34); }
+.formField textarea{ min-height:125px; resize:vertical; line-height:1.5; }
+.createEventSidebar{ position:sticky; top:22px; display:grid; gap:15px; }
+.posterCardHeading{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:13px; font-weight:600; }
+.posterCardHeading small{ padding:4px 8px; border-radius:20px; background:#f1f4f3; color:rgba(22,33,30,.45); font-size:10px; }
+.posterDropzone{ aspect-ratio:4/4.7; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; overflow:hidden; border:1px dashed rgba(0,0,0,.18); border-radius:13px; background:#f3f5f8; cursor:pointer; text-align:center; transition:.18s ease; }
+.posterDropzone:hover{ border-color:rgba(0,0,0,.35); background:#eef1f4; }
+.posterDropzone input{ display:none; }
+.posterDropzone img{ width:100%; height:100%; object-fit:cover; }
+.posterDropzone strong{ font-size:12px; }
+.posterDropzone small{ color:rgba(22,33,30,.42); font-size:10px; line-height:1.5; }
+.uploadIcon{ display:grid; place-items:center; width:44px; height:44px; border-radius:13px; background:white; color:#111; box-shadow:0 5px 16px rgba(0,0,0,.08); }
+.posterFile{ display:flex; align-items:center; gap:7px; margin-top:10px; color:rgba(22,33,30,.56); font-size:10px; }
+.posterFile span{ min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.posterFile button{ display:grid; place-items:center; padding:4px; border-radius:6px; color:#8c4d4d; }
+.eventSummary{ display:grid; gap:11px; }
+.eventSummary > p{ color:rgba(17,17,17,.48); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; }
+.eventSummary h3{ margin-bottom:3px; font-size:15px; overflow-wrap:anywhere; }
+.eventSummary div{ display:flex; align-items:center; gap:9px; color:rgba(22,33,30,.53); font-size:11px; }
+.eventSummary svg{ flex:0 0 auto; color:#111; }
 .createEventButton{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:30px;
-  margin-top:4px;
-  padding:0 12px;
-  border-radius:999px;
-  background:#050505;
-  color:#ffffff;
-  font-family:"Google Sans";
-  font-size:13px;
-  font-weight:500;
-  line-height:1;
-  box-shadow:0 10px 22px rgba(0,0,0,.12);
-  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease, opacity .18s ease;
+  width:100%; display:flex; align-items:center; justify-content:center; gap:8px; height:38px; border-radius:999px; background:#050505; color:#fff; font-size:13px; font-weight:500; box-shadow:0 10px 22px rgba(0,0,0,.12); transition:.18s ease;
 }
-
-.createEventButton:hover:not(:disabled){
-  background:#eef1f4;
-  color:#111111;
-  transform:translateY(-1px);
-  box-shadow:0 12px 26px rgba(0,0,0,.16);
-}
-
-.createEventButton:disabled{
-  opacity:.68;
-  cursor:not-allowed;
-}
-
+.spin{ animation:spin .8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.createEventButton:hover:not(:disabled){ background:#eef1f4; color:#111; transform:translateY(-1px); box-shadow:0 12px 26px rgba(0,0,0,.16); }
+.createEventButton:disabled{ opacity:.68; cursor:not-allowed; }
+.approvalNote{ margin:0 5px; color:rgba(22,33,30,.42); font-size:10px; text-align:center; }
+.formNotice{ padding:11px 13px; border-radius:11px; font-size:11px; line-height:1.4; }
+.formNotice.success{ background:#e4f6ed; color:#24634f; }
+.formNotice.error{ background:#fceaea; color:#8b3f3f; }
 @keyframes createEventDissolve{
   from{ opacity:0; transform:translateY(4px); }
   to{ opacity:1; transform:translateY(0); }
 }
 
+@media (max-width:900px){
+  .createEventLayout{ grid-template-columns:1fr; }
+  .createEventSidebar{ position:static; grid-template-columns:minmax(220px,280px) 1fr; align-items:start; }
+  .createEventButton,.approvalNote,.formNotice{ grid-column:1/-1; }
+}
 @media (max-width:720px){
-  .createEventPage{ padding:10px 14px 36px; }
-  .createEventShell{ border-radius:18px; padding:20px 14px 24px; }
+  .createEventPage{ width:calc(100% - 28px); padding:28px 14px; }
+  .createEventHero{ margin:-10px -14px 26px; padding:24px 14px 22px; align-items:flex-start; }
+  .heroNote{ display:none; }
+  .posterCard,.eventSummary{ padding:18px; border-radius:14px; }
+  .eventTypeGrid{ display:flex; width:100%; }
+  .eventTypeCard{ flex:0 0 auto; }
+  .fieldGrid{ grid-template-columns:1fr; }
+  .formField.full{ grid-column:auto; }
+  .createEventSidebar{ grid-template-columns:1fr; }
+  .createEventButton,.approvalNote,.formNotice{ grid-column:auto; }
 }
 `;
-
-const card = {
-  padding: 0,
-  maxWidth: 920,
-};
-
-const posterUploadRow = {
-  display: "flex",
-  alignItems: "center",
-  gap: 24,
-  marginBottom: 28,
-};
-
-const posterPreviewBox = {
-  width: 132,
-  aspectRatio: "1054 / 1492",
-  borderRadius: 10,
-  background: "#f3f5f8",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  overflow: "hidden",
-  flexShrink: 0,
-};
-
-const posterImg = {
-  width: "100%",
-  height: "100%",
-  objectFit: "contain",
-};
-
-const posterPlaceholder = {
-  fontSize: 34,
-  color: "#111111",
-};
-
-const posterTitle = {
-  margin: 0,
-  fontSize: 16,
-  fontWeight: 500,
-};
-
-const posterText = {
-  margin: "6px 0 10px",
-  fontSize: 14,
-  color: "rgba(17,17,17,0.56)",
-};
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: 16,
-};
-
-const fieldWrap = {
-  display: "grid",
-  gap: 6,
-  marginBottom: 14,
-};
-
-const labelStyle = {
-  fontSize: 13,
-  color: "rgba(17,17,17,0.56)",
-};
-
-const input = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid rgba(0,0,0,0.05)",
-  background: "#f3f5f8",
-  color: "#111111",
-  fontSize: 14,
-  fontFamily: '"Google Sans"',
-  outline: "none",
-};
-
-const textarea = {
-  ...input,
-  minHeight: 120,
-  resize: "vertical",
-};
-
-const successBox = {
-  background: "#dcfce7",
-  padding: 12,
-  borderRadius: 12,
-  marginTop: 14,
-};
-
-const errorBox = {
-  background: "#fee2e2",
-  padding: 12,
-  borderRadius: 12,
-  marginTop: 14,
-};
