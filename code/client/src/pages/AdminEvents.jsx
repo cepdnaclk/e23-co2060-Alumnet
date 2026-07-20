@@ -8,6 +8,7 @@ import { approveEvent, getAdminEvents, rejectEvent } from "../api";
 import rejectedIcon from "../assets/rejected.png";
 import tickIcon from "../assets/tick.png";
 import viewIcon from "../assets/view.png";
+import { formatEventDate as formatDate, formatEventTime as formatTime } from "../utils/dateTime";
 
 export default function AdminEvents() {
   const token = localStorage.getItem("token");
@@ -199,23 +200,6 @@ export default function AdminEvents() {
       )}
     </AccountListShell>
   );
-}
-
-function formatDate(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatTime(value) {
-  if (!value) return "-";
-  return new Date(`1970-01-01T${value}`).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 const css = `
