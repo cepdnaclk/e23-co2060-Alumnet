@@ -217,13 +217,29 @@ export default function Navbar() {
     <>
       <style>{css}</style>
       <header className="appTopNav">
-        <button className="appBrandBtn" type="button" onClick={() => navigate("/home")}>
+        <div className="appBrandBtn" aria-label="Alumnet">
           <img src={logo} alt="Alumnet" />
-        </button>
+        </div>
 
-        <nav className="appCenterNav">
-          <Link to="/directory">Directory</Link>
-          <Link to="/events">Events</Link>
+        <nav className="appCenterNav" aria-label="Main navigation">
+          <Link
+            to="/home"
+            className={location.pathname === "/home" ? "active" : ""}
+          >
+            Home
+          </Link>
+          <Link
+            to="/directory"
+            className={location.pathname.startsWith("/directory") ? "active" : ""}
+          >
+            Directory
+          </Link>
+          <Link
+            to="/events"
+            className={location.pathname.startsWith("/events") ? "active" : ""}
+          >
+            Events
+          </Link>
         </nav>
 
         <div className="appNavTools">
@@ -392,12 +408,6 @@ const css = `
   width:122px;
   display:inline-flex;
   align-items:center;
-  transition:opacity .18s ease, transform .18s ease;
-}
-
-.appBrandBtn:hover{
-  opacity:.72;
-  transform:translateY(-1px);
 }
 
 .appBrandBtn img{
@@ -415,9 +425,33 @@ const css = `
 }
 
 .appCenterNav a{
+  position:relative;
+  padding:7px 2px;
   text-decoration:none;
   color:#111111;
   transition:opacity .18s ease, transform .18s ease;
+}
+
+.appCenterNav a::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:2px;
+  border-radius:999px;
+  background:#111111;
+  transform:scaleX(0);
+  transform-origin:center;
+  transition:transform .18s ease;
+}
+
+.appCenterNav a.active{
+  font-weight:500;
+}
+
+.appCenterNav a.active::after{
+  transform:scaleX(1);
 }
 
 .appCenterNav a:hover{

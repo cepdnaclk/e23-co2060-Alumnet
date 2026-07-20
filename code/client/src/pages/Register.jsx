@@ -339,6 +339,11 @@ export default function Register() {
     setError("");
     setOpenTip(null);
 
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
     const linkError = validateLinks();
 
     if (linkError) {
@@ -1228,6 +1233,15 @@ const css = `
 .backHomeLink{
   color:#111111;
   text-decoration:none;
+}
+
+.registerFooter a{
+  font-weight:600;
+  transition:opacity .18s ease;
+}
+
+.registerFooter a:hover{
+  opacity:.68;
 }
 
 .backHomeLink{
