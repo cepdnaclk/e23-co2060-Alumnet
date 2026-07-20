@@ -199,6 +199,212 @@ export default function Chat() {
     }
   };
 
+  async function loadCurrentUser() {
+    try {
+      const token = localStorage.getItem("token");
+      const user = await getProfile(token);
+      setCurrentUser(user);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function loadConversations() {
+    try {
+      const token = localStorage.getItem("token");
+      const data = await getChatContacts(token);
+      setConversations(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function openConversation(conversation) {
+    try {
+      const token = localStorage.getItem("token");
+      pendingScrollToBottomRef.current = true;
+      setSelectedConversation(conversation);
+      window.dispatchEvent(
+        new CustomEvent("alumnet:chat-selection-changed", {
+          detail: { name: conversation.other_user_name || "" },
+        })
+      );
+
+      setConversations((prevList) =>
+        prevList.map((c) =>
+          c.id === conversation.id ? { ...c, unread: false, unread_count: 0 } : c
+        )
+      );
+
+      if (conversation.id) {
+        const data = await getConversationMessages(token, conversation.id);
+        setMessages(data);
+        window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
+      } else {
+        setMessages([]);
+      }
+      if (isMobile) {
+        setShowSidebar(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleSend() {
+    if (!selectedConversation?.id) return;
+
+    const cleanText = newMessage.trim();
+    const attachment = voiceClip
+      ? {
+          file: new File([voiceClip.blob], voiceClip.name, { type: "audio/webm" }),
+          type: "voice",
+        }
+      : attachedFile
+        ? { file: attachedFile, type: "file" }
+        : null;
+
+    if (!cleanText && !attachment) return;
+
+    try {
+      setIsSending(true);
+      setSendError("");
+      const token = localStorage.getItem("token");
+
+      let payload = {
+        message_type: "text",
+        message_text: cleanText,
+      };
+
+      if (attachment) {
+        const uploaded = await uploadChatAttachment(
+          selectedConversation.id,
+          attachment.file
+        );
+
+        payload = {
+          message_type: attachment.type,
+          message_text: cleanText || null,
+          attachment_url: uploaded.url,
+          attachment_name: attachment.file.name,
+          attachment_mime_type: attachment.file.type || "application/octet-stream",
+          attachment_size: attachment.file.size,
+        };
+      }
+
+      await sendMessage(token, selectedConversation.id, payload);
+      setNewMessage("");
+      setAttachedFile(null);
+      setVoiceClip(null);
+      setShowEmojiPicker(false);
+
+      const updated = await getConversationMessages(token, selectedConversation.id);
+      setMessages(updated);
+      loadConversations();
+      window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
+    } catch (err) {
+      console.error(err);
+      setSendError(err.message || "Failed to send message");
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function handleDeleteMessage(messageId) {
+    if (!selectedConversation?.id) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await deleteChatMessage(token, messageId);
+      const updated = await getConversationMessages(token, selectedConversation.id);
+      setMessages(updated);
+      loadConversations();
+      window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
+    } catch (err) {
+      console.error(err);
+      setSendError(err.message || "Failed to delete message");
+    }
+  }
+
+  const focusComposer = () => {
+    textareaRef.current?.focus();
+  };
+
+  const addEmoji = (emoji) => {
+    setNewMessage((value) => `${value}${emoji}`);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAttachedFile(file);
+      setVoiceClip(null);
+    }
+    e.target.value = "";
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      recordingChunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
+        setVoiceClip({
+          name: `voice-${new Date().toISOString().replace(/[:.]/g, "-")}.webm`,
+          blob,
+        });
+        setAttachedFile(null);
+        setIsRecording(false);
+        recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+        recordingStreamRef.current = null;
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start recording", err);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const getUnreadCount = (conversation) => {
+    if (Number(conversation.unread_count) > 0) return Number(conversation.unread_count);
+    return conversation.unread ? 1 : 0;
+  };
+
+  const filteredConversations = conversations.filter((conversation) =>
+    conversation.other_user_name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const sortedConversations = [...filteredConversations].sort((a, b) => {
+    const timeA = a.last_message_time || a.last_message_at;
+    const timeB = b.last_message_time || b.last_message_at;
+    const valueA = timeA ? new Date(timeA).getTime() : 0;
+    const valueB = timeB ? new Date(timeB).getTime() : 0;
+    return sortOrder === "newest" ? valueB - valueA : valueA - valueB;
+  });
+
   const formatLastSeen = (lastSeenDate, isOnline) => {
     if (isOnline) return "Online";
     if (!lastSeenDate) return "Offline";
