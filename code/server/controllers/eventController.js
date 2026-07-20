@@ -59,7 +59,7 @@ const createEvent = async (req, res) => {
         created_by,
         approval_status
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9, $10, $11)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *
       `,
       [
@@ -77,26 +77,54 @@ const createEvent = async (req, res) => {
       ]
     );
 
+    const createdEvent = result.rows[0];
+
     if (approvalStatus === "pending") {
+      // Alumni created event → notify admins
+
       await createNotificationsForRoles(
         ["university_admin", "system_admin"],
         "New Event Awaiting Approval",
-        `A new event "${result.rows[0].title}" has been submitted by an alumnus and is waiting for approval.`,
+        `A new event "${createdEvent.title}" has been submitted by an alumnus and is waiting for approval.`,
         "EVENT_UPDATE"
       );
 
       sendRoleNotificationEmail({
         category: "event",
         roles: ["university_admin", "system_admin"],
-        subject: `Event awaiting approval: ${result.rows[0].title}`,
+        subject: `Event awaiting approval: ${createdEvent.title}`,
         heading: "A new event needs approval",
-        message: `An alumnus submitted "${result.rows[0].title}". Review the event details and approve or reject it.`,
+        message: `An alumnus submitted "${createdEvent.title}". Review the event details and approve or reject it.`,
         buttonText: "Review event",
         buttonPath: "/admin-events",
         details: [
-          { label: "Date", value: event_date },
-          { label: "Time", value: event_time },
-          { label: "Venue", value: venue },
+          { label: "Date", value: createdEvent.event_date },
+          { label: "Time", value: createdEvent.event_time },
+          { label: "Venue", value: createdEvent.venue },
+        ],
+      });
+    } else {
+      // Admin created event → notify students immediately
+
+      await createNotificationsForRoles(
+        ["student"],
+        "New Event Added",
+        `A new event "${createdEvent.title}" has been added. Visit Events to view the details and register.`,
+        `NEW_EVENT:${createdEvent.id}`
+      );
+
+      sendRoleNotificationEmail({
+        category: "event",
+        roles: ["student"],
+        subject: `New Alumnet event: ${createdEvent.title}`,
+        heading: "A new event is available",
+        message: `"${createdEvent.title}" has been added to Alumnet. View the details and register before the available slots are filled.`,
+        buttonText: "View event",
+        buttonPath: `/events/${createdEvent.id}`,
+        details: [
+          { label: "Date", value: createdEvent.event_date },
+          { label: "Time", value: createdEvent.event_time },
+          { label: "Venue", value: createdEvent.venue },
         ],
       });
     }
@@ -106,7 +134,7 @@ const createEvent = async (req, res) => {
         approvalStatus === "approved"
           ? "Event created successfully"
           : "Event created and pending admin approval",
-      event: result.rows[0],
+      event: createdEvent,
     });
   } catch (error) {
     console.error("Create event error:", error);
