@@ -152,6 +152,9 @@ CREATE TABLE public.events (
     created_by integer,
     approval_status text DEFAULT 'pending'::text NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    event_type text DEFAULT 'other'::text NOT NULL,
+    event_details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT events_event_type_check CHECK ((event_type = ANY (ARRAY['lecture'::text, 'workshop'::text, 'conference'::text, 'competition'::text, 'other'::text]))),
     CONSTRAINT events_approval_status_check CHECK ((approval_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
 );
 

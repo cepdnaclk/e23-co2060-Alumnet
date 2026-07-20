@@ -31,7 +31,22 @@ const createEvent = async (req, res) => {
       image_url,
       speaker,
       zoom_link,
+      event_type,
+      event_details,
     } = req.body;
+
+    const allowedEventTypes = new Set([
+      "lecture",
+      "workshop",
+      "conference",
+      "competition",
+      "other",
+    ]);
+    const normalizedEventType = String(event_type || "other").toLowerCase();
+
+    if (!allowedEventTypes.has(normalizedEventType)) {
+      return res.status(400).json({ message: "Invalid event type" });
+    }
 
     if (!title || !event_date || !event_time || !venue) {
       return res.status(400).json({
@@ -56,10 +71,12 @@ const createEvent = async (req, res) => {
         image_url,
         speaker,
         zoom_link,
+        event_type,
+        event_details,
         created_by,
         approval_status
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9, $10, $11)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       RETURNING *
       `,
       [
@@ -72,6 +89,8 @@ const createEvent = async (req, res) => {
         image_url || null,
         speaker || null,
         zoom_link || null,
+        normalizedEventType,
+        event_details || {},
         userId,
         approvalStatus,
       ]
