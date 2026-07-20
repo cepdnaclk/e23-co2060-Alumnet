@@ -10,6 +10,20 @@ const {
 
 const ALLOWED_REMINDER_MINUTES = new Set([60, 1440, 2880, 10080]);
 
+const calculateEventDuration = (startTime, endTime) => {
+  if (!startTime || !endTime) return "";
+  const [startHour, startMinute] = String(startTime).split(":").map(Number);
+  const [endHour, endMinute] = String(endTime).split(":").map(Number);
+  const totalMinutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
+  if (totalMinutes <= 0) return "";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return [
+    hours ? `${hours} hour${hours === 1 ? "" : "s"}` : "",
+    minutes ? `${minutes} minute${minutes === 1 ? "" : "s"}` : "",
+  ].filter(Boolean).join(" ");
+};
+
 const createEvent = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -25,6 +39,7 @@ const createEvent = async (req, res) => {
       title,
       event_date,
       event_time,
+      ending_time,
       venue,
       description,
       available_slots,
@@ -54,10 +69,28 @@ const createEvent = async (req, res) => {
       });
     }
 
+    const supportsEndingTime = ["lecture", "workshop", "conference"].includes(normalizedEventType);
+    if (ending_time && !supportsEndingTime) {
+      return res.status(400).json({ message: "Ending time is only available for lectures, workshops, and conferences" });
+    }
+    if (ending_time && ending_time <= event_time) {
+      return res.status(400).json({ message: "Ending time must be later than starting time" });
+    }
+    if (["conference", "competition"].includes(normalizedEventType)) {
+      const deadline = String(event_details?.registration_deadline || "");
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(deadline) || Number.isNaN(Date.parse(deadline))) {
+        return res.status(400).json({ message: "A valid registration deadline is required for conferences and competitions" });
+      }
+    }
+
     const approvalStatus =
       role === "university_admin" || role === "system_admin"
         ? "approved"
         : "pending";
+    const normalizedEventDetails = { ...(event_details || {}) };
+    if (normalizedEventType === "workshop") {
+      normalizedEventDetails.duration = calculateEventDuration(event_time, ending_time);
+    }
 
     const result = await pool.query(
       `
@@ -65,6 +98,7 @@ const createEvent = async (req, res) => {
         title,
         event_date,
         event_time,
+        ending_time,
         venue,
         description,
         available_slots,
@@ -76,13 +110,14 @@ const createEvent = async (req, res) => {
         created_by,
         approval_status
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       RETURNING *
       `,
       [
         title,
         event_date,
         event_time,
+        ending_time || null,
         venue,
         description || null,
         Number(available_slots) || 0,
@@ -90,7 +125,7 @@ const createEvent = async (req, res) => {
         speaker || null,
         zoom_link || null,
         normalizedEventType,
-        event_details || {},
+        normalizedEventDetails,
         userId,
         approvalStatus,
       ]
@@ -139,6 +174,10 @@ const getApprovedEvents = async (req, res) => {
       `
       SELECT
         e.*,
+        (CASE WHEN e.ending_time IS NOT NULL
+          THEN (e.event_date + e.ending_time) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')
+          ELSE e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date
+        END) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
@@ -154,7 +193,6 @@ const getApprovedEvents = async (req, res) => {
       FROM events e
       JOIN users u ON u.id = e.created_by
       WHERE e.approval_status = 'approved'
-        AND e.event_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date
       ORDER BY e.event_date ASC, e.event_time ASC
       `,
       [req.user.id]
@@ -204,7 +242,10 @@ const getAdminEvents = async (req, res) => {
       `
       SELECT
         e.*,
-        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
+        (CASE WHEN e.ending_time IS NOT NULL
+          THEN (e.event_date + e.ending_time) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')
+          ELSE e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date
+        END) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
@@ -411,6 +452,10 @@ const registerForEvent = async (req, res) => {
       SELECT
         e.*,
         (((e.event_date + e.event_time) AT TIME ZONE 'Asia/Colombo') <= CURRENT_TIMESTAMP) AS event_has_started,
+        (CASE WHEN e.event_type IN ('conference', 'competition')
+          AND COALESCE(e.event_details->>'registration_deadline', '') ~ '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}'
+          THEN ((e.event_details->>'registration_deadline')::timestamp AT TIME ZONE 'Asia/Colombo') <= CURRENT_TIMESTAMP
+          ELSE FALSE END) AS registration_deadline_passed,
         (
           SELECT COUNT(*)::int
           FROM event_registrations er
@@ -437,6 +482,12 @@ const registerForEvent = async (req, res) => {
     if (event.event_has_started) {
       return res.status(400).json({
         message: "Registration has closed because this event has started",
+      });
+    }
+
+    if (event.registration_deadline_passed) {
+      return res.status(400).json({
+        message: "Registration has closed because the registration deadline has passed",
       });
     }
 
@@ -561,7 +612,10 @@ const getMyRegisteredEvents = async (req, res) => {
       SELECT
         e.*,
         er.registered_at,
-        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
+        (CASE WHEN e.ending_time IS NOT NULL
+          THEN (e.event_date + e.ending_time) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')
+          ELSE e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date
+        END) AS is_past,
         u.full_name AS created_by_name
       FROM event_registrations er
       JOIN events e ON e.id = er.event_id
@@ -587,7 +641,14 @@ const getEventById = async (req, res) => {
       `
       SELECT
         e.*,
-        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
+        (CASE WHEN e.ending_time IS NOT NULL
+          THEN (e.event_date + e.ending_time) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')
+          ELSE e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date
+        END) AS is_past,
+        (CASE WHEN e.event_type IN ('conference', 'competition')
+          AND COALESCE(e.event_details->>'registration_deadline', '') ~ '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}'
+          THEN ((e.event_details->>'registration_deadline')::timestamp AT TIME ZONE 'Asia/Colombo') <= CURRENT_TIMESTAMP
+          ELSE FALSE END) AS registration_deadline_passed,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
@@ -660,6 +721,7 @@ const updateEvent = async (req, res) => {
       title,
       event_date,
       event_time,
+      ending_time,
       venue,
       description,
       available_slots,
@@ -672,6 +734,14 @@ const updateEvent = async (req, res) => {
       return res.status(400).json({
         message: "title, event_date, event_time, and venue are required",
       });
+    }
+
+    const supportsEndingTime = ["lecture", "workshop", "conference"].includes(existingEvent.event_type);
+    if (ending_time && !supportsEndingTime) {
+      return res.status(400).json({ message: "Ending time is only available for lectures, workshops, and conferences" });
+    }
+    if (ending_time && ending_time <= event_time) {
+      return res.status(400).json({ message: "Ending time must be later than starting time" });
     }
 
     const slots = Number(available_slots);
@@ -687,32 +757,40 @@ const updateEvent = async (req, res) => {
     }
 
     const approvalStatus = isAdmin ? existingEvent.approval_status : "pending";
+    const updatedEventDetails = { ...(existingEvent.event_details || {}) };
+    if (existingEvent.event_type === "workshop") {
+      updatedEventDetails.duration = calculateEventDuration(event_time, ending_time);
+    }
     const result = await pool.query(
       `
       UPDATE events
       SET title = $1,
           event_date = $2,
           event_time = $3,
-          venue = $4,
-          description = $5,
-          available_slots = $6,
-          image_url = $7,
-          speaker = $8,
-          zoom_link = $9,
-          approval_status = $10
-      WHERE id = $11
+          ending_time = $4,
+          venue = $5,
+          description = $6,
+          available_slots = $7,
+          image_url = $8,
+          speaker = $9,
+          zoom_link = $10,
+          event_details = $11,
+          approval_status = $12
+      WHERE id = $13
       RETURNING *
       `,
       [
         title,
         event_date,
         event_time,
+        ending_time || null,
         venue,
         description || null,
         slots,
         image_url || null,
         speaker || null,
         zoom_link || null,
+        updatedEventDetails,
         approvalStatus,
         id,
       ]
@@ -738,7 +816,10 @@ const getMyCreatedEvents = async (req, res) => {
       `
       SELECT
         e.*,
-        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
+        (CASE WHEN e.ending_time IS NOT NULL
+          THEN (e.event_date + e.ending_time) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')
+          ELSE e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date
+        END) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int

@@ -68,8 +68,14 @@ export function formatEventTime(value) {
 }
 
 export function isEventDayPast(event) {
+  if (typeof event?.is_past === "boolean") return event.is_past;
   const dateValue = getEventDateValue(event?.event_date);
   if (!dateValue) return false;
+  if (event?.ending_time) {
+    const endingTime = String(event.ending_time).slice(0, 8);
+    const endDateTime = new Date(`${dateValue}T${endingTime}+05:30`);
+    return !Number.isNaN(endDateTime.getTime()) && endDateTime.getTime() <= Date.now();
+  }
   const endOfDay = new Date(`${dateValue}T23:59:59.999+05:30`);
   return !Number.isNaN(endOfDay.getTime()) && endOfDay.getTime() < Date.now();
 }

@@ -15,7 +15,7 @@ export default function Events() {
   const [searching, setSearching] = useState(false);
   const [err, setErr] = useState("");
   const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("upcoming");
 
   const loadEvents = async () => {
     try {
@@ -45,7 +45,7 @@ export default function Events() {
 
   const filteredEvents = events.filter((event) => {
     const query = search.trim().toLowerCase();
-    const matchesDate = matchesDateFilter(event.event_date, dateFilter);
+    const matchesDate = matchesDateFilter(event, dateFilter);
     if (!matchesDate) return false;
     if (!query) return true;
 
@@ -115,6 +115,7 @@ export default function Events() {
                       {event.is_registered && (
                         <span className="alreadyJoined">Already joined</span>
                       )}
+                      {event.is_past && <span className="archivedEvent">Past</span>}
                     </div>
                   </div>
 
@@ -137,7 +138,7 @@ export default function Events() {
                       </span>
                       <span>
                         <img src={timeIcon} alt="" />
-                        {formatTime(event.event_time)}
+                        {formatTime(event.event_time)}{event.ending_time ? ` – ${formatTime(event.ending_time)}` : ""}
                       </span>
                       <span>
                         <img src={locationIcon} alt="" />
@@ -166,15 +167,19 @@ export default function Events() {
 }
 
 const dateFilters = [
-  { value: "all", label: "All" },
+  { value: "upcoming", label: "Upcoming" },
   { value: "today", label: "Today" },
   { value: "tomorrow", label: "Tomorrow" },
   { value: "week", label: "This Week" },
   { value: "month", label: "This Month" },
+  { value: "archive", label: "Archive" },
 ];
 
-function matchesDateFilter(date, filter) {
-  if (filter === "all") return true;
+function matchesDateFilter(event, filter) {
+  if (filter === "archive") return Boolean(event.is_past);
+  if (filter === "upcoming") return !event.is_past;
+  if (event.is_past) return false;
+  const date = event.event_date;
   if (!date) return false;
 
   const [year, month, day] = getEventDateValue(date).split("-").map(Number);
@@ -550,6 +555,7 @@ const css = `
   background:#2f5ff5;
   flex:0 0 auto;
 }
+.archivedEvent{ display:inline-flex; align-items:center; min-height:22px; padding:0 9px; border-radius:999px; background:#eef0f3; color:#62666d; font-size:12px; white-space:nowrap; }
 
 .viewEventLink{
   display:inline-flex;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -33,7 +33,7 @@ const EVENT_TYPES = {
     dynamicLabel: "Instructor / Trainer",
     dynamicPlaceholder: "Instructor or trainer name",
     venueLabel: "Venue / Zoom Link",
-    extras: ["organization", "zoom_link", "duration"],
+    extras: ["organization", "zoom_link", "duration", "application_link"],
   },
   conference: {
     name: "Conference",
@@ -41,7 +41,7 @@ const EVENT_TYPES = {
     dynamicLabel: "Host Organization",
     dynamicPlaceholder: "Hosting organization",
     venueLabel: "Venue",
-    extras: ["keynote_speaker", "registration_deadline"],
+    extras: ["keynote_speaker", "registration_deadline", "application_link"],
   },
   competition: {
     name: "Competition",
@@ -49,7 +49,7 @@ const EVENT_TYPES = {
     dynamicLabel: "Organizer",
     dynamicPlaceholder: "Organizer name",
     venueLabel: "Venue",
-    extras: ["team_size", "registration_deadline", "prize_pool"],
+    extras: ["team_size", "registration_deadline", "prize_pool", "application_link"],
   },
   other: {
     name: "Other",
@@ -68,6 +68,7 @@ const EMPTY_DETAILS = {
   team_size: "",
   registration_deadline: "",
   prize_pool: "",
+  application_link: "",
 };
 
 export default function CreateEvent() {
@@ -77,6 +78,7 @@ export default function CreateEvent() {
   const [title, setTitle] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
+  const [endingTime, setEndingTime] = useState("");
   const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
   const [availableSlots, setAvailableSlots] = useState("");
@@ -90,6 +92,14 @@ export default function CreateEvent() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    if (eventType !== "workshop") return;
+    const duration = calculateDuration(eventTime, endingTime);
+    setDetails((current) =>
+      current.duration === duration ? current : { ...current, duration }
+    );
+  }, [eventType, eventTime, endingTime]);
 
   const handlePosterChange = (e) => {
     const file = e.target.files[0];
@@ -144,6 +154,9 @@ export default function CreateEvent() {
         title,
         event_date: eventDate,
         event_time: eventTime,
+        ending_time: ["lecture", "workshop", "conference"].includes(eventType)
+          ? endingTime || null
+          : null,
         venue,
         description,
         available_slots: availableSlots ? Number(availableSlots) : 0,
@@ -161,6 +174,7 @@ export default function CreateEvent() {
       setEventType("");
       setEventDate("");
       setEventTime("");
+      setEndingTime("");
       setVenue("");
       setDescription("");
       setAvailableSlots("");
@@ -221,9 +235,13 @@ export default function CreateEvent() {
           <section className="formCard">
             <div className="sectionHeading">
               <span>02</span>
-              <div><h2>Tell us about the event</h2><p>Add the information attendees need to know.</p></div>
+              <div>
+                <h2>Tell us about the event</h2>
+                <p>{eventType ? "Add the information attendees need to know." : "Choose an event type above to continue."}</p>
+              </div>
             </div>
-            <div className="fieldGrid">
+            <fieldset className="eventDetailsFieldset" disabled={!eventType}>
+              <div className="fieldGrid">
           <Field label="Event title" full>
             <input
               value={title}
@@ -281,7 +299,7 @@ export default function CreateEvent() {
             />
           </Field>
 
-          <Field label="Time">
+          <Field label={["lecture", "workshop", "conference"].includes(eventType) ? "Starting Time" : "Time"}>
             <input
               type="time"
               value={eventTime}
@@ -290,9 +308,20 @@ export default function CreateEvent() {
             />
           </Field>
 
+          {["lecture", "workshop", "conference"].includes(eventType) && (
+            <Field label="Ending Time (optional)">
+              <input
+                type="time"
+                value={endingTime}
+                min={eventTime || undefined}
+                onChange={(e) => setEndingTime(e.target.value)}
+              />
+            </Field>
+          )}
+
           {typeConfig?.extras.includes("duration") && (
-            <Field label="Duration">
-              <input value={details.duration} onChange={(e) => setDetail("duration", e.target.value)} placeholder="e.g. 3 hours" />
+            <Field label="Duration (automatic)">
+              <input value={details.duration} readOnly placeholder="Set starting and ending times" />
             </Field>
           )}
 
@@ -304,7 +333,18 @@ export default function CreateEvent() {
 
           {typeConfig?.extras.includes("registration_deadline") && (
             <Field label="Registration Deadline">
-              <input type="datetime-local" value={details.registration_deadline} onChange={(e) => setDetail("registration_deadline", e.target.value)} />
+              <input type="datetime-local" value={details.registration_deadline} onChange={(e) => setDetail("registration_deadline", e.target.value)} required />
+            </Field>
+          )}
+
+          {typeConfig?.extras.includes("application_link") && (
+            <Field label="To apply or participation">
+              <input
+                type="url"
+                value={details.application_link}
+                onChange={(e) => setDetail("application_link", e.target.value)}
+                placeholder="Link of application form"
+              />
             </Field>
           )}
 
@@ -330,7 +370,8 @@ export default function CreateEvent() {
             placeholder="Share what attendees can expect, who the event is for, and anything they should bring..."
           />
         </Field>
-            </div>
+              </div>
+            </fieldset>
           </section>
         </div>
 
@@ -352,14 +393,14 @@ export default function CreateEvent() {
             <p>Event preview</p>
             <h3>{title || "Your event title"}</h3>
             <div><CalendarDays size={15} /><span>{eventDate || "Date not set"}</span></div>
-            <div><Clock3 size={15} /><span>{eventTime || "Time not set"}</span></div>
+            <div><Clock3 size={15} /><span>{eventTime ? `${eventTime}${endingTime ? ` – ${endingTime}` : ""}` : "Time not set"}</span></div>
             <div><MapPin size={15} /><span>{venue || "Venue not set"}</span></div>
             <div><Users size={15} /><span>{availableSlots ? `${availableSlots} available slots` : "Unlimited attendance"}</span></div>
           </section>
 
           {(success || err) && <div className={`formNotice ${success ? "success" : "error"}`} role="status">{success || err}</div>}
 
-          <button type="submit" disabled={loading} className="createEventButton">
+          <button type="submit" disabled={loading || !eventType} className="createEventButton">
             {loading && <Loader2 size={15} className="spin" />}
             {loading ? "Creating event..." : "Create Event"}
             {!loading && <ArrowRight size={16} />}
@@ -378,6 +419,20 @@ function Field({ label, children, full = false }) {
       {children}
     </div>
   );
+}
+
+function calculateDuration(startTime, endTime) {
+  if (!startTime || !endTime) return "";
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
+  const minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
+  if (minutes <= 0) return "";
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return [
+    hours ? `${hours} hour${hours === 1 ? "" : "s"}` : "",
+    remainder ? `${remainder} minute${remainder === 1 ? "" : "s"}` : "",
+  ].filter(Boolean).join(" ");
 }
 
 const css = `
@@ -411,11 +466,15 @@ const css = `
 .eventTypeCard strong{ color:inherit; font-size:12px; font-weight:500; }
 .typeIcon{ display:grid; place-items:center; }
 .fieldGrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.eventDetailsFieldset{ min-width:0; margin:0; padding:0; border:0; }
+.eventDetailsFieldset:disabled{ opacity:.52; }
+.eventDetailsFieldset:disabled input,.eventDetailsFieldset:disabled textarea{ cursor:not-allowed; }
 .formField{ display:flex; flex-direction:column; gap:7px; min-width:0; }
 .formField.full{ grid-column:1/-1; }
 .formField > label{ color:rgba(17,17,17,.55); font-size:12px; font-weight:400; }
 .formField input,.formField textarea{ width:100%; padding:11px 13px; border:1px solid rgba(0,0,0,.06); border-radius:10px; outline:none; background:#f3f5f8; color:#111; font-size:13px; transition:.18s ease; }
 .formField input:focus,.formField textarea:focus{ border-color:rgba(0,0,0,.24); background:#f8f9fa; box-shadow:0 0 0 3px rgba(0,0,0,.04); }
+.formField input[readonly]{ color:rgba(17,17,17,.62); cursor:default; }
 .formField input::placeholder,.formField textarea::placeholder{ color:rgba(22,33,30,.34); }
 .formField textarea{ min-height:125px; resize:vertical; line-height:1.5; }
 .createEventSidebar{ position:sticky; top:22px; display:grid; gap:15px; }

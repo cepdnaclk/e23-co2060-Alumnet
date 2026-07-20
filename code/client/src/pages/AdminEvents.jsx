@@ -44,7 +44,7 @@ export default function AdminEvents() {
     { label: "Pending", value: "pending", count: counts.pending },
     { label: "Approved", value: "approved", count: counts.approved },
     { label: "Rejected", value: "rejected", count: counts.rejected },
-    { label: "Past", value: "past", count: counts.past },
+    { label: "Archived", value: "past", count: counts.past },
   ];
 
   const loadEvents = useCallback(async () => {
@@ -137,7 +137,7 @@ export default function AdminEvents() {
                       <td>
                         <div className="eventScheduleCell">
                           <span>{formatDate(event.event_date)}</span>
-                          <small>{formatTime(event.event_time)}</small>
+                          <small>{formatTime(event.event_time)}{event.ending_time ? ` – ${formatTime(event.ending_time)}` : ""}</small>
                         </div>
                       </td>
                       <td>
