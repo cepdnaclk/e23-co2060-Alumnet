@@ -126,15 +126,53 @@ export default function Chat() {
     setBrokenImages((prev) => ({ ...prev, [id]: true }));
   };
 
-  const formatMessageTime = (dateInput) => {
+  const isToday = (someDate) => {
+    const today = new Date();
+    return (
+      someDate.getDate() === today.getDate() &&
+      someDate.getMonth() === today.getMonth() &&
+      someDate.getFullYear() === today.getFullYear()
+    );
+  };
+
+  const isYesterday = (someDate) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return (
+      someDate.getDate() === yesterday.getDate() &&
+      someDate.getMonth() === yesterday.getMonth() &&
+      someDate.getFullYear() === yesterday.getFullYear()
+    );
+  };
+
+  const formatTimeOnly = (dateInput) => {
     try {
       if (!dateInput) return "";
       return new Date(dateInput).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
-        timeZone: "Asia/Colombo",
       });
+    } catch {
+      return "";
+    }
+  };
+
+  const formatMessageTime = (dateInput) => {
+    try {
+      if (!dateInput) return "";
+      const d = new Date(dateInput);
+      const timeStr = formatTimeOnly(d);
+      if (isToday(d)) return timeStr;
+      if (isYesterday(d)) return `Yesterday, ${timeStr}`;
+
+      const now = new Date();
+      if (d.getFullYear() === now.getFullYear()) {
+        const dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+        return `${dateStr}, ${timeStr}`;
+      }
+      const fullDateStr = d.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" });
+      return `${fullDateStr}, ${timeStr}`;
     } catch {
       return "";
     }
@@ -143,251 +181,66 @@ export default function Chat() {
   const formatConversationTime = (dateInput) => {
     try {
       if (!dateInput) return "";
-      return new Date(dateInput).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "Asia/Colombo",
-      });
+      const d = new Date(dateInput);
+      if (isToday(d)) return formatTimeOnly(d);
+      if (isYesterday(d)) return "Yesterday";
+
+      const now = new Date();
+      const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+      if (diffDays < 7 && diffDays > 0) {
+        return d.toLocaleDateString([], { weekday: "short" });
+      }
+      if (d.getFullYear() === now.getFullYear()) {
+        return d.toLocaleDateString([], { month: "short", day: "numeric" });
+      }
+      return d.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "2-digit" });
     } catch {
       return "";
     }
   };
 
-  async function loadCurrentUser() {
-    try {
-      const token = localStorage.getItem("token");
-      const user = await getProfile(token);
-      setCurrentUser(user);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function loadConversations() {
-    try {
-      const token = localStorage.getItem("token");
-      const data = await getChatContacts(token);
-      setConversations(data);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function openConversation(conversation) {
-    try {
-      const token = localStorage.getItem("token");
-      pendingScrollToBottomRef.current = true;
-      setSelectedConversation(conversation);
-      window.dispatchEvent(
-        new CustomEvent("alumnet:chat-selection-changed", {
-          detail: { name: conversation.other_user_name || "" },
-        })
-      );
-
-      setConversations((prevList) =>
-        prevList.map((c) =>
-          c.id === conversation.id ? { ...c, unread: false, unread_count: 0 } : c
-        )
-      );
-
-      if (conversation.id) {
-        const data = await getConversationMessages(token, conversation.id);
-        setMessages(data);
-        window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
-      } else {
-        setMessages([]);
-      }
-      if (isMobile) {
-        setShowSidebar(false);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function handleSend() {
-    if (!selectedConversation?.id) return;
-
-    const cleanText = newMessage.trim();
-    const attachment = voiceClip
-      ? {
-          file: new File([voiceClip.blob], voiceClip.name, { type: "audio/webm" }),
-          type: "voice",
-        }
-      : attachedFile
-        ? { file: attachedFile, type: "file" }
-        : null;
-
-    if (!cleanText && !attachment) return;
-
-    try {
-      setIsSending(true);
-      setSendError("");
-      const token = localStorage.getItem("token");
-
-      let payload = {
-        message_type: "text",
-        message_text: cleanText,
-      };
-
-      if (attachment) {
-        const uploaded = await uploadChatAttachment(
-          selectedConversation.id,
-          attachment.file
-        );
-
-        payload = {
-          message_type: attachment.type,
-          message_text: cleanText || null,
-          attachment_url: uploaded.url,
-          attachment_name: attachment.file.name,
-          attachment_mime_type: attachment.file.type || "application/octet-stream",
-          attachment_size: attachment.file.size,
-        };
-      }
-
-      await sendMessage(token, selectedConversation.id, payload);
-      setNewMessage("");
-      setAttachedFile(null);
-      setVoiceClip(null);
-      setShowEmojiPicker(false);
-
-      const updated = await getConversationMessages(token, selectedConversation.id);
-      setMessages(updated);
-      loadConversations();
-      window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
-    } catch (err) {
-      console.error(err);
-      setSendError(err.message || "Failed to send message");
-    } finally {
-      setIsSending(false);
-    }
-  }
-
-  async function handleDeleteMessage(messageId) {
-    if (!selectedConversation?.id) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      await deleteChatMessage(token, messageId);
-      const updated = await getConversationMessages(token, selectedConversation.id);
-      setMessages(updated);
-      loadConversations();
-      window.dispatchEvent(new Event("alumnet:chat-unread-changed"));
-    } catch (err) {
-      console.error(err);
-      setSendError(err.message || "Failed to delete message");
-    }
-  }
-
-  const focusComposer = () => {
-    textareaRef.current?.focus();
-  };
-
-  const addEmoji = (emoji) => {
-    setNewMessage((value) => `${value}${emoji}`);
-    requestAnimationFrame(() => textareaRef.current?.focus());
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAttachedFile(file);
-      setVoiceClip(null);
-    }
-    e.target.value = "";
-  };
-
-  const toggleRecording = async () => {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      recordingStreamRef.current = stream;
-      recordingChunksRef.current = [];
-
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
-        setVoiceClip({
-          name: `voice-${new Date().toISOString().replace(/[:.]/g, "-")}.webm`,
-          blob,
-        });
-        setAttachedFile(null);
-        setIsRecording(false);
-        recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
-        recordingStreamRef.current = null;
-      };
-
-      recorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error("Failed to start recording", err);
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const getUnreadCount = (conversation) => {
-    if (Number(conversation.unread_count) > 0) return Number(conversation.unread_count);
-    return conversation.unread ? 1 : 0;
-  };
-
-  const filteredConversations = conversations.filter((conversation) =>
-    conversation.other_user_name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const sortedConversations = [...filteredConversations].sort((a, b) => {
-    const timeA = a.last_message_time || a.last_message_at;
-    const timeB = b.last_message_time || b.last_message_at;
-    const valueA = timeA ? new Date(timeA).getTime() : 0;
-    const valueB = timeB ? new Date(timeB).getTime() : 0;
-    return sortOrder === "newest" ? valueB - valueA : valueA - valueB;
-  });
-
   const formatLastSeen = (lastSeenDate, isOnline) => {
     if (isOnline) return "Online";
     if (!lastSeenDate) return "Offline";
     try {
-      const date = new Date(lastSeenDate);
-      const diffMs = Date.now() - date.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMins / 60);
-      const diffDays = Math.floor(diffHours / 24);
+      const d = new Date(lastSeenDate);
+      const timeStr = formatTimeOnly(d);
+      if (isToday(d)) return `last seen today at ${timeStr}`;
+      if (isYesterday(d)) return `last seen yesterday at ${timeStr}`;
 
-      if (diffMins < 1) return "Offline • Active just now";
-      if (diffMins < 60) return `Offline • Active ${diffMins}m ago`;
-      if (diffHours < 24) return `Offline • Active ${diffHours}h ago`;
-      if (diffDays === 1) return `Offline • Active yesterday at ${formatMessageTime(date)}`;
-      return `Offline • Active ${date.toLocaleDateString([], { month: "short", day: "numeric" })}`;
+      const now = new Date();
+      if (d.getFullYear() === now.getFullYear()) {
+        const dateStr = d.toLocaleDateString([], { day: "numeric", month: "short" });
+        return `last seen ${dateStr} at ${timeStr}`;
+      }
+      const fullDateStr = d.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" });
+      return `last seen ${fullDateStr} at ${timeStr}`;
     } catch {
       return "Offline";
     }
   };
 
+  const formatFullDateTime = (dateInput) => {
+    try {
+      if (!dateInput) return "";
+      const d = new Date(dateInput);
+      const timeStr = formatTimeOnly(d);
+      if (isToday(d)) return `Today at ${timeStr}`;
+      if (isYesterday(d)) return `Yesterday at ${timeStr}`;
+      return `${d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" })} at ${timeStr}`;
+    } catch {
+      return "";
+    }
+  };
+
   const getMessageStatusTooltip = (message) => {
     if (!message) return "";
-    const sent = message.created_at ? `Sent: ${formatMessageTime(message.created_at)}` : "";
+    const sent = message.created_at ? `Sent: ${formatFullDateTime(message.created_at)}` : "";
     const delivered = message.delivered_at
-      ? ` • Delivered: ${formatMessageTime(message.delivered_at)}`
+      ? ` • Delivered: ${formatFullDateTime(message.delivered_at)}`
       : "";
     const read = message.is_read
-      ? ` • Read: ${message.read_at ? formatMessageTime(message.read_at) : "Yes"}`
+      ? ` • Read: ${message.read_at ? formatFullDateTime(message.read_at) : "Yes"}`
       : " • Unread";
     return `${sent}${delivered}${read}`;
   };
