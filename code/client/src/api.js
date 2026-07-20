@@ -380,10 +380,14 @@ export async function rejectEvent(token, id) {
   return handle(res);
 }
 
-export async function registerForEvent(token, eventId) {
+export async function registerForEvent(token, eventId, reminderMinutes = []) {
   const res = await fetch(`${API_URL}/api/events/${eventId}/register`, {
     method: "POST",
-    headers: { ...authHeaders(token) },
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ reminder_minutes: reminderMinutes }),
   });
 
   return handle(res);
