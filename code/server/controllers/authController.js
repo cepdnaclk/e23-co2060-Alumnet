@@ -333,6 +333,153 @@ const resendVerificationEmail = async (req, res) => {
   }
 };
 
+async function sendPasswordResetEmail(email, token) {
+  const resetUrl = `${getClientUrl()}/reset-password/${token}`;
+
+  await sendEmail({
+    to: email,
+    subject: "Reset your Alumnet password",
+    html: `
+      <h2>Reset your Alumnet password</h2>
+      <p>We received a request to reset the password for your Alumnet account.</p>
+      <p>
+        <a
+          href="${resetUrl}"
+          style="
+            display:inline-block;
+            padding:12px 24px;
+            background:#2563eb;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+          "
+        >
+          Reset Password
+        </a>
+      </p>
+      <p>This link expires in 15 minutes and can only be used once.</p>
+      <p>If you did not request this change, you can safely ignore this email.</p>
+    `,
+  });
+}
+
+const forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const userResult = await pool.query(
+      `SELECT id, email FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+      [email]
+    );
+
+    // Always return the same response so this endpoint does not reveal
+    // whether an email address is registered.
+    const successMessage =
+      "If an account exists for that email, a password reset link has been sent.";
+
+    if (userResult.rows.length === 0) {
+      return res.status(200).json({ message: successMessage });
+    }
+
+    const user = userResult.rows[0];
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await pool.query(
+      `
+      UPDATE users
+      SET password_reset_token_hash = $1,
+          password_reset_token_expiry = $2
+      WHERE id = $3
+      `,
+      [tokenHash, expiresAt, user.id]
+    );
+
+    try {
+      await sendPasswordResetEmail(user.email, rawToken);
+    } catch (emailError) {
+      await pool.query(
+        `
+        UPDATE users
+        SET password_reset_token_hash = NULL,
+            password_reset_token_expiry = NULL
+        WHERE id = $1
+        `,
+        [user.id]
+      );
+      throw emailError;
+    }
+
+    return res.status(200).json({ message: successMessage });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({
+      message: "Unable to send the password reset email. Please try again later.",
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const password = String(req.body.password || "");
+
+    if (!token) {
+      return res.status(400).json({ message: "Reset token is required" });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const userResult = await pool.query(
+      `
+      SELECT id
+      FROM users
+      WHERE password_reset_token_hash = $1
+        AND password_reset_token_expiry > CURRENT_TIMESTAMP
+      LIMIT 1
+      `,
+      [tokenHash]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({
+        message: "This password reset link is invalid or has expired.",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      `
+      UPDATE users
+      SET password_hash = $1,
+          password_reset_token_hash = NULL,
+          password_reset_token_expiry = NULL
+      WHERE id = $2
+      `,
+      [passwordHash, userResult.rows[0].id]
+    );
+
+    return res.status(200).json({
+      message: "Password reset successfully. You can now sign in.",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({ message: "Failed to reset password" });
+  }
+};
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -845,6 +992,8 @@ module.exports = {
   login,
   verifyEmail,
   resendVerificationEmail,
+  forgotPassword,
+  resetPassword,
   getProfile,
   updateProfile,
   getPendingUsers,

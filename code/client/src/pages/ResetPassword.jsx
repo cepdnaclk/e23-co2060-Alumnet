@@ -1,146 +1,103 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Eye, EyeOff, Loader2, LogIn, Mail, Lock } from "lucide-react";
-import { loginUser, resendVerificationEmail } from "../api";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowRight, Eye, EyeOff, KeyRound, Loader2, Lock } from "lucide-react";
+import { resetPassword } from "../api";
 
-export default function Login() {
+export default function ResetPassword() {
+  const { token } = useParams();
   const navigate = useNavigate();
-
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 40);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setMounted(true), 40);
+    return () => clearTimeout(timer);
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
-    setNeedsEmailVerification(false);
-    setResendMessage("");
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const data = await loginUser({ email, password });
-      localStorage.setItem("token", data.token);
-
-      const nextPath = data.user?.email_preferences_configured
-        ? "/home"
-        : "/settings/email-notifications";
-
-      navigate(nextPath, { replace: true });
+      const data = await resetPassword({ token, password });
+      setSuccess(data.message);
+      setTimeout(() => navigate("/login", { replace: true }), 1500);
     } catch (err) {
-      const message = err.message || "Login failed";
-      setError(message);
-      setNeedsEmailVerification(message.toLowerCase().includes("verify your email"));
+      setError(err.message || "Unable to reset your password.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResend = async () => {
-    setResendLoading(true);
-    setResendMessage("");
-
-    try {
-      const data = await resendVerificationEmail(email);
-      setResendMessage(data.message || "Verification email sent. Please check your inbox.");
-    } catch (err) {
-      setResendMessage(err.message || "Failed to send verification email.");
-    } finally {
-      setResendLoading(false);
-    }
-  };
-
-  const goHome = () => {
-    navigate("/");
-    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }));
-  };
-
   return (
     <main className="loginPage">
       <style>{css}</style>
-
       <section className={`loginCard ${mounted ? "in" : ""}`}>
-        <button className="iconButton" type="button" onClick={goHome}>
-          <LogIn size={21} strokeWidth={2} />
+        <button className="iconButton" type="button" onClick={() => navigate("/login")}>
+          <KeyRound size={21} strokeWidth={2} />
         </button>
 
-        <h1>Sign in</h1>
-        <p className="loginSubtitle">Continue your Alumnet mentorship journey.</p>
+        <h1>Create new password</h1>
+        <p className="loginSubtitle">Choose a password with at least 8 characters.</p>
 
-        <form onSubmit={handleSubmit} className="loginForm">
+        <form className="loginForm" onSubmit={handleSubmit}>
           <label className="inputWrap">
-            <Mail size={15} strokeWidth={2.1} />
+            <Lock size={15} strokeWidth={2.1} />
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="New password"
+              autoComplete="new-password"
               required
             />
+            <button className="passwordToggle" type="button" onClick={() => setShowPassword((value) => !value)}>
+              {showPassword ? <EyeOff size={15} strokeWidth={2.1} /> : <Eye size={15} strokeWidth={2.1} />}
+            </button>
           </label>
 
           <label className="inputWrap">
             <Lock size={15} strokeWidth={2.1} />
             <input
               type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              placeholder="Confirm new password"
+              autoComplete="new-password"
               required
             />
-            <button
-              className="passwordToggle"
-              type="button"
-              onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff size={15} strokeWidth={2.1} /> : <Eye size={15} strokeWidth={2.1} />}
-            </button>
           </label>
 
-          <div className="forgotPasswordRow">
-            <Link to="/forgot-password">Forgot password?</Link>
-          </div>
+          {error && <div className="errorBox"><span>{error}</span></div>}
+          {success && <div className="successBox"><span>{success}</span></div>}
 
-          {error && (
-            <div className="errorBox">
-              <span>{error}</span>
-              {needsEmailVerification && email && (
-                <button type="button" onClick={handleResend} disabled={resendLoading}>
-                  {resendLoading ? (
-                    <Loader2 className="spin" size={13} strokeWidth={2.2} />
-                  ) : null}
-                  {resendLoading ? "Sending..." : "Resend verification email"}
-                </button>
-              )}
-              {resendMessage && <small>{resendMessage}</small>}
-            </div>
-          )}
-
-          <button className="signInButton" type="submit" disabled={loading}>
-            <span>{loading ? "Signing in..." : "Sign in"}</span>
-            {!loading && <ArrowRight size={15} strokeWidth={2.4} />}
+          <button className="signInButton" type="submit" disabled={loading || Boolean(success)}>
+            {loading ? <Loader2 className="spin" size={14} strokeWidth={2.2} /> : null}
+            <span>{loading ? "Resetting..." : success ? "Password updated" : "Reset password"}</span>
+            {!loading && !success && <ArrowRight size={15} strokeWidth={2.4} />}
           </button>
         </form>
 
         <div className="loginFooter">
-          <span>New here?</span>
-          <Link to="/register">Register</Link>
+          <span>Remembered your password?</span>
+          <Link to="/login">Sign in</Link>
         </div>
-
-        <Link className="backHomeLink" to="/" onClick={goHome}>
-          Back to Home
-        </Link>
       </section>
     </main>
   );
@@ -156,7 +113,7 @@ const css = `
   background:
     linear-gradient(180deg, #afd6ff 0%, #cfe7f7 34%, #f6e8ee 62%, #eef7fb 100%);
   color:#050505;
-  font-family:"Google Sans";
+  font-family:"Google Sans", Arial, sans-serif;
   padding:24px;
 }
 
@@ -274,6 +231,9 @@ const css = `
   width:22px;
   height:22px;
   border-radius:999px;
+  background:transparent;
+  border:none;
+  cursor:pointer;
   color:rgba(17,17,17,.64);
   transition:background .18s ease, color .18s ease;
 }
@@ -324,31 +284,17 @@ const css = `
   text-align:left;
 }
 
-.errorBox button{
-  justify-self:start;
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  min-height:28px;
-  padding:0 10px;
-  border-radius:999px;
-  border:1px solid rgba(185,28,28,.18);
-  background:#ffffff;
-  color:#991b1b;
-  font:inherit;
-  font-size:12px;
-  cursor:pointer;
-}
-
-.errorBox button:disabled{
-  opacity:.72;
-  cursor:not-allowed;
-}
-
-.errorBox small{
-  color:#7f1d1d;
-  font-size:12px;
+.successBox{
+  display:grid;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:10px;
+  background:rgba(16,185,129,.10);
+  border:1px solid rgba(16,185,129,.20);
+  color:#047857;
+  font-size:13px;
   line-height:1.35;
+  text-align:left;
 }
 
 .spin{
@@ -359,23 +305,6 @@ const css = `
   to{
     transform:rotate(360deg);
   }
-}
-
-.forgotPasswordRow{
-  display:flex;
-  justify-content:flex-end;
-  margin:0 2px 2px;
-}
-
-.forgotPasswordRow a{
-  color:#000000;
-  font-size:12px;
-  font-weight:600;
-  text-decoration:none;
-}
-
-.forgotPasswordRow a:hover{
-  text-decoration:underline;
 }
 
 .loginFooter{
@@ -397,18 +326,8 @@ const css = `
   transition:opacity .18s ease;
 }
 
-.loginFooter a:hover,
-.backHomeLink:hover{
+.loginFooter a:hover{
   opacity:.68;
-}
-
-.backHomeLink{
-  display:inline-flex;
-  margin-top:10px;
-  color:rgba(17,17,17,.72);
-  font-size:13px;
-  text-decoration:none;
-  transition:opacity .18s ease;
 }
 
 @media (max-width:640px){

@@ -4,6 +4,8 @@ const {
   login,
   verifyEmail,
   resendVerificationEmail,
+  forgotPassword,
+  resetPassword,
   getProfile,
   updateProfile,
   getPendingUsers,
@@ -23,6 +25,8 @@ const router = express.Router();
 
 router.post("/signup", signup);
 router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 router.post("/resend-verification-email", resendVerificationEmail);
 router.get("/verify-email/:token", verifyEmail);
 router.get("/profile", protect, getProfile);

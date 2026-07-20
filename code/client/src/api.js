@@ -46,6 +46,26 @@ export async function loginUser({ email, password }) {
   return handle(res);
 }
 
+export async function forgotPassword(email) {
+  const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  return handle(res);
+}
+
+export async function resetPassword({ token, password }) {
+  const res = await fetch(`${API_URL}/api/auth/reset-password/${token}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+
+  return handle(res);
+}
+
 export async function registerUser(payload) {
   const res = await fetch(`${API_URL}/api/auth/signup`, {
     method: "POST",
@@ -360,11 +380,10 @@ export async function rejectEvent(token, id) {
   return handle(res);
 }
 
-export async function registerForEvent(token, eventId, reminderMinutes = []) {
+export async function registerForEvent(token, eventId) {
   const res = await fetch(`${API_URL}/api/events/${eventId}/register`, {
     method: "POST",
-    headers: { ...authHeaders(token), "Content-Type": "application/json" },
-    body: JSON.stringify({ reminder_minutes: reminderMinutes }),
+    headers: { ...authHeaders(token) },
   });
 
   return handle(res);
