@@ -6,6 +6,7 @@ import { getEvents } from "../api";
 import dateIcon from "../assets/date.png";
 import timeIcon from "../assets/time.png";
 import locationIcon from "../assets/location.png";
+import { formatEventDate as formatDate, formatEventTime as formatTime, getEventDateValue } from "../utils/dateTime";
 
 export default function Events() {
   const token = localStorage.getItem("token");
@@ -164,23 +165,6 @@ export default function Events() {
   );
 }
 
-function formatDate(date) {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatTime(time) {
-  if (!time) return "-";
-  return new Date(`1970-01-01T${time}`).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 const dateFilters = [
   { value: "all", label: "All" },
   { value: "today", label: "Today" },
@@ -193,7 +177,8 @@ function matchesDateFilter(date, filter) {
   if (filter === "all") return true;
   if (!date) return false;
 
-  const eventDate = startOfDay(new Date(date));
+  const [year, month, day] = getEventDateValue(date).split("-").map(Number);
+  const eventDate = startOfDay(new Date(year, month - 1, day));
   if (Number.isNaN(eventDate.getTime())) return false;
 
   const today = startOfDay(new Date());

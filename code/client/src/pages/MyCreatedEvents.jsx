@@ -6,6 +6,7 @@ import LoadingScreen from "../components/LoadingScreen";
 import SegmentedFilter from "../components/SegmentedFilter";
 import { getMyCreatedEvents } from "../api";
 import viewIcon from "../assets/view.png";
+import { formatEventDate as formatDate, formatEventTime as formatTime } from "../utils/dateTime";
 
 export default function MyCreatedEvents() {
   const token = localStorage.getItem("token");
@@ -168,23 +169,6 @@ export default function MyCreatedEvents() {
       <style>{css}</style>
     </AccountListShell>
   );
-}
-
-function formatDate(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatTime(value) {
-  if (!value) return "-";
-  return new Date(`1970-01-01T${value}`).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 const css = `

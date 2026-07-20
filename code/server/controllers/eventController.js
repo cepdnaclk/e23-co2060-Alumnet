@@ -4,6 +4,8 @@ const {
   createNotificationsForRoles,
 } = require("../utils/notify");
 
+const ALLOWED_REMINDER_MINUTES = new Set([60, 1440, 2880, 10080]);
+
 const createEvent = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -114,7 +116,7 @@ const getApprovedEvents = async (req, res) => {
       FROM events e
       JOIN users u ON u.id = e.created_by
       WHERE e.approval_status = 'approved'
-        AND e.event_date >= CURRENT_DATE
+        AND e.event_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date
       ORDER BY e.event_date ASC, e.event_time ASC
       `,
       [req.user.id]
@@ -164,7 +166,7 @@ const getAdminEvents = async (req, res) => {
       `
       SELECT
         e.*,
-        (e.event_date < CURRENT_DATE) AS is_past,
+        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
@@ -317,6 +319,13 @@ const registerForEvent = async (req, res) => {
     const studentUserId = req.user.id;
     const role = req.user.role;
     const { eventId } = req.params;
+    const requestedReminders = Array.isArray(req.body.reminder_minutes)
+      ? [...new Set(req.body.reminder_minutes.map(Number))]
+      : [];
+
+    if (requestedReminders.some((minutes) => !ALLOWED_REMINDER_MINUTES.has(minutes))) {
+      return res.status(400).json({ message: "Invalid event reminder preference" });
+    }
 
     if (role !== "student") {
       return res.status(403).json({
@@ -328,6 +337,7 @@ const registerForEvent = async (req, res) => {
       `
       SELECT
         e.*,
+        (((e.event_date + e.event_time) AT TIME ZONE 'Asia/Colombo') <= CURRENT_TIMESTAMP) AS event_has_started,
         (
           SELECT COUNT(*)::int
           FROM event_registrations er
@@ -351,13 +361,9 @@ const registerForEvent = async (req, res) => {
       });
     }
 
-    const eventDate = new Date(event.event_date);
-    const today = new Date();
-    eventDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    if (eventDate < today) {
+    if (event.event_has_started) {
       return res.status(400).json({
-        message: "Registration has closed because this event is past",
+        message: "Registration has closed because this event has started",
       });
     }
 
@@ -382,14 +388,41 @@ const registerForEvent = async (req, res) => {
       });
     }
 
-    const result = await pool.query(
-      `
-      INSERT INTO event_registrations (event_id, student_user_id)
-      VALUES ($1, $2)
-      RETURNING *
-      `,
-      [eventId, studentUserId]
-    );
+    const reminderMinutes = [0, ...requestedReminders];
+    const client = await pool.connect();
+    let registration;
+    try {
+      await client.query("BEGIN");
+      const result = await client.query(
+        `INSERT INTO event_registrations (event_id, student_user_id)
+         VALUES ($1, $2)
+         RETURNING *`,
+        [eventId, studentUserId]
+      );
+      registration = result.rows[0];
+      await client.query(
+        `INSERT INTO event_reminders (registration_id, minutes_before, sent_at)
+         SELECT $1, selected.minutes_before,
+           CASE
+             WHEN selected.minutes_before > 0
+              AND ((e.event_date + e.event_time) AT TIME ZONE 'Asia/Colombo')
+                  - (selected.minutes_before * INTERVAL '1 minute') <= CURRENT_TIMESTAMP
+             THEN CURRENT_TIMESTAMP
+             ELSE NULL
+           END
+         FROM UNNEST($2::integer[]) AS selected(minutes_before)
+         CROSS JOIN events e
+         WHERE e.id = $3
+         ON CONFLICT (registration_id, minutes_before) DO NOTHING`,
+        [registration.id, reminderMinutes, eventId]
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
 
     await createNotification(
       event.created_by,
@@ -400,7 +433,8 @@ const registerForEvent = async (req, res) => {
 
     return res.status(201).json({
       message: "Registered for event successfully",
-      registration: result.rows[0],
+      registration,
+      reminder_minutes: reminderMinutes,
     });
   } catch (error) {
     console.error("Register for event error:", error);
@@ -424,6 +458,7 @@ const getMyRegisteredEvents = async (req, res) => {
       SELECT
         e.*,
         er.registered_at,
+        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
         u.full_name AS created_by_name
       FROM event_registrations er
       JOIN events e ON e.id = er.event_id
@@ -449,7 +484,7 @@ const getEventById = async (req, res) => {
       `
       SELECT
         e.*,
-        (e.event_date < CURRENT_DATE) AS is_past,
+        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int
@@ -600,7 +635,7 @@ const getMyCreatedEvents = async (req, res) => {
       `
       SELECT
         e.*,
-        (e.event_date < CURRENT_DATE) AS is_past,
+        (e.event_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Colombo')::date) AS is_past,
         u.full_name AS created_by_name,
         (
           SELECT COUNT(*)::int

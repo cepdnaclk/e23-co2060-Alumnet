@@ -8,6 +8,7 @@ import timeIcon from "../assets/time.png";
 import locationIcon from "../assets/location.png";
 import speakerIcon from "../assets/speaker.png";
 import registerIcon from "../assets/register.png";
+import { formatEventDate, formatEventTime } from "../utils/dateTime";
 
 export default function EventDetails() {
   const { id } = useParams();
@@ -23,6 +24,9 @@ export default function EventDetails() {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminderMinutes, setReminderMinutes] = useState([]);
+  const [joining, setJoining] = useState(false);
 
   const loadEvent = async () => {
     try {
@@ -44,29 +48,22 @@ export default function EventDetails() {
   const handleJoin = async () => {
     try {
       setErr("");
-      await registerForEvent(token, id);
+      setJoining(true);
+      await registerForEvent(token, id, reminderMinutes);
       const updated = await getEventById(token, id);
       setEvent(updated);
+      setShowReminderModal(false);
     } catch (e) {
       setErr(e.message || "Failed to join event");
+    } finally {
+      setJoining(false);
     }
   };
 
-  const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
-  const formatTime = (time) => {
-    if (!time) return "-";
-    return new Date(`1970-01-01T${time}`).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const toggleReminder = (minutes) => {
+    setReminderMinutes((current) => current.includes(minutes)
+      ? current.filter((value) => value !== minutes)
+      : [...current, minutes]);
   };
 
   if (loading) {
@@ -120,7 +117,7 @@ export default function EventDetails() {
             ) : (
               <button
                 className="joinEventBtn"
-                onClick={handleJoin}
+                onClick={() => setShowReminderModal(true)}
                 disabled={remaining <= 0}
               >
                 {remaining <= 0 ? "Event Full" : "Join Event"}
@@ -129,8 +126,8 @@ export default function EventDetails() {
           </div>
 
           <div className="eventMetaList">
-            <EventMeta icon={dateIcon} label="Date" value={formatDate(event.event_date)} />
-            <EventMeta icon={timeIcon} label="Time" value={formatTime(event.event_time)} />
+            <EventMeta icon={dateIcon} label="Date" value={formatEventDate(event.event_date)} />
+            <EventMeta icon={timeIcon} label="Time" value={formatEventTime(event.event_time)} />
             <EventMeta icon={locationIcon} label="Location" value={event.venue || "-"} />
             <EventMeta icon={speakerIcon} label="Speaker" value={event.speaker || "-"} />
             <EventMeta
@@ -159,6 +156,29 @@ export default function EventDetails() {
 
         </section>
       </section>
+
+      {showReminderModal && (
+        <div className="reminderModalBackdrop" onMouseDown={(e) => {
+          if (e.target === e.currentTarget && !joining) setShowReminderModal(false);
+        }}>
+          <section className="reminderModal" role="dialog" aria-modal="true" aria-labelledby="reminder-title">
+            <h2 id="reminder-title">When should we remind you?</h2>
+            <p>Select multiple options if you want. You will also receive a notification when the event starts</p>
+            <div className="reminderChoices">
+              {[[10080, "A week before"], [2880, "Two days before"], [1440, "A day before"], [60, "An hour before"]].map(([minutes, label]) => (
+                <label key={minutes}>
+                  <input type="checkbox" checked={reminderMinutes.includes(minutes)} onChange={() => toggleReminder(minutes)} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="reminderModalActions">
+              <button type="button" className="reminderCancel" onClick={() => setShowReminderModal(false)} disabled={joining}>Cancel</button>
+              <button type="button" className="joinEventBtn" onClick={handleJoin} disabled={joining}>{joining ? "Joining..." : "Join event"}</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <EventDetailsStyles />
     </main>
@@ -390,6 +410,16 @@ function EventDetailsStyles() {
         background: #fee8e8;
         color: #9f1d1d;
       }
+
+      .reminderModalBackdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.46); }
+      .reminderModal { width: min(430px, 100%); padding: 24px; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.25); }
+      .reminderModal h2 { margin: 0 0 8px; font-size: 20px; }
+      .reminderModal > p { margin: 0 0 18px; color: #5f6368; font-size: 13px; line-height: 1.5; }
+      .reminderChoices { display: grid; gap: 8px; }
+      .reminderChoices label { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e2e5e9; border-radius: 10px; cursor: pointer; font-size: 14px; }
+      .reminderChoices input { width: 17px; height: 17px; accent-color: #111; }
+      .reminderModalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+      .reminderCancel { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: #eef1f4; cursor: pointer; }
 
       @media (max-width: 860px) {
         .eventDetailsPage {

@@ -7,6 +7,7 @@ const mentorshipRoutes = require("./routes/mentorshipRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const { startEventReminderService } = require("./services/eventReminderService");
 const app = express();
 
 app.use(cors());
@@ -28,6 +29,7 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  startEventReminderService();
 });
 
 const sendEmail = require("./utils/sendEmail");

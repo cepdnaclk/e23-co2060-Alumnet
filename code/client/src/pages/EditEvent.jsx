@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import LoadingScreen from "../components/LoadingScreen";
 import { getEventById, updateEvent } from "../api";
 import { supabase } from "../supabase";
+import { getEventDateValue } from "../utils/dateTime";
 
 export default function EditEvent() {
   const { id } = useParams();
@@ -42,7 +43,7 @@ export default function EditEvent() {
         const event = await getEventById(token, id);
         setForm({
           title: event.title || "",
-          event_date: event.event_date ? event.event_date.slice(0, 10) : "",
+          event_date: getEventDateValue(event.event_date),
           event_time: event.event_time ? event.event_time.slice(0, 5) : "",
           venue: event.venue || "",
           description: event.description || "",
