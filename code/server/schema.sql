@@ -350,7 +350,11 @@ CREATE TABLE public.users (
     avatar_url text,
     last_seen timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT users_role_check CHECK (((role)::text = ANY ((ARRAY['alumni'::character varying, 'student'::character varying, 'system_admin'::character varying, 'university_admin'::character varying])::text[]))),
-    CONSTRAINT users_verification_status_check CHECK (((verification_status)::text = ANY ((ARRAY['pending'::character varying, 'verified'::character varying, 'rejected'::character varying])::text[])))
+    CONSTRAINT users_verification_status_check CHECK (((verification_status)::text = ANY ((ARRAY['pending'::character varying, 'verified'::character varying, 'rejected'::character varying])::text[]))),
+    email_mentorship_notifications boolean DEFAULT false NOT NULL,
+    email_event_notifications boolean DEFAULT false NOT NULL,
+    email_account_notifications boolean DEFAULT false NOT NULL,
+    email_preferences_configured boolean DEFAULT false NOT NULL
 );
 
 

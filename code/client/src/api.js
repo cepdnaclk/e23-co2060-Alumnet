@@ -96,6 +96,29 @@ export async function updateProfile(token, payload) {
   return handle(res);
 }
 
+
+export async function getEmailPreferences(token) {
+  const res = await fetch(`${API_URL}/api/auth/email-preferences`, {
+    method: "GET",
+    headers: { ...authHeaders(token) },
+  });
+
+  return handle(res);
+}
+
+export async function updateEmailPreferences(token, payload) {
+  const res = await fetch(`${API_URL}/api/auth/email-preferences`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return handle(res);
+}
+
 export async function sendHeartbeat(token) {
   if (!token) return;
   try {

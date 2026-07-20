@@ -31,7 +31,12 @@ export default function Login() {
     try {
       const data = await loginUser({ email, password });
       localStorage.setItem("token", data.token);
-      navigate("/profile");
+
+      const nextPath = data.user?.email_preferences_configured
+        ? "/home"
+        : "/settings/email-notifications";
+
+      navigate(nextPath, { replace: true });
     } catch (err) {
       const message = err.message || "Login failed";
       setError(message);

@@ -924,8 +924,8 @@ const profileHero = {
 };
 
 const avatar = {
-  width: 78,
-  height: 78,
+  width: 100,
+  height: 100,
   borderRadius: "50%",
   objectFit: "cover",
   background: "#ffffff",
@@ -949,7 +949,7 @@ const welcomeTitle = {
   margin: "8px 0 0",
   color: COLORS.ink,
   fontFamily: '"Instrument Serif", serif',
-  fontSize: "clamp(48px, 7vw, 92px)",
+  fontSize: "clamp(40px, 7vw, 92px)",
   lineHeight: .9,
   fontWeight: 400,
   letterSpacing: "-.055em",
