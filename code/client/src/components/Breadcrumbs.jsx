@@ -226,9 +226,16 @@ function buildCrumbs(
 ) {
   if (path === "/home") return [{ label: "Home" }];
   if (path === "/profile") return [{ label: "Profile" }];
+  if (path === "/settings") return [{ label: "Settings" }];
+  if (path === "/settings/email-notifications") {
+    return [
+      { label: "Settings", to: "/settings" },
+      { label: "Notification Preferences" },
+    ];
+  }
   if (path === "/edit-profile") {
     return [
-      { label: "Profile", to: "/profile" },
+      { label: "Settings", to: "/settings" },
       { label: "Edit Profile" },
     ];
   }

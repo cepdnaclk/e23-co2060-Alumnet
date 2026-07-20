@@ -14,12 +14,18 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async ({ to, subject, html }) => {
-  await transporter.sendMail({
+const sendEmail = async ({ to, bcc, subject, html, text }) => {
+  if (!to && !bcc) {
+    throw new Error("An email recipient is required");
+  }
+
+  return transporter.sendMail({
     from: `"Alumnet" <${process.env.EMAIL_USER}>`,
     to,
+    bcc,
     subject,
     html,
+    text,
   });
 };
 

@@ -14,6 +14,8 @@ const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const EmailNotificationPreferences = lazy(() => import("./pages/EmailNotificationPreferences"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const Directory = lazy(() => import("./pages/Directory"));
@@ -120,6 +122,16 @@ export default function App() {
               </AppLayout>
             </ProtectedRoute>
           }
+        />
+
+
+        <Route
+          path="/settings"
+          element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>}
+        />
+        <Route
+          path="/settings/email-notifications"
+          element={<ProtectedRoute><AppLayout><EmailNotificationPreferences /></AppLayout></ProtectedRoute>}
         />
 
         <Route

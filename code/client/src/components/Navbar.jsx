@@ -10,9 +10,9 @@ import {
   LogOut,
   Mail,
   MessageCircle,
-  Pencil,
   PlusSquare,
   Search,
+  Settings,
   UserRound,
   Users,
 } from "lucide-react";
@@ -324,9 +324,9 @@ export default function Navbar() {
                       <UserRound size={14} strokeWidth={2} />
                       My Profile
                     </Link>
-                    <Link to="/edit-profile" onClick={() => setMenuOpen(false)}>
-                      <Pencil size={14} strokeWidth={2} />
-                      Edit Profile
+                    <Link to="/settings" onClick={() => setMenuOpen(false)}>
+                      <Settings size={14} strokeWidth={2} />
+                      Settings
                     </Link>
                     {(isStudent || isAlumni) && (
                       <Link to={mentorRoute} onClick={() => setMenuOpen(false)}>

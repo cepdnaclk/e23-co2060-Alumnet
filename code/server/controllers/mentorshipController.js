@@ -1,5 +1,6 @@
 const  pool  = require("../config/db");
-const { createNotification } = require("../utils/notify"); 
+const { createNotification } = require("../utils/notify");
+const { sendUserNotificationEmail } = require("../utils/emailNotifications");
 
 const createMentorshipRequest = async (req, res) => {
   try {
@@ -129,6 +130,25 @@ const createMentorshipRequest = async (req, res) => {
       "MENTOR_REQUEST"
     );
 
+    const studentResult = await pool.query(
+      "SELECT full_name FROM users WHERE id = $1",
+      [studentUserId]
+    );
+    const studentName = studentResult.rows[0]?.full_name || "A student";
+
+    sendUserNotificationEmail({
+      category: "mentorship",
+      userId: alumni_user_id,
+      subject: `New mentorship request from ${studentName}`,
+      heading: "You have a new mentorship request",
+      message: `${studentName} has requested you as a mentor. Review the request and choose whether to accept it.`,
+      buttonText: "Review request",
+      buttonPath: "/mentor-requests",
+      details: message
+        ? [{ label: "Student message", value: message }]
+        : [],
+    });
+
     return res.status(201).json({
       message: "Mentorship request sent successfully",
       request: result.rows[0],
@@ -211,6 +231,17 @@ const requestEndMentorship = async (req, res) => {
       "MENTOR_REQUEST"
     );
 
+    sendUserNotificationEmail({
+      category: "mentorship",
+      userId: alumni_user_id,
+      subject: "Mentorship end requested",
+      heading: "A mentee requested to end mentorship",
+      message: "A mentee has requested to end the mentorship. Please review the request in My Mentees.",
+      buttonText: "Review request",
+      buttonPath: "/my-mentees",
+      details: [{ label: "Reason", value: reason.trim() }],
+    });
+
     return res.json({
       message: "End mentorship request sent",
       request: result.rows[0],
@@ -281,6 +312,16 @@ const acceptEndMentorship = async (req, res) => {
       "Your mentor accepted the request to end this mentorship.",
       "REQUEST_UPDATE"
     );
+
+    sendUserNotificationEmail({
+      category: "mentorship",
+      userId: requestRow.student_user_id,
+      subject: "Your mentorship has ended",
+      heading: "Mentorship ended",
+      message: "Your mentor accepted your request to end the mentorship.",
+      buttonText: "View mentorships",
+      buttonPath: "/my-mentors",
+    });
 
     return res.json({
       message: "Mentorship ended",
@@ -498,12 +539,30 @@ const msg = status === "accepted"
   : "AN alumni has declined your mentorship request at this time."
 
 await createNotification(
-  updatedRequest.student_user_id, 
+  updatedRequest.student_user_id,
   title,
   msg,
   "REQUEST_UPDATE"
 );
 
+sendUserNotificationEmail({
+      category: "mentorship",
+  userId: updatedRequest.student_user_id,
+  subject:
+    status === "accepted"
+      ? "Your mentorship request was accepted"
+      : "Update on your mentorship request",
+  heading:
+    status === "accepted"
+      ? "Your mentorship request was accepted"
+      : "Your mentorship request was declined",
+  message:
+    status === "accepted"
+      ? "Great news! An alumnus accepted your mentorship request. You can now connect through Alumnet chat."
+      : "The alumnus was unable to accept your mentorship request at this time. You can continue exploring other available mentors.",
+  buttonText: status === "accepted" ? "Open chat" : "Find another mentor",
+  buttonPath: status === "accepted" ? "/chat" : "/directory",
+});
 
 res.json(updatedRequest);
   } catch (error) {
