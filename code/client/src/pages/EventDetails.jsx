@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import { BellRing, X } from "lucide-react";
 import LoadingScreen from "../components/LoadingScreen";
 import { getEventById, registerForEvent } from "../api";
 import dateIcon from "../assets/date.png";
@@ -118,16 +119,26 @@ export default function EventDetails() {
               <button
                 className="joinEventBtn"
                 onClick={() => setShowReminderModal(true)}
-                disabled={remaining <= 0}
+                disabled={remaining <= 0 || event.is_past || event.registration_deadline_passed}
               >
-                {remaining <= 0 ? "Event Full" : "Join Event"}
+                {event.is_past
+                  ? "Event Archived"
+                  : event.registration_deadline_passed
+                    ? "Registration Closed"
+                    : remaining <= 0 ? "Event Full" : "Join Event"}
               </button>
             ))}
           </div>
 
           <div className="eventMetaList">
             <EventMeta icon={dateIcon} label="Date" value={formatEventDate(event.event_date)} />
-            <EventMeta icon={timeIcon} label="Time" value={formatEventTime(event.event_time)} />
+            <EventMeta
+              icon={timeIcon}
+              label={event.ending_time ? "Time" : "Starting Time"}
+              value={event.ending_time
+                ? `${formatEventTime(event.event_time)} – ${formatEventTime(event.ending_time)}`
+                : formatEventTime(event.event_time)}
+            />
             <EventMeta icon={locationIcon} label="Location" value={event.venue || "-"} />
             <EventMeta icon={speakerIcon} label="Speaker" value={event.speaker || "-"} />
             <EventMeta
@@ -145,10 +156,19 @@ export default function EventDetails() {
 
           <div className="eventTextBlock">
             <h2>Links</h2>
-            {event.zoom_link ? (
-              <a className="eventLink" href={event.zoom_link} target="_blank" rel="noreferrer">
-                Join Zoom Session
-              </a>
+            {event.zoom_link || event.event_details?.application_link ? (
+              <div className="eventLinks">
+                {event.zoom_link && (
+                  <a className="eventLink" href={event.zoom_link} target="_blank" rel="noreferrer">
+                    Join Zoom Session
+                  </a>
+                )}
+                {event.event_details?.application_link && (
+                  <a className="eventLink" href={event.event_details.application_link} target="_blank" rel="noreferrer">
+                    Open Application Form
+                  </a>
+                )}
+              </div>
             ) : (
               <p>No links provided.</p>
             )}
@@ -162,8 +182,14 @@ export default function EventDetails() {
           if (e.target === e.currentTarget && !joining) setShowReminderModal(false);
         }}>
           <section className="reminderModal" role="dialog" aria-modal="true" aria-labelledby="reminder-title">
-            <h2 id="reminder-title">When should we remind you?</h2>
-            <p>Select multiple options if you want. You will also receive a notification when the event starts</p>
+            <header className="reminderModalHeader">
+              <span className="reminderIcon"><BellRing size={19} /></span>
+              <div>
+                <h2 id="reminder-title">Set a reminder</h2>
+                <p>Choose when you would like to be notified.</p>
+              </div>
+              <button type="button" className="reminderClose" onClick={() => setShowReminderModal(false)} disabled={joining} aria-label="Close reminder dialog"><X size={17} /></button>
+            </header>
             <div className="reminderChoices">
               {[[10080, "A week before"], [2880, "Two days before"], [1440, "A day before"], [60, "An hour before"]].map(([minutes, label]) => (
                 <label key={minutes}>
@@ -172,6 +198,7 @@ export default function EventDetails() {
                 </label>
               ))}
             </div>
+            <p className="reminderFootnote">You will also be notified when the event starts.</p>
             <div className="reminderModalActions">
               <button type="button" className="reminderCancel" onClick={() => setShowReminderModal(false)} disabled={joining}>Cancel</button>
               <button type="button" className="joinEventBtn" onClick={handleJoin} disabled={joining}>{joining ? "Joining..." : "Join event"}</button>
@@ -360,6 +387,8 @@ function EventDetailsStyles() {
         transform: translateY(-1px);
       }
 
+      .eventLinks { display: flex; flex-wrap: wrap; gap: 9px; }
+
       .joinEventBtn {
         flex: 0 0 auto;
         min-width: 104px;
@@ -411,15 +440,25 @@ function EventDetailsStyles() {
         color: #9f1d1d;
       }
 
-      .reminderModalBackdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.46); }
-      .reminderModal { width: min(430px, 100%); padding: 24px; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.25); }
-      .reminderModal h2 { margin: 0 0 8px; font-size: 20px; }
-      .reminderModal > p { margin: 0 0 18px; color: #5f6368; font-size: 13px; line-height: 1.5; }
-      .reminderChoices { display: grid; gap: 8px; }
-      .reminderChoices label { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e2e5e9; border-radius: 10px; cursor: pointer; font-size: 14px; }
-      .reminderChoices input { width: 17px; height: 17px; accent-color: #111; }
-      .reminderModalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
-      .reminderCancel { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: #eef1f4; cursor: pointer; }
+      .reminderModalBackdrop { position: fixed; inset: 0; z-index: 2147483500; display: grid; place-items: center; padding: 20px; background: rgba(15,20,28,.42); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      .reminderModal { width: min(440px, 100%); overflow: hidden; border: 1px solid rgba(255,255,255,.84); border-radius: 22px; background: #fff; box-shadow: 0 28px 72px rgba(0,0,0,.24); animation: reminderModalIn .2s ease both; }
+      .reminderModalHeader { position: relative; display: flex; align-items: center; gap: 13px; padding: 22px 22px 20px; background: #fafbfc; border-bottom: 1px solid rgba(0,0,0,.06); }
+      .reminderIcon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 12px; background: #111; color: #fff; }
+      .reminderModal h2 { margin: 0; color: #111; font-size: 17px; font-weight: 600; letter-spacing: -.15px; }
+      .reminderModalHeader p { margin: 4px 0 0; color: rgba(17,17,17,.5); font-size: 12px; }
+      .reminderClose { width: 30px; height: 30px; display: grid; place-items: center; margin-left: auto; border-radius: 50%; color: rgba(17,17,17,.56); transition: .18s ease; }
+      .reminderClose:hover:not(:disabled) { background: #eceff2; color: #111; }
+      .reminderChoices { display: grid; gap: 8px; padding: 20px 22px 8px; }
+      .reminderChoices label { display: flex; align-items: center; gap: 11px; min-height: 46px; padding: 10px 13px; border: 1px solid rgba(0,0,0,.06); border-radius: 11px; background: #f3f5f8; color: #111; cursor: pointer; font-size: 13px; transition: .18s ease; }
+      .reminderChoices label:hover { border-color: rgba(0,0,0,.14); background: #eef1f4; }
+      .reminderChoices label:has(input:checked) { border-color: rgba(0,0,0,.16); background: #fff; box-shadow: 0 3px 12px rgba(0,0,0,.06); }
+      .reminderChoices input { width: 17px; height: 17px; flex: 0 0 auto; accent-color: #111; }
+      .reminderFootnote { margin: 4px 22px 0; color: rgba(17,17,17,.43); font-size: 11px; line-height: 1.45; }
+      .reminderModalActions { display: flex; justify-content: flex-end; gap: 9px; padding: 18px 22px 22px; }
+      .reminderCancel { height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: #eef1f4; color: #111; cursor: pointer; font-size: 13px; transition: .18s ease; }
+      .reminderCancel:hover:not(:disabled) { background: #e3e6e9; transform: translateY(-1px); }
+      .reminderModalActions .joinEventBtn { height: 32px; padding: 0 15px; }
+      @keyframes reminderModalIn { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
       @media (max-width: 860px) {
         .eventDetailsPage {

@@ -22,6 +22,8 @@ export default function EditEvent() {
     title: "",
     event_date: "",
     event_time: "",
+    ending_time: "",
+    event_type: "other",
     venue: "",
     description: "",
     available_slots: "",
@@ -45,6 +47,8 @@ export default function EditEvent() {
           title: event.title || "",
           event_date: getEventDateValue(event.event_date),
           event_time: event.event_time ? event.event_time.slice(0, 5) : "",
+          ending_time: event.ending_time ? event.ending_time.slice(0, 5) : "",
+          event_type: event.event_type || "other",
           venue: event.venue || "",
           description: event.description || "",
           available_slots: String(event.available_slots ?? 0),
@@ -163,9 +167,14 @@ export default function EditEvent() {
           <Field label="Date">
             <input type="date" value={form.event_date} onChange={(e) => setField("event_date", e.target.value)} required style={input} />
           </Field>
-          <Field label="Time">
+          <Field label={["lecture", "workshop", "conference"].includes(form.event_type) ? "Starting Time" : "Time"}>
             <input type="time" value={form.event_time} onChange={(e) => setField("event_time", e.target.value)} required style={input} />
           </Field>
+          {["lecture", "workshop", "conference"].includes(form.event_type) && (
+            <Field label="Ending Time (optional)">
+              <input type="time" min={form.event_time || undefined} value={form.ending_time} onChange={(e) => setField("ending_time", e.target.value)} style={input} />
+            </Field>
+          )}
           <Field label={`Available Slots (${registeredCount} already registered)`}>
             <input type="number" min={registeredCount} value={form.available_slots} onChange={(e) => setField("available_slots", e.target.value)} required style={input} />
           </Field>
