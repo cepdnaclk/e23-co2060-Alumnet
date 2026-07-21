@@ -1,91 +1,187 @@
 ---
 layout: home
 permalink: index.html
-
 repository-name: e23-co2060-Alumnet
 title: Alumnet - Student-Alumni Engagement Platform
 ---
 
-# Alumnet
+# ALUMNET
 
-## Team
-- **E/23/435**, E.S Wickramasinghe, [e23435@eng.pdn.ac.lk](mailto:e23435@eng.pdn.ac.lk)
-- **E/23/362**, S.N.V.N Senadheera, [e23362@eng.pdn.ac.lk](mailto:e23362@eng.pdn.ac.lk)
-- **E/23/340**, W.H.C.C Samarasinghe, [e23340@eng.pdn.ac.lk](mailto:e23340@eng.pdn.ac.lk)
-- **E/23/075**, K.K Dilshara, [e23075@eng.pdn.ac.lk](mailto:e23075@eng.pdn.ac.lk)
+> Connecting university students and alumni through mentorship, professional networking, and events.
 
-#### Table of Contents
-1. [Introduction](#introduction)
-2. [Solution Architecture](#solution-architecture)
-3. [Software Designs](#software-designs)
-4. [Testing](#testing)
-5. [Conclusion](#conclusion)
-6. [Links](#links)
+**[Launch the ALUMNET application](https://alumnetconnect.vercel.app/){:target="_blank"}** · [View the GitHub repository](https://github.com/cepdnaclk/e23-co2060-Alumnet){:target="_blank"}
 
-## Introduction
+> This page contains the project documentation. Use the **Launch** link above to open the actual web application.
 
-Universities face ongoing challenges in maintaining meaningful and structured engagement with their alumni after graduation. Currently, alumni information is fragmented across informal platforms such as social media groups, emails, and personal networks. This fragmentation makes it difficult to identify alumni by expertise, facilitate mentorship, or effectively promote university events.
+## Project Overview
 
-**Alumnet** is a centralized, university-managed digital platform designed to solve this problem. It enables organized alumni engagement, structured mentorship workflows, and engagement monitoring in a secure, role-based environment.
+ALUMNET is a centralized, university-managed platform created to replace fragmented alumni engagement across email, social media, and personal networks. It helps students find alumni with relevant experience, formalizes mentorship, supports direct communication, and brings university events into one secure system.
 
-## Solution Architecture
+## Main Features
 
-Alumnet operates as a standalone web-based application using a 3-tier architecture:
+- Secure registration, email verification, login, and password recovery
+- Separate student, alumni, and administrator experiences
+- Searchable alumni directory with academic and professional filters
+- Mentorship requests, responses, tracking, and mentor–mentee chat
+- Student and alumni profile management
+- Event creation, administrator approval, registration, and reminders
+- In-app notifications and configurable email notifications
+- Administrative user verification and event moderation
 
-1.  **Presentation Layer (Frontend):** Built with **React.js** to provide a responsive and interactive user interface for Students, Alumni, and Administrators.
-2.  **Application Layer (Backend):** Powered by **Node.js** and **Express**, handling API routing, business logic, and authentication.
-3.  **Data Layer (Database):** Uses **PostgreSQL** for persistent storage of user profiles, mentorship requests, and events.
+## User Roles
 
-The system is deployed on **Render** and uses **JWT (JSON Web Tokens)** for secure, stateless authentication.
+### Students
 
-## Software Designs
+Students can browse the alumni directory, review professional profiles, request mentorship, communicate with accepted mentors, and register for events.
 
-The system is designed around five core features to ensure scalability and usability:
+### Alumni
 
-### 1. User Authentication & Role Management
-Secure login with JWT-based authentication. The system supports three distinct roles:
-* **Students:** Can search directories and request mentorship.
-* **Alumni:** Can manage profiles and accept/reject requests.
-* **Admins:** Manage users and events.
+Alumni can build professional profiles, respond to mentorship requests, guide mentees through chat, and create events for administrator approval.
 
-### 2. Alumni Profile Management
-A centralized directory allowing alumni to create professional profiles. Students can search this directory filtering by **batch, department, profession, and skills**.
+### Administrators
 
-### 3. Mentorship Workflow
-A structured process to formalize guidance:
-* **Request:** Students send a mentorship request to a specific alumnus.
-* **Response:** Alumni receive the request and can simply "Accept" or "Reject".
-* **Tracking:** Both parties can track the status of the connection.
+Administrators verify accounts, manage users, review submitted events, and monitor activity across the platform.
 
-### 4. Event Announcements
-University administrators can broadcast official event announcements to all users. To avoid complexity and legal risks, the system **does not** handle ticket bookings or financial transactions.
+## User Interface
 
-### 5. Database Design
-The database schema includes entities for **Users**, **AlumniProfiles**, **StudentProfiles**, **MentorshipRequests**, **Events**, and **Notifications** to support clear relationships and data integrity.
+The placeholders below show exactly where screenshots should be uploaded. Save each screenshot under `docs/images/screenshots/`, then remove the `<!--` and `-->` surrounding its image line in this file.
+
+### Landing Page
+
+> Add `images/screenshots/landing-page.png`
+
+![ALUMNET landing page](./images/screenshots/landing-page.png)
+
+### Login and Registration
+
+> Add `images/screenshots/login-page.png`
+
+![ALUMNET login page](./images/screenshots/login-page.png)
+
+> Add `images/screenshots/registration-page.png`
+
+![ALUMNET registration page](./images/screenshots/registration-page.png)
+
+### Student Dashboard
+
+> Add `images/screenshots/student-home.png`
+
+![ALUMNET student home page](./images/screenshots/student-home.png)
+
+> Add `images/screenshots/student-dashboard.png`
+
+![ALUMNET student dashboard](./images/screenshots/student-dashboard.png)
+
+### Alumni Directory
+
+> Add `images/screenshots/alumni-directory.png`
+
+![Searchable ALUMNET alumni directory](./images/screenshots/alumni-directory.png)
+
+> Add `image/screenshots/alumni-profile.png`
+
+![ALUMNET alumni profile](./images/screenshots/alumni-profile.png)
+
+### Mentorship and Chat
+
+> Add `images/screenshots/mentorship-requests.png`
+
+![ALUMNET mentorship request workflow](./images/screenshots/mentorship-requests.png)
+
+> Add `images/screenshots/mentorship-request-recieve.png`
+
+![ALUMNET mentorship requests from alumni profile](./images/screenshots/mentorship-request-recieve.png)
+
+> Add `images/screenshots/chat-page.png`
+
+![ALUMNET mentor and mentee chat](./images/screenshots/chat-page.png)
+
+### Events
+
+> Add `images/screenshots/create-event-page.png`
+
+![ALUMNET Create Event page](./images/screenshots/create-event-page.png)
+
+> Add `images/screenshots/events-page.png`
+
+![ALUMNET Events page](./images/screenshots/events-page.png)
+
+> Add `images/screenshots/event-details.png`
+
+![ALUMNET event details](./images/screenshots/event-details.png)
+
+### Notifications
+
+> Add `images/screenshots/notification-box.png`
+
+![ALUMNET notification box](./images/screenshots/notification-box.png)
+
+> Add `images/screenshots/notification-page.png`
+
+![ALUMNET notification page](./images/screenshots/notification-page.png)
+
+### Administrator Dashboard
+
+> Add `images/screenshots/admin-home.png`
+
+![ALUMNET administrator home page](./images/screenshots/admin-home.png)
+
+> Add `images/screenshots/admin-dashboard.png`
+
+![ALUMNET administrator dashboard](./images/screenshots/admin-dashboard.png)
+
+## System Architecture
+
+ALUMNET follows a three-tier architecture:
+
+1. **Presentation layer:** React and Vite deliver the responsive web interface.
+2. **Application layer:** Node.js and Express provide REST APIs, business logic, and role-based authorization.
+3. **Data layer:** PostgreSQL stores platform data, while Supabase Storage supports uploaded media.
+
+JWT tokens protect private routes, bcrypt secures passwords, and Nodemailer supports account and notification emails.
+
+
+## Database Design
+
+The main data areas include users, student and alumni profiles, mentorship requests, mentor–mentee relationships, chat messages, events, event registrations, reminders, and notifications.
+
+
+## Technology Stack
+
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React, Vite, React Router, Axios |
+| Backend | Node.js, Express |
+| Database | PostgreSQL |
+| Authentication | JWT, bcrypt |
+| Storage | Supabase Storage |
+| Email | Nodemailer |
+| Frontend deployment | Vercel |
 
 ## Testing
 
-The verification strategy for Alumnet includes:
+The verification strategy covers functional workflows, API integration, role-based authorization, form validation, responsive behavior, and usability. Important end-to-end scenarios include registration and verification, mentorship request handling, chat access, event approval, event registration, and notification delivery.
 
-* **Functional Testing:** Verifying that each feature (e.g., login, search, request sending) functions according to the requirements.
-* **Security Testing:** Ensuring that role-based access control (RBAC) is strictly enforced (e.g., a Student cannot delete an Event) and that user data is protected.
-* **Usability Inspection:** Reviewing the interface to ensure that the "Accept/Reject" workflow is intuitive for alumni with varying technical skills.
+## Future Improvements
 
-## Conclusion
+- Interest-based mentor recommendations
+- Calendar integration
+- Push notifications and richer real-time updates
+- Advanced engagement analytics
+- Multi-university support
 
-Alumnet successfully addresses the problem of unstructured alumni engagement by providing a secure and scalable platform. The project delivers a functional directory, a mentorship workflow, and an event broadcasting system.
+## Team CodeX
 
-**Future Enhancements:**
-* Support for multiple universities.
-* Inclusion of corporate or industry mentors.
-* Advanced analytics dashboards for engagement monitoring.
+| Registration No. | Member | Email |
+| --- | --- | --- |
+| E/23/435 | E. S. Wickramasinghe | [e23435@eng.pdn.ac.lk](mailto:e23435@eng.pdn.ac.lk) |
+| E/23/362 | S. N. V. N. Senadheera | [e23362@eng.pdn.ac.lk](mailto:e23362@eng.pdn.ac.lk) |
+| E/23/340 | W. H. C. C. Samarasinghe | [e23340@eng.pdn.ac.lk](mailto:e23340@eng.pdn.ac.lk) |
+| E/23/075 | K. K. Dilshara | [e23075@eng.pdn.ac.lk](mailto:e23075@eng.pdn.ac.lk) |
 
 ## Links
 
-- [Project Repository](https://github.com/cepdnaclk/{{ page.e23-co2060-Alumnet }}){:target="_blank"}
-- [Project Page](https://cepdnaclk.github.io/{{ page.e23-co2060-Alumnet }}){:target="_blank"}
-- [Department of Computer Engineering](http://www.ce.pdn.ac.lk/)
-- [University of Peradeniya](https://eng.pdn.ac.lk/)
-
-[//]: # (Please refer this to learn more about Markdown syntax)
-[//]: # (https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
+- [Live ALUMNET application](https://alumnetconnect.vercel.app/){:target="_blank"}
+- [GitHub repository](https://github.com/cepdnaclk/e23-co2060-Alumnet){:target="_blank"}
+- [Department of Computer Engineering](https://www.ce.pdn.ac.lk/){:target="_blank"}
+- [University of Peradeniya](https://eng.pdn.ac.lk/){:target="_blank"}
