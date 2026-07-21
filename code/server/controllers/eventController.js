@@ -728,7 +728,15 @@ const updateEvent = async (req, res) => {
       image_url,
       speaker,
       zoom_link,
+      event_type,
+      event_details,
     } = req.body;
+
+    const allowedEventTypes = new Set(["lecture", "workshop", "conference", "competition", "other"]);
+    const normalizedEventType = String(event_type || "").toLowerCase();
+    if (!allowedEventTypes.has(normalizedEventType)) {
+      return res.status(400).json({ message: "Please select a valid event type" });
+    }
 
     if (!title || !event_date || !event_time || !venue) {
       return res.status(400).json({
@@ -736,7 +744,7 @@ const updateEvent = async (req, res) => {
       });
     }
 
-    const supportsEndingTime = ["lecture", "workshop", "conference"].includes(existingEvent.event_type);
+    const supportsEndingTime = ["lecture", "workshop", "conference"].includes(normalizedEventType);
     if (ending_time && !supportsEndingTime) {
       return res.status(400).json({ message: "Ending time is only available for lectures, workshops, and conferences" });
     }
@@ -757,8 +765,14 @@ const updateEvent = async (req, res) => {
     }
 
     const approvalStatus = isAdmin ? existingEvent.approval_status : "pending";
-    const updatedEventDetails = { ...(existingEvent.event_details || {}) };
-    if (existingEvent.event_type === "workshop") {
+    if (["conference", "competition"].includes(normalizedEventType)) {
+      const deadline = String(event_details?.registration_deadline || "");
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(deadline) || Number.isNaN(Date.parse(deadline))) {
+        return res.status(400).json({ message: "A valid registration deadline is required for conferences and competitions" });
+      }
+    }
+    const updatedEventDetails = { ...(event_details || {}) };
+    if (normalizedEventType === "workshop") {
       updatedEventDetails.duration = calculateEventDuration(event_time, ending_time);
     }
     const result = await pool.query(
@@ -775,8 +789,9 @@ const updateEvent = async (req, res) => {
           speaker = $9,
           zoom_link = $10,
           event_details = $11,
-          approval_status = $12
-      WHERE id = $13
+          approval_status = $12,
+          event_type = $13
+      WHERE id = $14
       RETURNING *
       `,
       [
@@ -792,6 +807,7 @@ const updateEvent = async (req, res) => {
         zoom_link || null,
         updatedEventDetails,
         approvalStatus,
+        normalizedEventType,
         id,
       ]
     );
