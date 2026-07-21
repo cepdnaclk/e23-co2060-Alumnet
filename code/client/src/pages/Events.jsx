@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import LoadingScreen from "../components/LoadingScreen";
 import { getEvents } from "../api";
 import dateIcon from "../assets/date.png";
@@ -15,7 +15,9 @@ export default function Events() {
   const [searching, setSearching] = useState(false);
   const [err, setErr] = useState("");
   const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("upcoming");
+  const [timingFilter, setTimingFilter] = useState("");
+  const [categoryFilters, setCategoryFilters] = useState([]);
+  const [showPast, setShowPast] = useState(false);
 
   const loadEvents = async () => {
     try {
@@ -41,12 +43,15 @@ export default function Events() {
     const timeout = window.setTimeout(() => setSearching(false), 180);
 
     return () => window.clearTimeout(timeout);
-  }, [search, dateFilter, loading]);
+  }, [search, timingFilter, categoryFilters, showPast, loading]);
 
   const filteredEvents = events.filter((event) => {
     const query = search.trim().toLowerCase();
-    const matchesDate = matchesDateFilter(event, dateFilter);
+    const matchesDate = showPast
+      ? Boolean(event.is_past)
+      : matchesTimingFilter(event, timingFilter);
     if (!matchesDate) return false;
+    if (!showPast && categoryFilters.length && !categoryFilters.includes(event.event_type)) return false;
     if (!query) return true;
 
     return [event.title, event.venue, event.created_by_name, event.description]
@@ -69,17 +74,29 @@ export default function Events() {
             />
           </label>
 
-          <div className="dateFilters" aria-label="Filter events by date">
-            {dateFilters.map((filter) => (
-              <button
-                key={filter.value}
-                className={dateFilter === filter.value ? "active" : ""}
-                type="button"
-                onClick={() => setDateFilter(filter.value)}
-              >
-                {filter.label}
-              </button>
-            ))}
+          <div className="filterControls">
+            <FilterDropdown
+              label="Filter by timing"
+              options={TIMING_OPTIONS}
+              selected={timingFilter}
+              onChange={(value) => { setTimingFilter(value); setShowPast(false); }}
+              disabled={showPast}
+            />
+            <FilterDropdown
+              label="Filter by category"
+              options={CATEGORY_OPTIONS}
+              selected={categoryFilters}
+              onChange={setCategoryFilters}
+              multiple
+              disabled={showPast}
+            />
+            <button
+              type="button"
+              className={`pastFilter${showPast ? " active" : ""}`}
+              onClick={() => setShowPast((current) => !current)}
+            >
+              Past
+            </button>
           </div>
         </div>
 
@@ -166,19 +183,53 @@ export default function Events() {
   );
 }
 
-const dateFilters = [
-  { value: "upcoming", label: "Upcoming" },
+const TIMING_OPTIONS = [
+  { value: "", label: "All upcoming" },
   { value: "today", label: "Today" },
   { value: "tomorrow", label: "Tomorrow" },
   { value: "week", label: "This Week" },
   { value: "month", label: "This Month" },
-  { value: "archive", label: "Archive" },
 ];
 
-function matchesDateFilter(event, filter) {
-  if (filter === "archive") return Boolean(event.is_past);
-  if (filter === "upcoming") return !event.is_past;
+const CATEGORY_OPTIONS = [
+  { value: "lecture", label: "Lectures" },
+  { value: "workshop", label: "Workshops" },
+  { value: "conference", label: "Conferences" },
+  { value: "competition", label: "Competitions" },
+  { value: "other", label: "Other" },
+];
+
+function FilterDropdown({ label, options, selected, onChange, disabled = false, multiple = false }) {
+  const selectedValues = multiple ? selected : [selected];
+  const selectedOption = options.find((option) => option.value === selected);
+  const summary = multiple
+    ? (selected.length ? `${label} (${selected.length})` : label)
+    : (selected ? selectedOption?.label || label : label);
+  const selectOption = (value) => {
+    if (!multiple) { onChange(value); return; }
+    onChange(selected.includes(value)
+      ? selected.filter((item) => item !== value)
+      : [...selected, value]);
+  };
+
+  return (
+    <details name="event-filter-dropdown" className={`filterDropdown${disabled ? " disabled" : ""}`}>
+      <summary onClick={(event) => disabled && event.preventDefault()} aria-disabled={disabled}>{summary}<ChevronDown size={14} /></summary>
+      <div className="filterMenu">
+        {options.map((option) => (
+          <label key={option.value}>
+            <input type={multiple ? "checkbox" : "radio"} name={label} checked={selectedValues.includes(option.value)} onChange={() => selectOption(option.value)} />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function matchesTimingFilter(event, filter) {
   if (event.is_past) return false;
+  if (!filter) return true;
   const date = event.event_date;
   if (!date) return false;
 
@@ -199,13 +250,10 @@ function matchesDateFilter(event, filter) {
   }
 
   if (filter === "month") {
-    return (
-      eventDate.getFullYear() === today.getFullYear() &&
-      eventDate.getMonth() === today.getMonth()
-    );
+    return eventDate.getFullYear() === today.getFullYear() && eventDate.getMonth() === today.getMonth();
   }
 
-  return true;
+  return false;
 }
 
 function startOfDay(date) {
@@ -264,6 +312,77 @@ const css = `
   margin-bottom:22px;
 }
 
+.filterControls{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+}
+
+.filterDropdown{
+  position:relative;
+}
+
+.filterDropdown summary,
+.pastFilter{
+  height:32px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  min-width:154px;
+  padding:0 12px;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:999px;
+  background:#fff;
+  color:#111;
+  font-family:"Google Sans";
+  font-size:13px;
+  line-height:1;
+  cursor:pointer;
+  list-style:none;
+  box-shadow:0 10px 24px rgba(0,0,0,.12),0 2px 7px rgba(0,0,0,.05);
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease,color .18s ease;
+}
+
+.filterDropdown summary::-webkit-details-marker{display:none}
+.filterDropdown[open] summary svg{transform:rotate(180deg)}
+.filterDropdown summary svg{transition:transform .18s ease}
+.filterDropdown summary:hover,.pastFilter:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(0,0,0,.16)}
+.filterDropdown.disabled summary{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.filterDropdown.disabled .filterMenu{display:none}
+.pastFilter{
+  min-width:auto;
+  justify-content:center;
+  gap:0;
+  border-color:#9aabc1;
+  background:#dce5f0;
+  color:#405a7b;
+  font-weight:600;
+  box-shadow:0 10px 24px rgba(64,90,123,.19),0 2px 7px rgba(0,0,0,.05);
+}
+.pastFilter:hover{background:#cfdae8;box-shadow:0 12px 26px rgba(64,90,123,.25)}
+.pastFilter.active{background:#536f94;color:#fff;border-color:#536f94;box-shadow:0 10px 24px rgba(64,90,123,.32)}
+
+.filterMenu{
+  position:absolute;
+  z-index:20;
+  top:calc(100% + 8px);
+  right:0;
+  width:210px;
+  padding:9px;
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:13px;
+  background:#fff;
+  box-shadow:0 18px 40px rgba(26,38,65,.16);
+}
+
+.filterMenu label{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:8px;color:#333;font-size:13px;cursor:pointer}
+.filterMenu label:hover{background:#f3f5f8}
+.filterMenu input{width:17px;height:17px;margin:0;accent-color:#5f78df;cursor:pointer}
+.filterMenu span{white-space:nowrap}
+
 .eventSearch{
   height:36px;
   width:100%;
@@ -290,38 +409,6 @@ const css = `
 
 .eventSearch input::placeholder{
   color:rgba(17,17,17,.44);
-}
-
-.dateFilters{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  flex-wrap:wrap;
-  gap:8px;
-}
-
-.dateFilters button{
-  height:30px;
-  padding:0 12px;
-  border-radius:999px;
-  background:#ffffff;
-  color:#111111;
-  font-family:"Google Sans";
-  font-size:13px;
-  line-height:1;
-  box-shadow:0 10px 24px rgba(0,0,0,.14), 0 2px 7px rgba(0,0,0,.06);
-  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
-}
-
-.dateFilters button:hover{
-  transform:translateY(-1px);
-  box-shadow:0 12px 26px rgba(0,0,0,.16);
-}
-
-.dateFilters button.active{
-  background:#2f5ff5;
-  color:#ffffff;
-  box-shadow:0 10px 24px rgba(47,95,245,.22), 0 2px 7px rgba(0,0,0,.08);
 }
 
 .eventState{
@@ -599,8 +686,9 @@ const css = `
     grid-template-columns:1fr;
   }
 
-  .dateFilters{
+  .filterControls{
     justify-content:flex-start;
+    flex-wrap:wrap;
   }
 
   .eventList{
@@ -629,6 +717,11 @@ const css = `
     border-radius:18px;
     padding:20px 14px 24px;
   }
+
+  .filterControls{display:grid;grid-template-columns:1fr 1fr}
+  .filterDropdown summary{min-width:0;width:100%;gap:8px}
+  .pastFilter{grid-column:1/-1;width:max-content}
+  .filterMenu{left:0;right:auto;width:max(190px,100%)}
 
   .eventList{
     margin:0 -14px -24px;
