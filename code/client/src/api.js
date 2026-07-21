@@ -548,3 +548,19 @@ export async function getMyCreatedEvents(token) {
 
   return handle(res);
 }
+
+export async function deleteNotification(token, id) {
+  const res = await fetch(`${API_URL}/api/notifications/${id}`, {
+    method: "DELETE",
+    headers: { ...authHeaders(token) },
+  });
+  return handle(res);
+}
+
+export async function markAllNotificationsAsRead(token) {
+  const res = await fetch(`${API_URL}/api/notifications/read-all`, {
+    method: "PATCH",
+    headers: { ...authHeaders(token) },
+  });
+  return handle(res);
+}

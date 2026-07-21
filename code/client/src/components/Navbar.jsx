@@ -23,6 +23,7 @@ import {
   getChatContacts,
   getMyNotifications,
   getProfile,
+  markAllNotificationsAsRead,
   markNotificationAsRead,
 } from "../api";
 import { supabase } from "../supabase";
@@ -262,12 +263,34 @@ export default function Navbar() {
 
             {showNotifications && (
               <div className="notifDropdown">
-                <div className="notifHeader">Notifications</div>
+                <div className="notifHeader">
+                  <span>Notifications</span>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      className="navMarkAllBtn"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await markAllNotificationsAsRead(token);
+                          setNotifications((prev) =>
+                            prev.map((n) => ({ ...n, is_read: true }))
+                          );
+                          setUnreadCount(0);
+                        } catch (err) {
+                          console.error("Failed to mark all as read", err);
+                        }
+                      }}
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
                 <div className="notifList">
                   {notifications.length === 0 ? (
                     <div className="notifEmpty">No new notifications</div>
                   ) : (
-                    notifications.map((notif) => (
+                    notifications.slice(0, 4).map((notif) => (
                       <button
                         key={notif.id}
                         className={`notifItem ${!notif.is_read ? "unread" : ""}`}
@@ -283,6 +306,17 @@ export default function Navbar() {
                     ))
                   )}
                 </div>
+                {notifications.length > 0 && (
+                  <div
+                    className="notifFooter"
+                    onClick={() => {
+                      setShowNotifications(false);
+                      navigate("/notifications");
+                    }}
+                  >
+                    See All Notifications
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -517,6 +551,8 @@ const css = `
   border:1px solid rgba(0,0,0,.08);
   box-shadow:0 24px 58px rgba(0,0,0,.18);
   animation:dropdownFade .16s ease both;
+  display:flex;
+  flex-direction:column;
 }
 
 .profileDropdown{
@@ -591,11 +627,32 @@ const css = `
   padding:14px 16px;
   border-bottom:1px solid rgba(0,0,0,.06);
   font-size:14px;
+  font-weight:600;
   color:#111111;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.navMarkAllBtn{
+  background:none;
+  border:none;
+  color:#2563eb;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  padding:2px 6px;
+  border-radius:4px;
+  font-family:"Google Sans";
+  transition:background .15s ease;
+}
+
+.navMarkAllBtn:hover{
+  background:rgba(37,99,235,.08);
 }
 
 .notifList{
-  max-height:340px;
+  max-height:300px;
   overflow-y:auto;
   padding:6px;
 }
@@ -618,6 +675,7 @@ const css = `
   padding:10px;
   font-family:"Google Sans";
   transition:background .18s ease;
+  cursor:pointer;
 }
 
 .notifItem:hover,
@@ -640,6 +698,22 @@ const css = `
 .notifTime{
   color:rgba(17,17,17,.42);
   font-size:11px;
+}
+
+.notifFooter{
+  padding:12px 16px;
+  text-align:center;
+  font-size:13px;
+  font-weight:600;
+  color:#295bb8;
+  background:#f8fafc;
+  border-top:1px solid rgba(0,0,0,.06);
+  cursor:pointer;
+  transition:background .18s ease;
+}
+
+.notifFooter:hover{
+  background:#f1f5f9;
 }
 
 @keyframes dropdownFade{
@@ -691,7 +765,7 @@ const css = `
   .notifDropdown{
     right:16px;
     top:62px;
-    width:min(320px, calc(100vw - 32px));
+    width:calc(100vw - 32px);
   }
 }
 `;
