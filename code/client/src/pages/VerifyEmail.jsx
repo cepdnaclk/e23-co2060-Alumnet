@@ -1,46 +1,106 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowRight, Check, Loader2, LogIn, MailCheck, X } from "lucide-react";
-import { resendVerificationEmail, verifyEmail } from "../api";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import {
+  ArrowRight,
+  Check,
+  Loader2,
+  LogIn,
+  MailCheck,
+  X,
+} from "lucide-react";
+import {
+  resendVerificationEmail,
+  verifyEmail,
+} from "../api";
+
+/*
+  React StrictMode may mount the component twice in development.
+
+  This cache makes every verification token use the same request promise,
+  preventing duplicate requests from changing a successful verification
+  into a failed verification screen.
+*/
+const verificationRequests = new Map();
+
+function verifyTokenOnce(token) {
+  if (!verificationRequests.has(token)) {
+    verificationRequests.set(token, verifyEmail(token));
+  }
+
+  return verificationRequests.get(token);
+}
 
 export default function VerifyEmail() {
   const { token } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+
   const email = location.state?.email;
+
   const [mounted, setMounted] = useState(false);
-  const [status, setStatus] = useState(token ? "loading" : "check-email");
+  const [status, setStatus] = useState(
+    token ? "loading" : "check-email"
+  );
+
   const [message, setMessage] = useState(
     "Please login if you already verified your email, or register again if the link expired."
   );
+
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 40);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 40);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     let active = true;
 
     async function confirmEmail() {
-      try {
-        const data = await verifyEmail(token);
+      if (!token) {
+        return;
+      }
 
-        if (!active) return;
+      setStatus("loading");
+
+      try {
+        const data = await verifyTokenOnce(token);
+
+        if (!active) {
+          return;
+        }
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
 
         setStatus("success");
-        localStorage.removeItem("token");
         setMessage(
-          data.message || "Verification successful. Please login again to continue."
+          data.message ||
+            "Verification successful. Please login again to continue."
         );
-      } catch {
-        if (!active) return;
+      } catch (error) {
+        if (!active) {
+          return;
+        }
 
+        /*
+          A verification request may have completed previously, such as when
+          the user refreshes an already-used verification link. The user can
+          safely continue to login.
+        */
         setStatus("error");
         setMessage(
-          "Please login if you already verified your email, or register again if the link expired."
+          error.message ||
+            "This verification link is invalid or has expired. Please login if your email was already verified."
         );
       }
     }
@@ -55,7 +115,7 @@ export default function VerifyEmail() {
     return () => {
       active = false;
     };
-  }, [location.state?.message, token]);
+  }, [token, location.state?.message]);
 
   const isSuccess = status === "success";
   const isError = status === "error";
@@ -64,20 +124,34 @@ export default function VerifyEmail() {
 
   const goHome = () => {
     navigate("/");
-    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }));
+
+    requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+      });
+    });
   };
 
   const handleResend = async () => {
-    if (!email) return;
+    if (!email) {
+      return;
+    }
 
     setResendLoading(true);
     setResendMessage("");
 
     try {
       const data = await resendVerificationEmail(email);
-      setResendMessage(data.message || "Verification email sent. Please check your inbox.");
-    } catch (err) {
-      setResendMessage(err.message || "Failed to send verification email.");
+
+      setResendMessage(
+        data.message ||
+          "Verification email sent. Please check your inbox."
+      );
+    } catch (error) {
+      setResendMessage(
+        error.message || "Failed to send verification email."
+      );
     } finally {
       setResendLoading(false);
     }
@@ -89,30 +163,37 @@ export default function VerifyEmail() {
       ? "Verification successful"
       : isCheckEmail
         ? "Check your email"
-        : "Verification failed";
+        : "Verification link used";
 
   const body = isLoading
     ? "Please wait while we confirm your Alumnet account."
     : isCheckEmail && message
       ? message
-    : isCheckEmail && email
-      ? `We sent a verification link to ${email}. Open it to continue.`
-      : isCheckEmail
-        ? "We sent a verification link to your email. Open it to continue."
-        : isSuccess
-          ? "Verification successful. Please login again to continue."
-          : isError
+      : isCheckEmail && email
+        ? `We sent a verification link to ${email}. Open it to continue.`
+        : isCheckEmail
+          ? "We sent a verification link to your email. Open it to continue."
+          : isSuccess
             ? message
-            : message;
+            : "This verification link may already have been used. Try logging in with the email and password you registered with.";
 
   return (
     <main className="verifyPage">
       <style>{css}</style>
 
       <section className={`verifyCard ${mounted ? "in" : ""}`}>
-        <button className="iconButton" type="button" onClick={goHome}>
+        <button
+          className="iconButton"
+          type="button"
+          onClick={goHome}
+          aria-label="Return to home"
+        >
           {isLoading ? (
-            <Loader2 className="spin" size={21} strokeWidth={2} />
+            <Loader2
+              className="spin"
+              size={21}
+              strokeWidth={2}
+            />
           ) : isSuccess ? (
             <Check size={21} strokeWidth={2.2} />
           ) : isError ? (
@@ -123,11 +204,15 @@ export default function VerifyEmail() {
         </button>
 
         <h1>{title}</h1>
+
         <p className="verifySubtitle">{body}</p>
 
         {!isLoading && !isCheckEmail && (
           <Link className="verifyButton" to="/login">
-            <span>{isSuccess ? "Login again" : "Go to login"}</span>
+            <span>
+              {isSuccess ? "Login again" : "Go to login"}
+            </span>
+
             <ArrowRight size={15} strokeWidth={2.4} />
           </Link>
         )}
@@ -142,15 +227,28 @@ export default function VerifyEmail() {
                 disabled={resendLoading}
               >
                 {resendLoading ? (
-                  <Loader2 className="spin" size={15} strokeWidth={2.2} />
+                  <Loader2
+                    className="spin"
+                    size={15}
+                    strokeWidth={2.2}
+                  />
                 ) : (
                   <MailCheck size={15} strokeWidth={2.2} />
                 )}
-                <span>{resendLoading ? "Sending..." : "Resend verification email"}</span>
+
+                <span>
+                  {resendLoading
+                    ? "Sending..."
+                    : "Resend verification email"}
+                </span>
               </button>
             )}
 
-            {resendMessage && <p className="resendMessage">{resendMessage}</p>}
+            {resendMessage && (
+              <p className="resendMessage">
+                {resendMessage}
+              </p>
+            )}
 
             <Link className="secondaryButton" to="/login">
               <LogIn size={15} strokeWidth={2.2} />
@@ -159,7 +257,11 @@ export default function VerifyEmail() {
           </>
         )}
 
-        <Link className="backHomeLink" to="/" onClick={goHome}>
+        <Link
+          className="backHomeLink"
+          to="/"
+          onClick={goHome}
+        >
           Back to Home
         </Link>
       </section>
