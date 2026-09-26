@@ -172,9 +172,8 @@ The verification strategy covers functional workflows, API integration, role-bas
 | E/23/362 | S. N. V. N. Senadheera | [e23362@eng.pdn.ac.lk](mailto:e23362@eng.pdn.ac.lk) |
 | E/23/435 | E. S. Wickramasinghe | [e23435@eng.pdn.ac.lk](mailto:e23435@eng.pdn.ac.lk) |
 
-## Links
+## ALUMNET Project Hub
 
-- [Live ALUMNET application](https://alumnetconnect.vercel.app/){:target="_blank"}
-- [GitHub repository](https://github.com/cepdnaclk/e23-co2060-Alumnet){:target="_blank"}
+- [All the project resources] (https://linktr.ee/alumnet?utm_source=qr_code) {:target="_blank"}
 - [Department of Computer Engineering](https://www.ce.pdn.ac.lk/){:target="_blank"}
 - [University of Peradeniya](https://eng.pdn.ac.lk/){:target="_blank"}
