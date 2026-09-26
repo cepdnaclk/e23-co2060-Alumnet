@@ -174,6 +174,6 @@ The verification strategy covers functional workflows, API integration, role-bas
 
 ## ALUMNET Project Hub
 
-- [All the project resources] (https://linktr.ee/alumnet?utm_source=qr_code) {:target="_blank"}
+- [All the project resources](https://linktr.ee/alumnet?utm_source=qr_code) {:target="_blank"}
 - [Department of Computer Engineering](https://www.ce.pdn.ac.lk/){:target="_blank"}
 - [University of Peradeniya](https://eng.pdn.ac.lk/){:target="_blank"}
